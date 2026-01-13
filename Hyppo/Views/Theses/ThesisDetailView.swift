@@ -24,6 +24,7 @@ struct ThesisDetailView: View {
     @State private var showingAddLogEntry = false
     @State private var selectedLogEntry: LogEntry?
     @State private var showingLogEntryDetail = false
+    @State private var logEntryForEvidence: LogEntry?
     
     // MARK: - Body
     
@@ -74,6 +75,12 @@ struct ThesisDetailView: View {
         }
         .sheet(item: $selectedLogEntry) { logEntry in
             LogEntryDetailSheet(logEntry: logEntry)
+        }
+        .sheet(item: $logEntryForEvidence) { logEntry in
+            EvidenceFormView(mode: .add(logEntry: logEntry)) { newEvidence in
+                modelContext.insert(newEvidence)
+                newEvidence.logEntry = logEntry
+            }
         }
     }
     
@@ -209,13 +216,15 @@ struct ThesisDetailView: View {
             } else {
                 LazyVStack(spacing: 12) {
                     ForEach(thesis.sortedLogEntries) { logEntry in
-                        LogEntryCard(logEntry: logEntry)
-                            .onTapGesture {
-                                selectedLogEntry = logEntry
-                            }
-                            .contextMenu {
-                                logEntryContextMenu(for: logEntry)
-                            }
+                        LogEntryCard(logEntry: logEntry) {
+                            logEntryForEvidence = logEntry
+                        }
+                        .onTapGesture {
+                            selectedLogEntry = logEntry
+                        }
+                        .contextMenu {
+                            logEntryContextMenu(for: logEntry)
+                        }
                     }
                 }
             }
@@ -322,6 +331,7 @@ private struct BulletPoint: View {
 /// Card view for displaying a log entry in the timeline
 struct LogEntryCard: View {
     let logEntry: LogEntry
+    let onAddEvidence: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -388,6 +398,15 @@ struct LogEntryCard: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
+                
+                // Add Evidence button
+                Button {
+                    onAddEvidence()
+                } label: {
+                    Label("Add Evidence", systemImage: "link.badge.plus")
+                        .font(.caption)
+                }
+                .buttonStyle(.borderless)
             }
         }
         .padding()
@@ -571,6 +590,6 @@ struct EvidenceRow: View {
     )
     
     return ThesisDetailView(thesis: thesis)
-        .modelContainer(for: [Thesis.self, LogEntry.self, Evidence.self], inMemory: true)
+        .modelContainer(for: [Thesis.self, LogEntry.self, Evidence.self, ReviewReminder.self], inMemory: true)
 }
 

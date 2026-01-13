@@ -16,7 +16,7 @@ struct HyppoApp: App {
         DebugLogger.info(
             location: "HyppoApp:init",
             message: "Footnote app initializing",
-            data: ["models": "Asset, Thesis, LogEntry, Evidence, Tag"]
+            data: ["models": "Asset, Thesis, LogEntry, Evidence, Tag, ReviewReminder"]
         )
     }
     
@@ -36,7 +36,8 @@ struct HyppoApp: App {
             Thesis.self,
             LogEntry.self,
             Evidence.self,
-            Tag.self
+            Tag.self,
+            ReviewReminder.self
         ])
         
         let modelConfiguration = ModelConfiguration(

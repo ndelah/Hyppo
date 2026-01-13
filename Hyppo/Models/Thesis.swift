@@ -72,6 +72,9 @@ final class Thesis {
     /// Tags associated with this thesis
     var tags: [Tag]?
     
+    /// Review reminder for this thesis
+    @Relationship(deleteRule: .cascade) var reviewReminder: ReviewReminder?
+    
     // MARK: - Initialization
     
     /**

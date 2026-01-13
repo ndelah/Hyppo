@@ -197,64 +197,76 @@ The product must support this end-to-end workflow:
 - **MVP 2 (Workflow support):** Quick Capture, snippets/attachments, reminders + review mode, scenario comparison.
 - **MVP 3 (Premium):** analytics dashboard, AI summaries/critique prompts, polished memo exports.
 
+### MVP 0 implementation status (as built in this repo)
+- **Navigation shell (sidebar → asset → thesis → timeline)**: **Done**
+- **Local persistence (SwiftData)**: **Done**
+- **CRUD for core entities**
+  - Asset: **Done**
+  - Thesis: **Done**
+  - Log Entry: **Done**
+  - Evidence: **Done**
+- **Settings window**: **Done** (export/import/backup actions are UI placeholders only)
+- **Review reminders entity**: **Done** (ReviewReminder model with cadence, scheduling, snooze)
+- **Review reminders workflow/UI**: **Not done** (MVP 2)
+
 ## 11. Feature backlog and Scrum ticketing
 Epics (user stories + tickets) are organized by MVP phase.
 
 ### Epic A — App shell and navigation (MVP 0)
 User flow: open app → assets → asset → theses → thesis → timeline.
-- A1: SwiftUI shell (sidebar + detail) with Settings.
-- A2: Routing/state management; robust empty states.
+- A1 (**Done**): SwiftUI shell (sidebar + detail) with Settings.
+- A2 (**Done**): Routing/state management; robust empty states.
 
 ### Epic B — Local persistence and data model (MVP 0)
-- B1: Define entities (Asset, Thesis, Log Entry, Evidence, Review Reminder).
-- B2: Implement persistence; cascading deletes; performance targets.
-- B3: Integrity rules and validation.
+- B1 (**Done**): Define entities (Asset, Thesis, Log Entry, Evidence, Review Reminder).
+- B2 (**Done**): Implement persistence; cascading deletes; performance targets.
+- B3 (**Done**): Integrity rules and validation.
 
 ### Epic C — Assets management (MVP 1)
-- C1: Asset list view + search.
-- C2: Add/edit/delete asset.
-- C3: Asset tags + tag filtering.
+- C1 (**Done**): Asset list view + search.
+- C2 (**Done**): Add/edit/delete asset.
+- C3 (**Not done**): Asset tags + tag filtering.
 
 ### Epic D — Thesis threads per asset (MVP 1)
-- D1: Thesis list under asset.
-- D2: Create/edit thesis (structured fields).
-- D3: Thesis lifecycle statuses + auto log on status change.
+- D1 (**Done**): Thesis list under asset.
+- D2 (**Done**): Create/edit thesis (structured fields).
+- D3 (**Not done**): Thesis lifecycle statuses + auto log on status change. *(Statuses exist; no auto-log on change.)*
 
 ### Epic E — Log entries and timeline (MVP 1)
-- E1: Timeline view (compact markers; expand/collapse).
-- E2: Fast log creation (shortcut; drafts).
-- E3: Log metadata (tags, confidence, entry type).
-- E4: UI density control via progressive disclosure.
+- E1 (**Done**): Timeline view (compact markers; expand/collapse).
+- E2 (**Not done**): Fast log creation (shortcut; drafts). *(Basic add log exists; no drafts/shortcut wiring.)*
+- E3 (**Not done**): Log metadata (tags, confidence, entry type). *(Confidence + entry type exist; tags missing.)*
+- E4 (**Not done**): UI density control via progressive disclosure.
 
 ### Epic F — Evidence (MVP 1 → MVP 2)
-- F1 (MVP 1): Attach URL to a log.
-- F2 (MVP 2): Snippet capture with attribution.
-- F3 (MVP 2): File attachments (PDF/images) stored locally.
+- F1 (MVP 1) (**Done**): Attach URL to a log.
+- F2 (MVP 2) (**Not done**): Snippet capture with attribution.
+- F3 (MVP 2) (**Not done**): File attachments (PDF/images) stored locally.
 
 ### Epic G — Search and filters (MVP 1)
-- G1: Global search across assets/theses/logs/evidence.
-- G2: Filters (date, tags, confidence, entry type).
+- G1 (**Not done**): Global search across assets/theses/logs/evidence.
+- G2 (**Not done**): Filters (date, tags, confidence, entry type).
 
 ### Epic H — Export, backup, portability (MVP 1)
-- H1: Export/import JSON.
-- H2: Export Markdown per thesis.
-- H3: Automatic local backups (versioned folder).
+- H1 (**Not done**): Export/import JSON.
+- H2 (**Not done**): Export Markdown per thesis.
+- H3 (**Not done**): Automatic local backups (versioned folder).
 
 ### Epic I — Review loop and reminders (MVP 2)
-- I1: Local reminder scheduling per thesis.
-- I2: Review mode wizard (reinforce/revise/invalidate).
-- I3: Structured review log generation.
+- I1 (**Not done**): Local reminder scheduling per thesis.
+- I2 (**Not done**): Review mode wizard (reinforce/revise/invalidate).
+- I3 (**Not done**): Structured review log generation.
 
 ### Epic J — Scenario comparison (MVP 2)
-- J1: Scenario grouping (bull/base/bear) per asset.
-- J2: Compare view (drivers/invalidation side-by-side).
-- J3: “Which is playing out?” selector that creates a log.
+- J1 (**Not done**): Scenario grouping (bull/base/bear) per asset.
+- J2 (**Not done**): Compare view (drivers/invalidation side-by-side).
+- J3 (**Not done**): “Which is playing out?” selector that creates a log.
 
 ### Epic K — Premium features (MVP 3)
-- K1: Behavioral analytics dashboard.
-- K2: AI-assisted thesis summaries (editable, non-destructive).
-- K3: AI critique prompts (Socratic questioning).
-- K4: Premium export templates (investor memo).
+- K1 (**Not done**): Behavioral analytics dashboard.
+- K2 (**Not done**): AI-assisted thesis summaries (editable, non-destructive).
+- K3 (**Not done**): AI critique prompts (Socratic questioning).
+- K4 (**Not done**): Premium export templates (investor memo).
 
 ## 12. Definition of Done
 - Acceptance criteria met.

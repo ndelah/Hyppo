@@ -58,6 +58,6 @@ struct MainNavigationView: View {
 
 #Preview {
     MainNavigationView()
-        .modelContainer(for: [Asset.self, Thesis.self, LogEntry.self, Evidence.self, Tag.self], inMemory: true)
+        .modelContainer(for: [Asset.self, Thesis.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
 }
 
