@@ -21,6 +21,7 @@ struct ReviewReminderView: View {
     // MARK: - State
     
     @State private var showingCadenceSheet = false
+    @State private var showingReviewWizard = false
     @StateObject private var notificationService = NotificationService.shared
     
     // MARK: - Body
@@ -136,13 +137,22 @@ struct ReviewReminderView: View {
     @ViewBuilder
     private func dueActionsView(_ reminder: ReviewReminder) -> some View {
         HStack(spacing: 12) {
-            // Complete review button
+            // Start review wizard button
             Button {
-                completeReview(reminder)
+                showingReviewWizard = true
             } label: {
-                Label("Complete Review", systemImage: "checkmark.circle")
+                Label("Start Review", systemImage: "wand.and.stars")
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            
+            // Quick complete (skip wizard)
+            Button {
+                quickCompleteReview(reminder)
+            } label: {
+                Label("Quick Complete", systemImage: "checkmark.circle")
+            }
+            .buttonStyle(.bordered)
             .controlSize(.small)
             
             // Snooze button
@@ -155,6 +165,14 @@ struct ReviewReminderView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
+        }
+        .sheet(isPresented: $showingReviewWizard) {
+            ReviewWizardView(thesis: thesis) {
+                // Wizard handles everything, just reschedule notification
+                if let r = thesis.reviewReminder {
+                    notificationService.rescheduleNotification(for: r, thesis: thesis)
+                }
+            }
         }
     }
     
@@ -234,18 +252,21 @@ struct ReviewReminderView: View {
         }
     }
     
-    private func completeReview(_ reminder: ReviewReminder) {
+    private func quickCompleteReview(_ reminder: ReviewReminder) {
         reminder.completeReview()
         notificationService.rescheduleNotification(for: reminder, thesis: thesis)
         
-        // Create a review log entry
+        // Create a simple review log entry (for quick complete without wizard)
         let logEntry = LogEntry.createReviewLog(
-            outcome: .reinforce,
-            summary: "Completed scheduled review",
+            outcome: ReviewOutcome.reinforce,
+            summary: "Quick review completed - thesis still valid",
             confidence: thesis.confidenceCurrent
         )
         modelContext.insert(logEntry)
         logEntry.thesis = thesis
+        
+        // Update thesis
+        thesis.lastReviewedAt = Date()
     }
     
     private func snooze(_ reminder: ReviewReminder, days: Int) {

@@ -49,16 +49,87 @@ private enum SettingsTab: String {
     case about
 }
 
+// MARK: - Display Density
+
+/// Controls the amount of information shown in the UI
+enum DisplayDensity: String, CaseIterable, Identifiable {
+    case compact = "compact"
+    case comfortable = "comfortable"
+    case expanded = "expanded"
+    
+    var id: String { rawValue }
+    
+    var displayName: String {
+        switch self {
+        case .compact: return "Compact"
+        case .comfortable: return "Comfortable"
+        case .expanded: return "Expanded"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .compact: return "Minimal info, collapsed sections"
+        case .comfortable: return "Balanced view (default)"
+        case .expanded: return "All details visible"
+        }
+    }
+    
+    /// Number of lines to show in log entry body preview
+    var bodyPreviewLines: Int {
+        switch self {
+        case .compact: return 1
+        case .comfortable: return 3
+        case .expanded: return 6
+        }
+    }
+    
+    /// Whether to expand thesis sections by default
+    var expandSectionsByDefault: Bool {
+        switch self {
+        case .compact: return false
+        case .comfortable: return true
+        case .expanded: return true
+        }
+    }
+    
+    /// Whether to show metadata row in log cards
+    var showMetadataRow: Bool {
+        switch self {
+        case .compact: return false
+        case .comfortable: return true
+        case .expanded: return true
+        }
+    }
+}
+
 // MARK: - General Settings Tab
 
 private struct GeneralSettingsTab: View {
     @AppStorage("defaultConfidenceLevel") private var defaultConfidenceLevel: Int = 3
     @AppStorage("showSystemLogs") private var showSystemLogs: Bool = true
-    @AppStorage("compactTimelineView") private var compactTimelineView: Bool = false
+    @AppStorage("displayDensity") private var displayDensity: String = DisplayDensity.comfortable.rawValue
+    
+    private var density: DisplayDensity {
+        DisplayDensity(rawValue: displayDensity) ?? .comfortable
+    }
     
     var body: some View {
         Form {
             Section {
+                Picker("UI Density", selection: $displayDensity) {
+                    ForEach(DisplayDensity.allCases) { density in
+                        VStack(alignment: .leading) {
+                            Text(density.displayName)
+                            Text(density.description)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .tag(density.rawValue)
+                    }
+                }
+                .pickerStyle(.inline)
+                
                 Picker("Default Confidence Level", selection: $defaultConfidenceLevel) {
                     ForEach(ConfidenceLevel.allCases, id: \.rawValue) { level in
                         Text(level.displayName).tag(level.rawValue)
@@ -67,18 +138,16 @@ private struct GeneralSettingsTab: View {
                 .pickerStyle(.menu)
                 
                 Toggle("Show system-generated log entries", isOn: $showSystemLogs)
-                
-                Toggle("Compact timeline view", isOn: $compactTimelineView)
             } header: {
                 Text("Display")
             }
             
             Section {
-                Text("Keyboard shortcuts and additional settings will be available in future updates.")
+                Text("UI Density controls how much information is shown at once. Compact hides details until you expand them.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } header: {
-                Text("Behavior")
+                Text("About Density")
             }
         }
         .formStyle(.grouped)
@@ -89,11 +158,14 @@ private struct GeneralSettingsTab: View {
 // MARK: - Backup Settings Tab
 
 private struct BackupSettingsTab: View {
+    @Environment(\.modelContext) private var modelContext
+    
     @AppStorage("autoBackupEnabled") private var autoBackupEnabled: Bool = false
     @AppStorage("backupFolderPath") private var backupFolderPath: String = ""
     @AppStorage("maxBackupCount") private var maxBackupCount: Int = 10
     
     @State private var showFolderPicker = false
+    @State private var showingExportImportSheet = false
     @State private var lastBackupDate: Date?
     
     var body: some View {
@@ -118,42 +190,41 @@ private struct BackupSettingsTab: View {
                     .disabled(!autoBackupEnabled)
             } header: {
                 Text("Automatic Backup")
+            } footer: {
+                Text("Automatic backups will be available in a future update.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
             
             Section {
-                HStack {
-                    Button("Export JSON...") {
-                        // TODO: Implement JSON export
-                    }
-                    
-                    Button("Export Markdown...") {
-                        // TODO: Implement Markdown export
-                    }
+                Button {
+                    showingExportImportSheet = true
+                } label: {
+                    Label("Open Export / Import...", systemImage: "arrow.up.arrow.down.square")
                 }
                 
+                Text("Export all your data to JSON for backup, or import previously exported data.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
                 if let lastBackup = lastBackupDate {
-                    Text("Last backup: \(lastBackup.formatted(date: .abbreviated, time: .shortened))")
+                    Text("Last export: \(lastBackup.formatted(date: .abbreviated, time: .shortened))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             } header: {
-                Text("Manual Export")
-            }
-            
-            Section {
-                Button("Import from JSON...") {
-                    // TODO: Implement JSON import
-                }
-                
-                Text("Importing will merge with existing data. Duplicates will be skipped.")
+                Text("Export & Import")
+            } footer: {
+                Text("Use the Export button on individual theses to export as Markdown.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-            } header: {
-                Text("Import")
+                    .foregroundStyle(.tertiary)
             }
         }
         .formStyle(.grouped)
         .padding()
+        .sheet(isPresented: $showingExportImportSheet) {
+            ExportImportView()
+        }
     }
 }
 

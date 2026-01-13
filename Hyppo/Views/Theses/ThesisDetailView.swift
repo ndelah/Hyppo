@@ -7,12 +7,22 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 /// Detail view for a selected thesis showing content and timeline
 struct ThesisDetailView: View {
     // MARK: - Environment
     
     @Environment(\.modelContext) private var modelContext
+    
+    // MARK: - App Storage (User Preferences)
+    
+    @AppStorage("displayDensity") private var displayDensityRaw: String = DisplayDensity.comfortable.rawValue
+    @AppStorage("showSystemLogs") private var showSystemLogs: Bool = true
+    
+    private var displayDensity: DisplayDensity {
+        DisplayDensity(rawValue: displayDensityRaw) ?? .comfortable
+    }
     
     // MARK: - Properties
     
@@ -25,6 +35,20 @@ struct ThesisDetailView: View {
     @State private var selectedLogEntry: LogEntry?
     @State private var showingLogEntryDetail = false
     @State private var logEntryForEvidence: LogEntry?
+    
+    // Section expansion states
+    @State private var isThesisStatementExpanded = true
+    @State private var isKeyDriversExpanded = true
+    @State private var isInvalidationRulesExpanded = true
+    @State private var isCatalystsExpanded = true
+    @State private var isKeyRisksExpanded = true
+    
+    // Export state
+    @State private var showingMarkdownExport = false
+    @State private var markdownContent: String = ""
+    
+    // Review wizard state
+    @State private var showingReviewWizard = false
     
     // MARK: - Body
     
@@ -54,6 +78,23 @@ struct ThesisDetailView: View {
         .navigationTitle(thesis.title)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
+                // Review wizard
+                Button {
+                    showingReviewWizard = true
+                } label: {
+                    Label("Review", systemImage: "wand.and.stars")
+                }
+                .help("Start structured review")
+                
+                // Export to Markdown
+                Button {
+                    markdownContent = ExportService.shared.exportThesisToMarkdown(thesis)
+                    showingMarkdownExport = true
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                }
+                .help("Export to Markdown")
+                
                 Button {
                     showingEditThesis = true
                 } label: {
@@ -68,7 +109,7 @@ struct ThesisDetailView: View {
             }
         }
         .sheet(isPresented: $showingEditThesis) {
-            if let asset = thesis.asset {
+            if thesis.asset != nil {
                 ThesisFormView(mode: .edit(thesis)) { _ in }
             }
         }
@@ -87,6 +128,26 @@ struct ThesisDetailView: View {
                 newEvidence.logEntry = logEntry
             }
         }
+        .fileExporter(
+            isPresented: $showingMarkdownExport,
+            document: MarkdownDocument(content: markdownContent),
+            contentType: .text,
+            defaultFilename: "\(thesis.asset?.ticker ?? "thesis")_\(sanitizedThesisTitle).md"
+        ) { _ in }
+        .sheet(isPresented: $showingReviewWizard) {
+            ReviewWizardView(thesis: thesis) { }
+        }
+    }
+    
+    /// Sanitized thesis title for filename
+    private var sanitizedThesisTitle: String {
+        thesis.title
+            .lowercased()
+            .replacingOccurrences(of: " ", with: "_")
+            .replacingOccurrences(of: "/", with: "-")
+            .filter { $0.isLetter || $0.isNumber || $0 == "_" || $0 == "-" }
+            .prefix(30)
+            .description
     }
     
     // MARK: - Subviews
@@ -142,15 +203,24 @@ struct ThesisDetailView: View {
     }
     
     private var thesisContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 12) {
             // Thesis statement
-            ContentSection(title: "Thesis Statement", iconName: "text.quote") {
+            CollapsibleSection(
+                title: "Thesis Statement",
+                iconName: "text.quote",
+                isExpanded: $isThesisStatementExpanded
+            ) {
                 Text(thesis.thesisStatement)
                     .font(.body)
             }
             
             // Key drivers
-            ContentSection(title: "Key Drivers", iconName: "arrow.up.forward") {
+            CollapsibleSection(
+                title: "Key Drivers",
+                iconName: "arrow.up.forward",
+                isExpanded: $isKeyDriversExpanded,
+                itemCount: thesis.keyDrivers.count
+            ) {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(thesis.keyDrivers, id: \.self) { driver in
                         BulletPoint(text: driver)
@@ -159,7 +229,12 @@ struct ThesisDetailView: View {
             }
             
             // Invalidation rules
-            ContentSection(title: "Invalidation Rules", iconName: "xmark.circle") {
+            CollapsibleSection(
+                title: "Invalidation Rules",
+                iconName: "xmark.circle",
+                isExpanded: $isInvalidationRulesExpanded,
+                itemCount: thesis.invalidationRules.count
+            ) {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(thesis.invalidationRules, id: \.self) { rule in
                         BulletPoint(text: rule, color: .red)
@@ -169,7 +244,12 @@ struct ThesisDetailView: View {
             
             // Catalysts (if any)
             if !thesis.catalysts.isEmpty {
-                ContentSection(title: "Catalysts", iconName: "bolt") {
+                CollapsibleSection(
+                    title: "Catalysts",
+                    iconName: "bolt",
+                    isExpanded: $isCatalystsExpanded,
+                    itemCount: thesis.catalysts.count
+                ) {
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(thesis.catalysts, id: \.self) { catalyst in
                             BulletPoint(text: catalyst, color: .orange)
@@ -180,7 +260,12 @@ struct ThesisDetailView: View {
             
             // Key risks (if any)
             if !thesis.keyRisks.isEmpty {
-                ContentSection(title: "Key Risks", iconName: "exclamationmark.triangle") {
+                CollapsibleSection(
+                    title: "Key Risks",
+                    iconName: "exclamationmark.triangle",
+                    isExpanded: $isKeyRisksExpanded,
+                    itemCount: thesis.keyRisks.count
+                ) {
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(thesis.keyRisks, id: \.self) { risk in
                             BulletPoint(text: risk, color: .yellow)
@@ -188,7 +273,53 @@ struct ThesisDetailView: View {
                     }
                 }
             }
+            
+            // Expand/Collapse all button
+            HStack {
+                Spacer()
+                Button {
+                    toggleAllSections()
+                } label: {
+                    Label(
+                        allSectionsExpanded ? "Collapse All" : "Expand All",
+                        systemImage: allSectionsExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical"
+                    )
+                    .font(.caption)
+                }
+                .buttonStyle(.borderless)
+            }
         }
+        .onAppear {
+            // Set initial expansion state based on density preference
+            let shouldExpand = displayDensity.expandSectionsByDefault
+            isThesisStatementExpanded = shouldExpand
+            isKeyDriversExpanded = shouldExpand
+            isInvalidationRulesExpanded = shouldExpand
+            isCatalystsExpanded = shouldExpand
+            isKeyRisksExpanded = shouldExpand
+        }
+    }
+    
+    private var allSectionsExpanded: Bool {
+        isThesisStatementExpanded && isKeyDriversExpanded && isInvalidationRulesExpanded
+    }
+    
+    private func toggleAllSections() {
+        let newState = !allSectionsExpanded
+        isThesisStatementExpanded = newState
+        isKeyDriversExpanded = newState
+        isInvalidationRulesExpanded = newState
+        isCatalystsExpanded = newState
+        isKeyRisksExpanded = newState
+    }
+    
+    /// Filtered log entries based on user preferences
+    private var filteredLogEntries: [LogEntry] {
+        var entries = thesis.sortedLogEntries
+        if !showSystemLogs {
+            entries = entries.filter { !$0.isSystemGenerated }
+        }
+        return entries
     }
     
     private var timelineSection: some View {
@@ -197,7 +328,39 @@ struct ThesisDetailView: View {
                 Text("Timeline")
                     .font(.headline)
                 
+                // Show count with filter indicator
+                Text("(\(filteredLogEntries.count))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                if !showSystemLogs && thesis.sortedLogEntries.count != filteredLogEntries.count {
+                    Text("• filtered")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                
                 Spacer()
+                
+                // Density indicator
+                Menu {
+                    ForEach(DisplayDensity.allCases) { density in
+                        Button {
+                            displayDensityRaw = density.rawValue
+                        } label: {
+                            if displayDensity == density {
+                                Label(density.displayName, systemImage: "checkmark")
+                            } else {
+                                Text(density.displayName)
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "text.alignleft")
+                        .font(.caption)
+                }
+                .menuStyle(.borderlessButton)
+                .frame(width: 24)
+                .help("Change display density")
                 
                 Button {
                     showingAddLogEntry = true
@@ -208,20 +371,22 @@ struct ThesisDetailView: View {
                 .buttonStyle(.borderless)
             }
             
-            if thesis.sortedLogEntries.isEmpty {
+            if filteredLogEntries.isEmpty {
                 EmptyStateView(
                     iconName: "note.text",
-                    title: "No Log Entries",
-                    description: "Start documenting your research by adding log entries.",
+                    title: thesis.sortedLogEntries.isEmpty ? "No Log Entries" : "No Visible Entries",
+                    description: thesis.sortedLogEntries.isEmpty
+                        ? "Start documenting your research by adding log entries."
+                        : "System-generated logs are hidden. Enable them in Settings.",
                     actionTitle: "Add Log Entry"
                 ) {
                     showingAddLogEntry = true
                 }
                 .frame(height: 200)
             } else {
-                LazyVStack(spacing: 12) {
-                    ForEach(thesis.sortedLogEntries) { logEntry in
-                        LogEntryCard(logEntry: logEntry) {
+                LazyVStack(spacing: displayDensity == .compact ? 8 : 12) {
+                    ForEach(filteredLogEntries) { logEntry in
+                        LogEntryCard(logEntry: logEntry, density: displayDensity) {
                             logEntryForEvidence = logEntry
                         }
                         .onTapGesture {
@@ -291,23 +456,58 @@ struct ThesisDetailView: View {
     }
 }
 
-// MARK: - Content Section
+// MARK: - Collapsible Section
 
-/// Reusable section component for thesis content
-private struct ContentSection<Content: View>: View {
+/// Reusable collapsible section component for thesis content
+private struct CollapsibleSection<Content: View>: View {
     let title: String
     let iconName: String
+    @Binding var isExpanded: Bool
+    var itemCount: Int?
     @ViewBuilder let content: () -> Content
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(title, systemImage: iconName)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 0) {
+            // Header (always visible, clickable)
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16)
+                    
+                    Label(title, systemImage: iconName)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                    
+                    if let count = itemCount {
+                        Text("(\(count))")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.vertical, 6)
             
-            content()
+            // Content (collapsible)
+            if isExpanded {
+                content()
+                    .padding(.leading, 24)
+                    .padding(.top, 4)
+            }
         }
+        .padding(12)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -336,19 +536,20 @@ private struct BulletPoint: View {
 /// Card view for displaying a log entry in the timeline
 struct LogEntryCard: View {
     let logEntry: LogEntry
+    var density: DisplayDensity = .comfortable
     let onAddEvidence: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: density == .compact ? 4 : 8) {
             // Header row
             HStack {
                 // Type icon
                 Image(systemName: logEntry.entryType.iconName)
                     .foregroundStyle(typeColor)
-                    .font(.body)
+                    .font(density == .compact ? .caption : .body)
                 
                 Text(logEntry.title)
-                    .font(.headline)
+                    .font(density == .compact ? .subheadline : .headline)
                     .lineLimit(1)
                 
                 if logEntry.isPinned {
@@ -357,86 +558,113 @@ struct LogEntryCard: View {
                         .foregroundStyle(.orange)
                 }
                 
+                // Compact: show type badge inline
+                if density == .compact {
+                    Text(logEntry.entryType.displayName)
+                        .font(.caption2)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(typeColor.opacity(0.15))
+                        .foregroundStyle(typeColor)
+                        .clipShape(Capsule())
+                }
+                
                 Spacer()
                 
                 // Date
-                Text(logEntry.occurredAt.formatted(date: .abbreviated, time: .shortened))
+                Text(logEntry.occurredAt.formatted(date: .abbreviated, time: density == .compact ? .omitted : .shortened))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
             
-            // Body preview
-            Text(logEntry.bodyPreview)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
+            // Body preview (respect density line limits)
+            if density != .compact || !logEntry.bodyPreview.isEmpty {
+                Text(bodyPreviewText)
+                    .font(density == .compact ? .caption : .subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(density.bodyPreviewLines)
+            }
             
-            // Metadata row
-            HStack(spacing: 12) {
-                // Entry type badge
-                Text(logEntry.entryType.displayName)
-                    .font(.caption2)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(typeColor.opacity(0.15))
-                    .foregroundStyle(typeColor)
-                    .clipShape(Capsule())
-                
-                // Confidence
-                if let confidence = logEntry.confidenceLevel {
-                    Label(confidence.shortLabel, systemImage: "gauge")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                // Evidence count
-                if logEntry.evidenceCount > 0 {
-                    Label("\(logEntry.evidenceCount)", systemImage: "link")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                // Tags
-                if let tags = logEntry.tags, !tags.isEmpty {
-                    HStack(spacing: 2) {
-                        ForEach(tags.prefix(3)) { tag in
-                            Circle()
-                                .fill(colorFor(tag))
-                                .frame(width: 6, height: 6)
-                        }
-                        if tags.count > 3 {
-                            Text("+\(tags.count - 3)")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+            // Metadata row (hide in compact mode)
+            if density.showMetadataRow {
+                HStack(spacing: 12) {
+                    // Entry type badge (not in compact, shown in header)
+                    if density != .compact {
+                        Text(logEntry.entryType.displayName)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(typeColor.opacity(0.15))
+                            .foregroundStyle(typeColor)
+                            .clipShape(Capsule())
+                    }
+                    
+                    // Confidence
+                    if let confidence = logEntry.confidenceLevel {
+                        Label(confidence.shortLabel, systemImage: "gauge")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    // Evidence count
+                    if logEntry.evidenceCount > 0 {
+                        Label("\(logEntry.evidenceCount)", systemImage: "link")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    // Tags
+                    if let tags = logEntry.tags, !tags.isEmpty {
+                        HStack(spacing: 2) {
+                            ForEach(tags.prefix(3)) { tag in
+                                Circle()
+                                    .fill(colorFor(tag))
+                                    .frame(width: 6, height: 6)
+                            }
+                            if tags.count > 3 {
+                                Text("+\(tags.count - 3)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
+                    
+                    Spacer()
+                    
+                    if logEntry.isSystemGenerated {
+                        Label("Auto", systemImage: "gearshape")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    
+                    // Add Evidence button
+                    Button {
+                        onAddEvidence()
+                    } label: {
+                        Label("Add Evidence", systemImage: "link.badge.plus")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.borderless)
                 }
-                
-                Spacer()
-                
-                if logEntry.isSystemGenerated {
-                    Label("Auto", systemImage: "gearshape")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-                
-                // Add Evidence button
-                Button {
-                    onAddEvidence()
-                } label: {
-                    Label("Add Evidence", systemImage: "link.badge.plus")
-                        .font(.caption)
-                }
-                .buttonStyle(.borderless)
             }
         }
-        .padding()
+        .padding(density == .compact ? 10 : 16)
         .background(Color(nsColor: .controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: density == .compact ? 8 : 10))
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: density == .compact ? 8 : 10)
                 .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
         )
+    }
+    
+    /// Body preview text with density-appropriate truncation
+    private var bodyPreviewText: String {
+        let text = logEntry.body
+        let maxLength = density == .compact ? 80 : (density == .comfortable ? 150 : 300)
+        if text.count <= maxLength {
+            return text
+        }
+        return String(text.prefix(maxLength)) + "..."
     }
     
     private var typeColor: Color {
