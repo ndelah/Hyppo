@@ -36,6 +36,11 @@ struct ThesisDetailView: View {
                 
                 Divider()
                 
+                // Review reminder section
+                ReviewReminderView(thesis: thesis)
+                
+                Divider()
+                
                 // Thesis content sections
                 thesisContent
                 

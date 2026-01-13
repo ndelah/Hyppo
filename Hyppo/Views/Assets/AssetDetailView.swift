@@ -255,6 +255,9 @@ struct ThesisRowView: View {
                     .font(.headline)
                     .lineLimit(1)
                 
+                // Review due badge
+                ReviewDueBadge(reminder: thesis.reviewReminder)
+                
                 Spacer()
                 
                 // Status badge
@@ -340,6 +343,6 @@ struct ThesisRowView: View {
         asset: Asset(ticker: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", currency: "USD"),
         selectedThesis: .constant(nil)
     )
-    .modelContainer(for: [Asset.self, Thesis.self], inMemory: true)
+    .modelContainer(for: [Asset.self, Thesis.self, ReviewReminder.self], inMemory: true)
 }
 

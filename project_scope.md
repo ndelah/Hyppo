@@ -207,7 +207,8 @@ The product must support this end-to-end workflow:
   - Evidence: **Done**
 - **Settings window**: **Done** (export/import/backup actions are UI placeholders only)
 - **Review reminders entity**: **Done** (ReviewReminder model with cadence, scheduling, snooze)
-- **Review reminders workflow/UI**: **Not done** (MVP 2)
+- **Review reminders UI**: **Done** (cadence selector, due badge, snooze/complete actions)
+- **macOS notifications**: **Done** (UNUserNotificationCenter integration with snooze action)
 
 ## 11. Feature backlog and Scrum ticketing
 Epics (user stories + tickets) are organized by MVP phase.
@@ -253,9 +254,9 @@ User flow: open app → assets → asset → theses → thesis → timeline.
 - H3 (**Not done**): Automatic local backups (versioned folder).
 
 ### Epic I — Review loop and reminders (MVP 2)
-- I1 (**Not done**): Local reminder scheduling per thesis.
+- I1 (**Done**): Local reminder scheduling per thesis. *(Cadence selector, due indicators, macOS notifications)*
 - I2 (**Not done**): Review mode wizard (reinforce/revise/invalidate).
-- I3 (**Not done**): Structured review log generation.
+- I3 (**Partial**): Structured review log generation. *(Auto-creates log on "Complete Review", but no full wizard)*
 
 ### Epic J — Scenario comparison (MVP 2)
 - J1 (**Not done**): Scenario grouping (bull/base/bear) per asset.
