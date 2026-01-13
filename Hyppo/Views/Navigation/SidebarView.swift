@@ -17,6 +17,7 @@ struct SidebarView: View {
     // MARK: - Queries
     
     @Query(sort: \Asset.tickerNormalized) private var assets: [Asset]
+    @Query(sort: \Tag.name) private var allTags: [Tag]
     
     // MARK: - State
     
@@ -24,16 +25,25 @@ struct SidebarView: View {
     @State private var searchText = ""
     @State private var showingAddAsset = false
     @State private var showingArchived = false
+    @State private var filterTag: Tag?
+    @State private var showingTagManagement = false
     
     // MARK: - Computed Properties
     
-    /// Filtered assets based on search and archive state
+    /// Filtered assets based on search, archive state, and tag filter
     private var filteredAssets: [Asset] {
         var result = assets
         
         // Filter by archive state
         if !showingArchived {
             result = result.filter { !$0.isArchived }
+        }
+        
+        // Filter by tag
+        if let tag = filterTag {
+            result = result.filter { asset in
+                asset.tags?.contains { $0.tagId == tag.tagId } ?? false
+            }
         }
         
         // Filter by search text
@@ -46,6 +56,13 @@ struct SidebarView: View {
         }
         
         return result
+    }
+    
+    /// Tags that have assets assigned
+    private var tagsWithAssets: [Tag] {
+        allTags.filter { tag in
+            (tag.assets?.count ?? 0) > 0
+        }
     }
     
     /// Count of active (non-archived) assets
@@ -62,6 +79,63 @@ struct SidebarView: View {
     
     var body: some View {
         List(selection: $selectedAsset) {
+            // Tag filter section (only show if there are tags with assets)
+            if !tagsWithAssets.isEmpty {
+                Section {
+                    // All assets option
+                    Button {
+                        filterTag = nil
+                    } label: {
+                        HStack {
+                            Image(systemName: "square.grid.2x2")
+                                .foregroundStyle(.secondary)
+                            Text("All Assets")
+                            Spacer()
+                            if filterTag == nil {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(.blue)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    
+                    // Tag filters
+                    ForEach(tagsWithAssets) { tag in
+                        Button {
+                            filterTag = tag
+                        } label: {
+                            HStack {
+                                Circle()
+                                    .fill(colorFor(tag))
+                                    .frame(width: 10, height: 10)
+                                Text(tag.name)
+                                Spacer()
+                                Text("\(tag.assets?.count ?? 0)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                if filterTag?.tagId == tag.tagId {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } header: {
+                    HStack {
+                        Text("Filter by Tag")
+                        Spacer()
+                        Button {
+                            showingTagManagement = true
+                        } label: {
+                            Image(systemName: "gear")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                }
+            }
+            
             // Assets section
             Section {
                 if filteredAssets.isEmpty {
@@ -71,8 +145,8 @@ struct SidebarView: View {
                             .foregroundStyle(.secondary)
                             .font(.subheadline)
                             .padding(.vertical, 4)
-                    } else if !searchText.isEmpty {
-                        // No search results
+                    } else if !searchText.isEmpty || filterTag != nil {
+                        // No search/filter results
                         Text("No matching assets")
                             .foregroundStyle(.secondary)
                             .font(.subheadline)
@@ -91,8 +165,13 @@ struct SidebarView: View {
             } header: {
                 HStack {
                     Text("Assets")
+                    if let tag = filterTag {
+                        TagChip(tag: tag, isSelected: true) {
+                            filterTag = nil
+                        }
+                    }
                     Spacer()
-                    Text("\(activeAssetsCount)")
+                    Text("\(filteredAssets.count)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -138,6 +217,19 @@ struct SidebarView: View {
                 selectedAsset = newAsset
             }
         }
+        .sheet(isPresented: $showingTagManagement) {
+            TagManagementSheet()
+        }
+    }
+    
+    // MARK: - Helpers
+    
+    private func colorFor(_ tag: Tag) -> Color {
+        guard let colorName = tag.colorName,
+              let tagColor = TagColor(rawValue: colorName) else {
+            return .blue
+        }
+        return tagColor.color
     }
     
     // MARK: - Context Menu
@@ -220,14 +312,40 @@ struct AssetRowView: View {
                     .lineLimit(1)
                     .foregroundStyle(asset.isArchived ? .secondary : .primary)
                 
-                Text("\(asset.thesesCount) \(asset.thesesCount == 1 ? "thesis" : "theses")")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Text("\(asset.thesesCount) \(asset.thesesCount == 1 ? "thesis" : "theses")")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    // Show tag dots
+                    if let tags = asset.tags, !tags.isEmpty {
+                        HStack(spacing: 2) {
+                            ForEach(tags.prefix(3)) { tag in
+                                Circle()
+                                    .fill(colorFor(tag))
+                                    .frame(width: 6, height: 6)
+                            }
+                            if tags.count > 3 {
+                                Text("+\(tags.count - 3)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
             }
             
             Spacer()
         }
         .padding(.vertical, 2)
+    }
+    
+    private func colorFor(_ tag: Tag) -> Color {
+        guard let colorName = tag.colorName,
+              let tagColor = TagColor(rawValue: colorName) else {
+            return .blue
+        }
+        return tagColor.color
     }
 }
 
@@ -236,7 +354,7 @@ struct AssetRowView: View {
 #Preview {
     NavigationSplitView {
         SidebarView(selectedAsset: .constant(nil))
-            .modelContainer(for: Asset.self, inMemory: true)
+            .modelContainer(for: [Asset.self, Tag.self], inMemory: true)
     } detail: {
         Text("Detail")
     }

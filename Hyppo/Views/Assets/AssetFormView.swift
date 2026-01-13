@@ -45,6 +45,7 @@ struct AssetFormView: View {
     @State private var name: String = ""
     @State private var exchange: String = ""
     @State private var currency: String = ""
+    @State private var selectedTags: [Tag] = []
     @State private var validationErrors: [String] = []
     
     // MARK: - Initialization
@@ -59,6 +60,7 @@ struct AssetFormView: View {
             _name = State(initialValue: asset.name)
             _exchange = State(initialValue: asset.exchange ?? "")
             _currency = State(initialValue: asset.currency ?? "")
+            _selectedTags = State(initialValue: asset.tags ?? [])
         }
     }
     
@@ -100,6 +102,12 @@ struct AssetFormView: View {
                     Text("Optional")
                 }
                 
+                Section {
+                    TagPickerView(selectedTags: $selectedTags)
+                } header: {
+                    Text("Tags")
+                }
+                
                 // Validation errors
                 if !validationErrors.isEmpty {
                     Section {
@@ -118,7 +126,7 @@ struct AssetFormView: View {
             // Footer with buttons
             footerView
         }
-        .frame(width: 400, height: 350)
+        .frame(width: 400, height: 450)
     }
     
     // MARK: - Subviews
@@ -181,6 +189,7 @@ struct AssetFormView: View {
                 exchange: trimmedExchange.isEmpty ? nil : trimmedExchange,
                 currency: trimmedCurrency.isEmpty ? nil : trimmedCurrency
             )
+            newAsset.tags = selectedTags.isEmpty ? nil : selectedTags
             onSave(newAsset)
             
         case .edit(let asset):
@@ -190,6 +199,7 @@ struct AssetFormView: View {
                 exchange: trimmedExchange.isEmpty ? nil : trimmedExchange,
                 currency: trimmedCurrency.isEmpty ? nil : trimmedCurrency
             )
+            asset.tags = selectedTags.isEmpty ? nil : selectedTags
             onSave(asset)
         }
         
@@ -201,5 +211,6 @@ struct AssetFormView: View {
 
 #Preview("Add") {
     AssetFormView(mode: .add) { _ in }
+        .modelContainer(for: [Asset.self, Tag.self], inMemory: true)
 }
 

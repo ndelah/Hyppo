@@ -226,12 +226,12 @@ User flow: open app → assets → asset → theses → thesis → timeline.
 ### Epic C — Assets management (MVP 1)
 - C1 (**Done**): Asset list view + search.
 - C2 (**Done**): Add/edit/delete asset.
-- C3 (**Not done**): Asset tags + tag filtering.
+- C3 (**Done**): Asset tags + tag filtering. *(Tag management, assignment in forms, sidebar filtering)*
 
 ### Epic D — Thesis threads per asset (MVP 1)
 - D1 (**Done**): Thesis list under asset.
 - D2 (**Done**): Create/edit thesis (structured fields).
-- D3 (**Not done**): Thesis lifecycle statuses + auto log on status change. *(Statuses exist; no auto-log on change.)*
+- D3 (**Done**): Thesis lifecycle statuses + auto log on status change.
 
 ### Epic E — Log entries and timeline (MVP 1)
 - E1 (**Done**): Timeline view (compact markers; expand/collapse).
