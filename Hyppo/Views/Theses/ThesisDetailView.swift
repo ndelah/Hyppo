@@ -396,6 +396,22 @@ struct LogEntryCard: View {
                         .foregroundStyle(.secondary)
                 }
                 
+                // Tags
+                if let tags = logEntry.tags, !tags.isEmpty {
+                    HStack(spacing: 2) {
+                        ForEach(tags.prefix(3)) { tag in
+                            Circle()
+                                .fill(colorFor(tag))
+                                .frame(width: 6, height: 6)
+                        }
+                        if tags.count > 3 {
+                            Text("+\(tags.count - 3)")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                
                 Spacer()
                 
                 if logEntry.isSystemGenerated {
@@ -431,6 +447,14 @@ struct LogEntryCard: View {
         case .catalyst: return .orange
         case .review: return .green
         }
+    }
+    
+    private func colorFor(_ tag: Tag) -> Color {
+        guard let colorName = tag.colorName,
+              let tagColor = TagColor(rawValue: colorName) else {
+            return .blue
+        }
+        return tagColor.color
     }
 }
 

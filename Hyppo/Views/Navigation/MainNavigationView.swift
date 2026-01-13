@@ -10,11 +10,20 @@ import SwiftData
 
 /// Root navigation view with sidebar and detail areas
 struct MainNavigationView: View {
+    // MARK: - Environment
+    
+    @Environment(\.modelContext) private var modelContext
+    
     // MARK: - State
     
     @State private var selectedAsset: Asset?
     @State private var selectedThesis: Thesis?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    
+    // Shortcut-triggered sheets
+    @State private var showingAddAssetSheet = false
+    @State private var showingAddLogSheet = false
+    @State private var showingNoThesisAlert = false
     
     // MARK: - Body
     
@@ -50,6 +59,37 @@ struct MainNavigationView: View {
             if oldValue != newValue {
                 selectedThesis = nil
             }
+        }
+        // Handle menu shortcut notifications
+        .onReceive(NotificationCenter.default.publisher(for: .addAsset)) { _ in
+            showingAddAssetSheet = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .addLogEntry)) { _ in
+            if selectedThesis != nil {
+                showingAddLogSheet = true
+            } else {
+                showingNoThesisAlert = true
+            }
+        }
+        // Shortcut-triggered sheets
+        .sheet(isPresented: $showingAddAssetSheet) {
+            AssetFormView(mode: .add) { newAsset in
+                modelContext.insert(newAsset)
+                selectedAsset = newAsset
+            }
+        }
+        .sheet(isPresented: $showingAddLogSheet) {
+            if let thesis = selectedThesis {
+                LogEntryFormView(mode: .add(thesis: thesis)) { newLogEntry in
+                    modelContext.insert(newLogEntry)
+                    newLogEntry.thesis = thesis
+                }
+            }
+        }
+        .alert("No Thesis Selected", isPresented: $showingNoThesisAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Please select a thesis first to add a log entry. Use ⌘⇧L after selecting a thesis.")
         }
     }
 }

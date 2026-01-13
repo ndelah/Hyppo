@@ -46,6 +46,7 @@ struct LogEntryFormView: View {
     @State private var entryType: LogEntryType = .observation
     @State private var confidence: Int? = nil
     @State private var occurredAt: Date = Date()
+    @State private var selectedTags: [Tag] = []
     @State private var validationErrors: [String] = []
     
     // MARK: - Initialization
@@ -61,6 +62,7 @@ struct LogEntryFormView: View {
             _entryType = State(initialValue: logEntry.entryType)
             _confidence = State(initialValue: logEntry.confidence)
             _occurredAt = State(initialValue: logEntry.occurredAt)
+            _selectedTags = State(initialValue: logEntry.tags ?? [])
         }
     }
     
@@ -197,6 +199,15 @@ struct LogEntryFormView: View {
                         }
                     }
                     
+                    // Tags
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Tags (Optional)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        
+                        TagPickerView(selectedTags: $selectedTags)
+                    }
+                    
                     // Validation errors
                     if !validationErrors.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
@@ -219,7 +230,7 @@ struct LogEntryFormView: View {
             // Footer with buttons
             footerView
         }
-        .frame(width: 500, height: 550)
+        .frame(width: 500, height: 620)
     }
     
     // MARK: - Subviews
@@ -281,6 +292,7 @@ struct LogEntryFormView: View {
                 occurredAt: occurredAt,
                 isSystemGenerated: false
             )
+            newLogEntry.tags = selectedTags.isEmpty ? nil : selectedTags
             onSave(newLogEntry)
             
         case .edit(let logEntry):
@@ -291,6 +303,7 @@ struct LogEntryFormView: View {
                 confidence: confidence,
                 occurredAt: occurredAt
             )
+            logEntry.tags = selectedTags.isEmpty ? nil : selectedTags
             onSave(logEntry)
         }
         
@@ -310,5 +323,6 @@ struct LogEntryFormView: View {
     )
     
     return LogEntryFormView(mode: .add(thesis: thesis)) { _ in }
+        .modelContainer(for: [Thesis.self, LogEntry.self, Tag.self], inMemory: true)
 }
 
