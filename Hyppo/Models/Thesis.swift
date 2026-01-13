@@ -240,13 +240,19 @@ final class Thesis {
     }
     
     /**
-     Updates the thesis status.
+     Updates the thesis status and returns the previous status for logging.
      
      - Parameter newStatus: The new status to set
+     - Returns: The previous status before the change, or nil if unchanged
      */
-    func updateStatus(_ newStatus: ThesisStatus) {
+    @discardableResult
+    func updateStatus(_ newStatus: ThesisStatus) -> ThesisStatus? {
+        let oldStatus = self.status
+        guard oldStatus != newStatus else { return nil }
+        
         self.status = newStatus
         self.updatedAt = Date()
+        return oldStatus
     }
     
     /**

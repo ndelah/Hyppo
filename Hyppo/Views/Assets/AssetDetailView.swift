@@ -196,7 +196,7 @@ struct AssetDetailView: View {
         Menu("Change Status") {
             ForEach(ThesisStatus.allCases) { status in
                 Button {
-                    thesis.updateStatus(status)
+                    changeThesisStatus(thesis, to: status)
                 } label: {
                     if thesis.status == status {
                         Label(status.displayName, systemImage: "checkmark")
@@ -233,6 +233,19 @@ struct AssetDetailView: View {
             selectedThesis = nil
         }
         modelContext.delete(thesis)
+    }
+    
+    private func changeThesisStatus(_ thesis: Thesis, to newStatus: ThesisStatus) {
+        // Update status and get the old status for logging
+        if let oldStatus = thesis.updateStatus(newStatus) {
+            // Create auto-generated log entry for the status change
+            let logEntry = LogEntry.createStatusChangeLog(
+                fromStatus: oldStatus,
+                toStatus: newStatus
+            )
+            modelContext.insert(logEntry)
+            logEntry.thesis = thesis
+        }
     }
 }
 

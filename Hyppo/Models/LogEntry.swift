@@ -251,4 +251,46 @@ extension LogEntry {
             isSystemGenerated: true
         )
     }
+    
+    /**
+     Creates a system-generated log entry for thesis status changes.
+     
+     - Parameters:
+       - fromStatus: The previous status
+       - toStatus: The new status
+       - reason: Optional reason for the status change
+     - Returns: A new system-generated log entry
+     */
+    static func createStatusChangeLog(
+        fromStatus: ThesisStatus,
+        toStatus: ThesisStatus,
+        reason: String? = nil
+    ) -> LogEntry {
+        let title = "Status: \(fromStatus.displayName) → \(toStatus.displayName)"
+        
+        var body = "Thesis status changed from \(fromStatus.displayName) to \(toStatus.displayName)."
+        
+        // Add contextual message based on new status
+        switch toStatus {
+        case .active:
+            body += "\n\nThe thesis is now actively being tracked."
+        case .onHold:
+            body += "\n\nThe thesis has been put on hold for further evaluation."
+        case .invalidated:
+            body += "\n\nThe thesis has been marked as invalidated. One or more invalidation rules may have been triggered."
+        case .archived:
+            body += "\n\nThe thesis has been archived and is no longer actively tracked."
+        }
+        
+        if let reason = reason, !reason.isEmpty {
+            body += "\n\nReason: \(reason)"
+        }
+        
+        return LogEntry(
+            title: title,
+            body: body,
+            entryType: .update,
+            isSystemGenerated: true
+        )
+    }
 }
