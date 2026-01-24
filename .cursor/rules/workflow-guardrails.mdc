@@ -1,0 +1,31 @@
+---
+description: "How to work in this repo: clarify when needed, plan-then-code, stop-and-ask guardrails."
+alwaysApply: false
+---
+## Workflow (default)
+- Clarify (only if needed): ask targeted questions; provide 2-3 answer options; state assumptions.
+- Plan, then code: propose a short plan, call out risks (behavior changes, migrations, perf, UX), then implement.
+- Report back: short rationale, concise “what changed”, and quick manual QA checks when relevant.
+
+## Guardrails: when to stop and ask
+Stop and ask before proceeding if:
+- The change modifies existing behavior.
+- It introduces breaking changes or alters UX flows.
+- It requires schema/data migrations.
+- It adds a new dependency.
+- It touches persistence formats or export formats in a way that impacts users.
+
+When raising impact, present:
+- What changes (user-visible)
+- Who it impacts
+- Compatibility concerns
+- Alternatives (at least one safer/smaller option)
+
+## Assumptions policy
+- You may make assumptions for low-risk work.
+- Always list assumptions explicitly.
+- Prefer reversible changes.
+
+## Canonical reference
+- This rule mirrors the repo’s working agreement in `AGENTS.MD` (keep that file as the source of truth).
+

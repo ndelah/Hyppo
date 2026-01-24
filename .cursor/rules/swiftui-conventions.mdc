@@ -1,0 +1,12 @@
+---
+description: "Swift / SwiftUI conventions for Compass."
+globs:
+  - "**/*.swift"
+alwaysApply: false
+---
+
+## Swift / SwiftUI conventions
+- Prefer SwiftUI idioms (composable views, small view components).
+- Keep view bodies readable: extract subviews/helpers when complexity grows.
+- Avoid “clever” one-liners when clarity suffers.
+

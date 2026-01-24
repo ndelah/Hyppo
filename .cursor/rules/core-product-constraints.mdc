@@ -1,0 +1,16 @@
+
+---
+description: "Non-negotiable product constraints for Compass (offline-first, privacy-by-default, macOS UX)."
+alwaysApply: true
+---
+
+## Product constraints (non-negotiable)
+- Offline-first: core functionality must work with no network.
+- Privacy-by-default: do not add telemetry, tracking, or external calls unless explicitly requested.
+- macOS app: optimize for macOS UX and performance.
+
+## Delivery philosophy
+- Optimize for shipping fast + correctness.
+- Prefer Pareto solutions now; leave clear seams to improve later.
+- Avoid overengineering: only introduce abstractions when they remove real duplication or risk.
+

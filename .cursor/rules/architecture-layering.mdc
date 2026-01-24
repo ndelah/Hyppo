@@ -1,0 +1,13 @@
+---
+description: "Architecture guidance: keep SwiftUI views thin; put non-trivial logic in appropriate layers."
+alwaysApply: false
+---
+
+## Architecture
+- Use a layered architecture.
+- Default: UI is thin; non-trivial logic should not live inside views.
+- When uncertain where logic belongs, propose 2-3 placements and pick the simplest that keeps UI clean.
+
+## Canonical reference
+- Prefer following the workflow + guardrails in `AGENTS.MD`.
+

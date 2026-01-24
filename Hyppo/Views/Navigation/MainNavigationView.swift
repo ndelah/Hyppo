@@ -101,3 +101,7 @@ struct MainNavigationView: View {
         .modelContainer(for: [Asset.self, Thesis.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
 }
 
+
+
+
+

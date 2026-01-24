@@ -40,27 +40,73 @@ struct HyppoApp: App {
             ReviewReminder.self
         ])
         
-        let modelConfiguration = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: false
-        )
-        
         do {
-            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let storeName = "default"
+            let storeURL = try SwiftDataStoreReset.defaultStoreURL(storeName: storeName)
             
             DebugLogger.info(
                 location: "HyppoApp:sharedModelContainer",
-                message: "ModelContainer created successfully"
+                message: "Using SwiftData store location",
+                data: ["url": storeURL.path]
             )
             
-            return container
+            let modelConfiguration = ModelConfiguration(
+                storeName,
+                schema: schema,
+                isStoredInMemoryOnly: false
+            )
+            
+            do {
+                let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+                
+                DebugLogger.info(
+                    location: "HyppoApp:sharedModelContainer",
+                    message: "ModelContainer created successfully"
+                )
+                
+                return container
+            } catch {
+                DebugLogger.error(
+                    location: "HyppoApp:sharedModelContainer",
+                    message: "Failed to create ModelContainer (will reset store and retry once)",
+                    error: error,
+                    data: ["storeURL": storeURL.path]
+                )
+                
+                do {
+                    try SwiftDataStoreReset.deleteStoreFiles(storeURL: storeURL)
+                    
+                    DebugLogger.warning(
+                        location: "HyppoApp:sharedModelContainer",
+                        message: "Deleted SwiftData store files after load failure; recreating ModelContainer",
+                        data: ["storeURL": storeURL.path]
+                    )
+                    
+                    let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+                    
+                    DebugLogger.info(
+                        location: "HyppoApp:sharedModelContainer",
+                        message: "ModelContainer created successfully after store reset"
+                    )
+                    
+                    return container
+                } catch {
+                    DebugLogger.error(
+                        location: "HyppoApp:sharedModelContainer",
+                        message: "Failed to recreate ModelContainer after store reset",
+                        error: error,
+                        data: ["storeURL": storeURL.path]
+                    )
+                    fatalError("Could not create ModelContainer after store reset: \(error)")
+                }
+            }
         } catch {
             DebugLogger.error(
                 location: "HyppoApp:sharedModelContainer",
-                message: "Failed to create ModelContainer",
+                message: "Failed to compute SwiftData store URL",
                 error: error
             )
-            fatalError("Could not create ModelContainer: \(error)")
+            fatalError("Could not compute SwiftData store URL: \(error)")
         }
     }()
     

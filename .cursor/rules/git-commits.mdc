@@ -1,0 +1,36 @@
+---
+description: "Conventional Commit message format + local style expectations."
+alwaysApply: true
+---
+
+## Git commits
+Use Conventional Commits:
+`<type>[optional scope][!]: <short summary>`
+
+Optional:
+- Body: explain rationale/trade-offs when not obvious.
+- Footer(s): breaking notes, issue references, etc.
+
+### Types
+- feat – a new feature (user-visible)
+- fix – a bug fix
+- docs – documentation only
+- style – formatting/whitespace (no logic change)
+- refactor – code change that neither fixes a bug nor adds a feature
+- perf – performance improvement
+- test – adding or fixing tests
+- build – build system or dependencies
+- ci – CI configuration
+- chore – maintenance/tooling (no production code change)
+- revert – reverts a previous commit
+
+### Style rules
+- Imperative mood in summary.
+- Keep summary concise and specific (≤ 72 chars).
+- Use scope when it helps navigation (e.g. map, canvas, export, persistence, ui).
+- Use `!` for breaking changes and explain in body/footer.
+
+### Examples
+- `feat(auth): add refresh token rotation`
+- `fix(ui): prevent sidebar overflow on small screens`
+
