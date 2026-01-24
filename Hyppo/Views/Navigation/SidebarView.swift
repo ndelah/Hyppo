@@ -305,7 +305,7 @@ struct AssetRowView: View {
                 .background(asset.isArchived ? Color.gray : Color.blue)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
             
-            // Name and thesis count
+            // Name and scenario count
             VStack(alignment: .leading, spacing: 2) {
                 Text(asset.name)
                     .font(.body)
@@ -313,7 +313,7 @@ struct AssetRowView: View {
                     .foregroundStyle(asset.isArchived ? .secondary : .primary)
                 
                 HStack(spacing: 6) {
-                    Text("\(asset.thesesCount) \(asset.thesesCount == 1 ? "thesis" : "theses")")
+                    Text("\(asset.researchQuestionsCount) \(asset.researchQuestionsCount == 1 ? "question" : "questions")")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     

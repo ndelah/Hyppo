@@ -1,7 +1,7 @@
 /**
- ReviewReminder model for scheduling thesis review reminders.
+ ReviewReminder model for scheduling scenario review reminders.
  
- Tracks when a thesis should be reviewed next, the review cadence,
+ Tracks when a scenario should be reviewed next, the review cadence,
  and notification state. Supports snoozing and disabling reminders.
  */
 
@@ -11,10 +11,10 @@ import SwiftData
 // MARK: - Review Cadence Enum
 
 /**
- Represents the frequency of thesis reviews.
+ Represents the frequency of scenario reviews.
  
  Users can set how often they want to be reminded to review
- a particular thesis.
+ a particular scenario.
  */
 enum ReviewCadence: String, Codable, CaseIterable, Identifiable {
     case daily = "Daily"
@@ -75,7 +75,7 @@ final class ReviewReminder {
     /// Timestamp when last notification was sent
     var lastNotifiedAt: Date?
     
-    /// Whether reminders are enabled for this thesis
+    /// Whether reminders are enabled for this scenario
     var isEnabled: Bool
     
     /// Number of times this reminder has been snoozed
@@ -92,8 +92,8 @@ final class ReviewReminder {
     
     // MARK: - Relationships
     
-    /// The thesis this reminder belongs to
-    @Relationship(inverse: \Thesis.reviewReminder) var thesis: Thesis?
+    /// The scenario this reminder belongs to
+    @Relationship(inverse: \Scenario.reviewReminder) var scenario: Scenario?
     
     // MARK: - Initialization
     
@@ -236,8 +236,8 @@ final class ReviewReminder {
         )
         self.updatedAt = Date()
         
-        // Also update the thesis's lastReviewedAt
-        thesis?.markReviewed()
+        // Also update the scenario's lastReviewedAt
+        scenario?.markReviewed()
     }
     
     /**

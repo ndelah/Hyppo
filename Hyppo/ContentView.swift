@@ -19,5 +19,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [Asset.self, Thesis.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
+        .modelContainer(for: [Asset.self, Scenario.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
 }

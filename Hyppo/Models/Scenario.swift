@@ -1,58 +1,58 @@
 /**
- Thesis model representing an investment hypothesis for an asset.
+ Scenario model representing an investment hypothesis for a research question.
  
- A thesis captures the user's reasoning about why an investment
- might succeed or fail. Users can create multiple theses per asset
- to represent different scenarios (bull/base/bear cases).
+ A scenario captures the user's reasoning about a possible outcome
+ (bull/base/bear case). Multiple scenarios can exist under a single
+ research question to explore different possibilities.
  */
 
 import Foundation
 import SwiftData
 
 @Model
-final class Thesis {
+final class Scenario {
     // MARK: - Properties
     
-    /// Unique identifier for the thesis
-    @Attribute(.unique) var thesisId: UUID
+    /// Unique identifier for the scenario
+    @Attribute(.unique) var scenarioId: UUID
     
-    /// Type/scenario of the thesis (base, bull, bear, custom)
-    var thesisTypeRaw: String
+    /// Type/scenario (base, bull, bear, custom)
+    var scenarioTypeRaw: String
     
-    /// Title of the thesis
+    /// Title of the scenario
     var title: String
     
-    /// The core thesis statement - what must be true for this to work
-    var thesisStatement: String
+    /// The core scenario statement - what must be true for this to work
+    var scenarioStatement: String
     
-    /// Key drivers that support the thesis (stored as JSON array)
+    /// Key drivers that support the scenario (stored as JSON array)
     var keyDriversData: Data?
     
-    /// Rules that would invalidate the thesis (stored as JSON array)
+    /// Rules that would invalidate the scenario (stored as JSON array)
     var invalidationRulesData: Data?
     
-    /// Optional catalysts that could trigger the thesis (stored as JSON array)
+    /// Optional catalysts that could trigger the scenario (stored as JSON array)
     var catalystsData: Data?
     
-    /// Optional key risks to the thesis (stored as JSON array)
+    /// Optional key risks to the scenario (stored as JSON array)
     var keyRisksData: Data?
     
     /// Current confidence level (1-5, optional)
     var confidenceCurrent: Int?
     
-    /// Current status of the thesis
+    /// Current status of the scenario
     var statusRaw: String
     
     /// Version number for tracking revisions
     var versionNumber: Int
     
-    /// Timestamp when the thesis was created
+    /// Timestamp when the scenario was created
     var createdAt: Date
     
-    /// Timestamp when the thesis was last updated
+    /// Timestamp when the scenario was last updated
     var updatedAt: Date
     
-    /// Timestamp when the thesis content was last meaningfully updated
+    /// Timestamp when the scenario content was last meaningfully updated
     var lastUpdatedAt: Date
     
     /// Optional timestamp of the last review
@@ -63,53 +63,53 @@ final class Thesis {
     
     // MARK: - Relationships
     
-    /// Parent asset this thesis belongs to
-    var asset: Asset?
+    /// Parent research question this scenario belongs to
+    var researchQuestion: ResearchQuestion?
     
-    /// Log entries for this thesis (ordered chronologically)
+    /// Log entries for this scenario (ordered chronologically)
     @Relationship(deleteRule: .cascade) var logEntries: [LogEntry]?
     
-    /// Tags associated with this thesis
+    /// Tags associated with this scenario
     var tags: [Tag]?
     
-    /// Review reminder for this thesis
+    /// Review reminder for this scenario
     @Relationship(deleteRule: .cascade) var reviewReminder: ReviewReminder?
     
     // MARK: - Initialization
     
     /**
-     Creates a new thesis with the required fields.
+     Creates a new scenario with the required fields.
      
      - Parameters:
-       - thesisType: The type/scenario of the thesis
-       - title: Short title for the thesis
-       - thesisStatement: The core hypothesis statement
-       - keyDrivers: List of key drivers supporting the thesis
-       - invalidationRules: List of conditions that would invalidate the thesis
+       - scenarioType: The type/scenario (bull/base/bear/custom)
+       - title: Short title for the scenario
+       - scenarioStatement: The core hypothesis statement
+       - keyDrivers: List of key drivers supporting the scenario
+       - invalidationRules: List of conditions that would invalidate the scenario
        - catalysts: Optional list of potential catalysts
        - keyRisks: Optional list of key risks
        - confidence: Optional confidence level (1-5)
      */
     init(
-        thesisType: ThesisType,
+        scenarioType: ScenarioType,
         title: String,
-        thesisStatement: String,
+        scenarioStatement: String,
         keyDrivers: [String],
         invalidationRules: [String],
         catalysts: [String]? = nil,
         keyRisks: [String]? = nil,
         confidence: Int? = nil
     ) {
-        self.thesisId = UUID()
-        self.thesisTypeRaw = thesisType.rawValue
+        self.scenarioId = UUID()
+        self.scenarioTypeRaw = scenarioType.rawValue
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.thesisStatement = thesisStatement.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.scenarioStatement = scenarioStatement.trimmingCharacters(in: .whitespacesAndNewlines)
         self.keyDriversData = try? JSONEncoder().encode(keyDrivers)
         self.invalidationRulesData = try? JSONEncoder().encode(invalidationRules)
         self.catalystsData = catalysts.flatMap { try? JSONEncoder().encode($0) }
         self.keyRisksData = keyRisks.flatMap { try? JSONEncoder().encode($0) }
         self.confidenceCurrent = confidence
-        self.statusRaw = ThesisStatus.active.rawValue
+        self.statusRaw = ScenarioStatus.active.rawValue
         self.versionNumber = 1
         self.createdAt = Date()
         self.updatedAt = Date()
@@ -119,15 +119,15 @@ final class Thesis {
     
     // MARK: - Computed Properties
     
-    /// Thesis type as enum
-    var thesisType: ThesisType {
-        get { ThesisType(rawValue: thesisTypeRaw) ?? .custom }
-        set { thesisTypeRaw = newValue.rawValue }
+    /// Scenario type as enum
+    var scenarioType: ScenarioType {
+        get { ScenarioType(rawValue: scenarioTypeRaw) ?? .custom }
+        set { scenarioTypeRaw = newValue.rawValue }
     }
     
     /// Status as enum
-    var status: ThesisStatus {
-        get { ThesisStatus(rawValue: statusRaw) ?? .active }
+    var status: ScenarioStatus {
+        get { ScenarioStatus(rawValue: statusRaw) ?? .active }
         set {
             statusRaw = newValue.rawValue
             statusChangedAt = Date()
@@ -189,7 +189,7 @@ final class Thesis {
         }
     }
     
-    /// Returns the count of log entries for this thesis
+    /// Returns the count of log entries for this scenario
     var logEntriesCount: Int {
         logEntries?.count ?? 0
     }
@@ -201,17 +201,17 @@ final class Thesis {
     
     /// Display subtitle combining type and status
     var displaySubtitle: String {
-        "\(thesisType.displayName) • \(status.displayName)"
+        "\(scenarioType.displayName) • \(status.displayName)"
     }
     
     // MARK: - Methods
     
     /**
-     Updates the thesis content and increments the version number.
+     Updates the scenario content and increments the version number.
      
      - Parameters:
        - title: New title
-       - thesisStatement: New thesis statement
+       - scenarioStatement: New scenario statement
        - keyDrivers: Updated key drivers
        - invalidationRules: Updated invalidation rules
        - catalysts: Updated catalysts
@@ -220,7 +220,7 @@ final class Thesis {
      */
     func update(
         title: String,
-        thesisStatement: String,
+        scenarioStatement: String,
         keyDrivers: [String],
         invalidationRules: [String],
         catalysts: [String]?,
@@ -228,7 +228,7 @@ final class Thesis {
         confidence: Int?
     ) {
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.thesisStatement = thesisStatement.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.scenarioStatement = scenarioStatement.trimmingCharacters(in: .whitespacesAndNewlines)
         self.keyDrivers = keyDrivers
         self.invalidationRules = invalidationRules
         self.catalysts = catalysts ?? []
@@ -240,13 +240,13 @@ final class Thesis {
     }
     
     /**
-     Updates the thesis status and returns the previous status for logging.
+     Updates the scenario status and returns the previous status for logging.
      
      - Parameter newStatus: The new status to set
      - Returns: The previous status before the change, or nil if unchanged
      */
     @discardableResult
-    func updateStatus(_ newStatus: ThesisStatus) -> ThesisStatus? {
+    func updateStatus(_ newStatus: ScenarioStatus) -> ScenarioStatus? {
         let oldStatus = self.status
         guard oldStatus != newStatus else { return nil }
         
@@ -266,11 +266,11 @@ final class Thesis {
 
 // MARK: - Validation
 
-extension Thesis {
-    /// Validates that the thesis has all required fields populated
+extension Scenario {
+    /// Validates that the scenario has all required fields populated
     var isValid: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !thesisStatement.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !scenarioStatement.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !keyDrivers.isEmpty &&
         !invalidationRules.isEmpty
     }
@@ -283,8 +283,8 @@ extension Thesis {
             errors.append("Title is required")
         }
         
-        if thesisStatement.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors.append("Thesis statement is required")
+        if scenarioStatement.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            errors.append("Scenario statement is required")
         }
         
         if keyDrivers.isEmpty {
@@ -302,3 +302,4 @@ extension Thesis {
         return errors
     }
 }
+

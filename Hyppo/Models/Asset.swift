@@ -2,8 +2,8 @@
  Asset model representing a tracked company or security.
  
  An asset is the top-level entity in the data hierarchy.
- Users track companies by creating assets and then attaching
- one or more theses to record their investment hypotheses.
+ Users track companies by creating assets, formulating research questions,
+ and then creating scenarios to explore different outcomes.
  */
 
 import Foundation
@@ -42,8 +42,8 @@ final class Asset {
     
     // MARK: - Relationships
     
-    /// Theses associated with this asset
-    @Relationship(deleteRule: .cascade) var theses: [Thesis]?
+    /// Research questions associated with this asset
+    @Relationship(deleteRule: .cascade) var researchQuestions: [ResearchQuestion]?
     
     /// Tags associated with this asset
     var tags: [Tag]?
@@ -82,14 +82,24 @@ final class Asset {
         archivedAt != nil
     }
     
-    /// Returns the count of theses for this asset
-    var thesesCount: Int {
-        theses?.count ?? 0
+    /// Returns the count of research questions for this asset
+    var researchQuestionsCount: Int {
+        researchQuestions?.count ?? 0
     }
     
-    /// Returns only active theses
-    var activeTheses: [Thesis] {
-        theses?.filter { $0.status == .active } ?? []
+    /// Returns only open research questions
+    var openResearchQuestions: [ResearchQuestion] {
+        researchQuestions?.filter { $0.status == .open } ?? []
+    }
+    
+    /// Returns all scenarios across all research questions
+    var allScenarios: [Scenario] {
+        researchQuestions?.flatMap { $0.scenarios ?? [] } ?? []
+    }
+    
+    /// Returns only active scenarios across all research questions
+    var activeScenarios: [Scenario] {
+        allScenarios.filter { $0.status == .active }
     }
     
     /// Display string combining ticker and name

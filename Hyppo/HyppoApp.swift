@@ -16,7 +16,7 @@ struct HyppoApp: App {
         DebugLogger.info(
             location: "HyppoApp:init",
             message: "Footnote app initializing",
-            data: ["models": "Asset, Thesis, LogEntry, Evidence, Tag, ReviewReminder"]
+            data: ["models": "Asset, ResearchQuestion, Scenario, LogEntry, Evidence, Tag, ReviewReminder"]
         )
     }
     
@@ -33,7 +33,8 @@ struct HyppoApp: App {
         // Define the schema with all model types
         let schema = Schema([
             Asset.self,
-            Thesis.self,
+            ResearchQuestion.self,
+            Scenario.self,
             LogEntry.self,
             Evidence.self,
             Tag.self,
@@ -128,8 +129,13 @@ struct HyppoApp: App {
                 }
                 .keyboardShortcut("n", modifiers: [.command])
                 
-                Button("New Thesis") {
-                    NotificationCenter.default.post(name: .addThesis, object: nil)
+                Button("New Research Question") {
+                    NotificationCenter.default.post(name: .addResearchQuestion, object: nil)
+                }
+                .keyboardShortcut("q", modifiers: [.command, .shift])
+                
+                Button("New Scenario") {
+                    NotificationCenter.default.post(name: .addScenario, object: nil)
                 }
                 .keyboardShortcut("t", modifiers: [.command, .shift])
                 
@@ -153,8 +159,11 @@ extension Notification.Name {
     /// Notification to trigger Add Asset action
     static let addAsset = Notification.Name("addAsset")
     
-    /// Notification to trigger Add Thesis action
-    static let addThesis = Notification.Name("addThesis")
+    /// Notification to trigger Add Research Question action
+    static let addResearchQuestion = Notification.Name("addResearchQuestion")
+    
+    /// Notification to trigger Add Scenario action
+    static let addScenario = Notification.Name("addScenario")
     
     /// Notification to trigger Add Log Entry action
     static let addLogEntry = Notification.Name("addLogEntry")

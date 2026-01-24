@@ -10,7 +10,7 @@ import SwiftData
 
 /// Form mode for add vs edit
 enum LogEntryFormMode {
-    case add(thesis: Thesis)
+    case add(scenario: Scenario)
     case edit(LogEntry)
     
     var title: String {
@@ -73,12 +73,12 @@ struct LogEntryFormView: View {
         !bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
-    private var thesisTitle: String {
+    private var scenarioTitle: String {
         switch mode {
-        case .add(let thesis):
-            return thesis.title
+        case .add(let scenario):
+            return scenario.title
         case .edit(let logEntry):
-            return logEntry.thesis?.title ?? "Unknown Thesis"
+            return logEntry.scenario?.title ?? "Unknown Scenario"
         }
     }
     
@@ -94,12 +94,12 @@ struct LogEntryFormView: View {
             // Form content
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Thesis reference
+                    // Scenario reference
                     HStack {
-                        Text("Thesis:")
+                        Text("Scenario:")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(thesisTitle)
+                        Text(scenarioTitle)
                             .font(.caption)
                             .fontWeight(.medium)
                     }
@@ -314,15 +314,15 @@ struct LogEntryFormView: View {
 // MARK: - Preview
 
 #Preview {
-    let thesis = Thesis(
-        thesisType: .base,
-        title: "Test Thesis",
-        thesisStatement: "Testing",
+    let scenario = Scenario(
+        scenarioType: .base,
+        title: "Test Scenario",
+        scenarioStatement: "Testing",
         keyDrivers: ["Driver 1"],
         invalidationRules: ["Rule 1"]
     )
     
-    return LogEntryFormView(mode: .add(thesis: thesis)) { _ in }
-        .modelContainer(for: [Thesis.self, LogEntry.self, Tag.self], inMemory: true)
+    return LogEntryFormView(mode: .add(scenario: scenario)) { _ in }
+        .modelContainer(for: [Scenario.self, LogEntry.self, Tag.self], inMemory: true)
 }
 

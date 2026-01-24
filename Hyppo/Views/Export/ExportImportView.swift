@@ -48,7 +48,7 @@ struct ExportImportView: View {
                     Label("Export Data", systemImage: "square.and.arrow.up")
                         .font(.headline)
                     
-                    Text("Export all assets, theses, log entries, and evidence to a JSON file. This file can be imported later to restore your data.")
+                    Text("Export all assets, research questions, scenarios, log entries, and evidence to a JSON file. This file can be imported later to restore your data.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
@@ -282,6 +282,6 @@ struct MarkdownDocument: FileDocument {
 
 #Preview {
     ExportImportView()
-        .modelContainer(for: [Asset.self, Thesis.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
+        .modelContainer(for: [Asset.self, Scenario.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
 }
 

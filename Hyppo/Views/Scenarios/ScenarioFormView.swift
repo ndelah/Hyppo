@@ -1,7 +1,7 @@
 /**
- ThesisFormView provides a form for creating or editing a thesis.
+ ScenarioFormView provides a form for creating or editing a scenario.
  
- Supports structured input for thesis statement, key drivers,
+ Supports structured input for scenario statement, key drivers,
  invalidation rules, catalysts, risks, and confidence level.
  */
 
@@ -9,14 +9,14 @@ import SwiftUI
 import SwiftData
 
 /// Form mode for add vs edit
-enum ThesisFormMode {
-    case add(asset: Asset)
-    case edit(Thesis)
+enum ScenarioFormMode {
+    case add(researchQuestion: ResearchQuestion)
+    case edit(Scenario)
     
     var title: String {
         switch self {
-        case .add: return "Add Thesis"
-        case .edit: return "Edit Thesis"
+        case .add: return "Add Scenario"
+        case .edit: return "Edit Scenario"
         }
     }
     
@@ -28,22 +28,22 @@ enum ThesisFormMode {
     }
 }
 
-/// Form for creating or editing a thesis
-struct ThesisFormView: View {
+/// Form for creating or editing a scenario
+struct ScenarioFormView: View {
     // MARK: - Environment
     
     @Environment(\.dismiss) private var dismiss
     
     // MARK: - Properties
     
-    let mode: ThesisFormMode
-    let onSave: (Thesis) -> Void
+    let mode: ScenarioFormMode
+    let onSave: (Scenario) -> Void
     
     // MARK: - State
     
-    @State private var thesisType: ThesisType = .base
+    @State private var scenarioType: ScenarioType = .base
     @State private var title: String = ""
-    @State private var thesisStatement: String = ""
+    @State private var scenarioStatement: String = ""
     @State private var keyDrivers: [String] = [""]
     @State private var invalidationRules: [String] = [""]
     @State private var catalysts: [String] = []
@@ -53,20 +53,20 @@ struct ThesisFormView: View {
     
     // MARK: - Initialization
     
-    init(mode: ThesisFormMode, onSave: @escaping (Thesis) -> Void) {
+    init(mode: ScenarioFormMode, onSave: @escaping (Scenario) -> Void) {
         self.mode = mode
         self.onSave = onSave
         
         // Pre-populate for edit mode
-        if case .edit(let thesis) = mode {
-            _thesisType = State(initialValue: thesis.thesisType)
-            _title = State(initialValue: thesis.title)
-            _thesisStatement = State(initialValue: thesis.thesisStatement)
-            _keyDrivers = State(initialValue: thesis.keyDrivers.isEmpty ? [""] : thesis.keyDrivers)
-            _invalidationRules = State(initialValue: thesis.invalidationRules.isEmpty ? [""] : thesis.invalidationRules)
-            _catalysts = State(initialValue: thesis.catalysts)
-            _keyRisks = State(initialValue: thesis.keyRisks)
-            _confidence = State(initialValue: thesis.confidenceCurrent)
+        if case .edit(let scenario) = mode {
+            _scenarioType = State(initialValue: scenario.scenarioType)
+            _title = State(initialValue: scenario.title)
+            _scenarioStatement = State(initialValue: scenario.scenarioStatement)
+            _keyDrivers = State(initialValue: scenario.keyDrivers.isEmpty ? [""] : scenario.keyDrivers)
+            _invalidationRules = State(initialValue: scenario.invalidationRules.isEmpty ? [""] : scenario.invalidationRules)
+            _catalysts = State(initialValue: scenario.catalysts)
+            _keyRisks = State(initialValue: scenario.keyRisks)
+            _confidence = State(initialValue: scenario.confidenceCurrent)
         }
     }
     
@@ -74,7 +74,7 @@ struct ThesisFormView: View {
     
     private var isValid: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !thesisStatement.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !scenarioStatement.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         keyDrivers.contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } &&
         invalidationRules.contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
@@ -94,8 +94,8 @@ struct ThesisFormView: View {
                     // Type and title section
                     typeAndTitleSection
                     
-                    // Thesis statement section
-                    thesisStatementSection
+                    // Scenario statement section
+                    scenarioStatementSection
                     
                     // Key drivers section
                     keyDriversSection
@@ -148,8 +148,8 @@ struct ThesisFormView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
-                    Picker("Type", selection: $thesisType) {
-                        ForEach(ThesisType.allCases) { type in
+                    Picker("Type", selection: $scenarioType) {
+                        ForEach(ScenarioType.allCases) { type in
                             Label(type.displayName, systemImage: type.iconName)
                                 .tag(type)
                         }
@@ -164,23 +164,23 @@ struct ThesisFormView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
-                    TextField("e.g., Growth thesis on cloud expansion", text: $title)
+                    TextField("e.g., Growth scenario on cloud expansion", text: $title)
                         .textFieldStyle(.roundedBorder)
                 }
             }
         }
     }
     
-    private var thesisStatementSection: some View {
+    private var scenarioStatementSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Thesis Statement")
+            Text("Scenario Statement")
                 .font(.headline)
             
             Text("What must be true for this investment to work?")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
-            TextEditor(text: $thesisStatement)
+            TextEditor(text: $scenarioStatement)
                 .font(.body)
                 .frame(minHeight: 80)
                 .padding(4)
@@ -203,7 +203,7 @@ struct ThesisFormView: View {
                     .foregroundStyle(.secondary)
             }
             
-            Text("What factors support this thesis?")
+            Text("What factors support this scenario?")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
@@ -221,7 +221,7 @@ struct ThesisFormView: View {
                     .foregroundStyle(.secondary)
             }
             
-            Text("What would prove this thesis wrong?")
+            Text("What would prove this scenario wrong?")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
@@ -251,7 +251,7 @@ struct ThesisFormView: View {
                         .font(.subheadline)
                         .fontWeight(.medium)
                     
-                    Text("What are the main risks to this thesis?")
+                    Text("What are the main risks to this scenario?")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
@@ -335,8 +335,8 @@ struct ThesisFormView: View {
             validationErrors.append("Title is required")
         }
         
-        if thesisStatement.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            validationErrors.append("Thesis statement is required")
+        if scenarioStatement.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            validationErrors.append("Scenario statement is required")
         }
         
         let validDrivers = keyDrivers.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -363,38 +363,41 @@ struct ThesisFormView: View {
         
         switch mode {
         case .add:
-            let newThesis = Thesis(
-                thesisType: thesisType,
+            let newScenario = Scenario(
+                scenarioType: scenarioType,
                 title: title,
-                thesisStatement: thesisStatement,
+                scenarioStatement: scenarioStatement,
                 keyDrivers: cleanDrivers,
                 invalidationRules: cleanRules,
                 catalysts: cleanCatalysts.isEmpty ? nil : cleanCatalysts,
                 keyRisks: cleanRisks.isEmpty ? nil : cleanRisks,
                 confidence: confidence
             )
-            onSave(newThesis)
+            onSave(newScenario)
             
-        case .edit(let thesis):
-            thesis.update(
+        case .edit(let scenario):
+            scenario.update(
                 title: title,
-                thesisStatement: thesisStatement,
+                scenarioStatement: scenarioStatement,
                 keyDrivers: cleanDrivers,
                 invalidationRules: cleanRules,
                 catalysts: cleanCatalysts.isEmpty ? nil : cleanCatalysts,
                 keyRisks: cleanRisks.isEmpty ? nil : cleanRisks,
                 confidence: confidence
             )
-            onSave(thesis)
+            onSave(scenario)
         }
         
         dismiss()
     }
 }
 
-// MARK: - Editable List Section
+// MARK: - EditableListSection
 
-/// Reusable component for editing a list of strings
+/**
+ * Reusable component for editing a list of string items.
+ * Used for key drivers, invalidation rules, catalysts, and key risks.
+ */
 struct EditableListSection: View {
     @Binding var items: [String]
     let placeholder: String
@@ -406,37 +409,24 @@ struct EditableListSection: View {
                     TextField(placeholder, text: $items[index])
                         .textFieldStyle(.roundedBorder)
                     
-                    if items.count > 1 || !items[index].isEmpty {
-                        Button {
-                            removeItem(at: index)
-                        } label: {
-                            Image(systemName: "minus.circle")
-                                .foregroundStyle(.red)
-                        }
-                        .buttonStyle(.borderless)
+                    Button {
+                        items.remove(at: index)
+                    } label: {
+                        Image(systemName: "minus.circle.fill")
+                            .foregroundStyle(.red)
                     }
+                    .buttonStyle(.plain)
                 }
             }
             
             Button {
-                addItem()
+                items.append("")
             } label: {
-                Label("Add", systemImage: "plus")
+                Label("Add Item", systemImage: "plus.circle")
                     .font(.caption)
             }
-            .buttonStyle(.borderless)
-        }
-    }
-    
-    private func addItem() {
-        items.append("")
-    }
-    
-    private func removeItem(at index: Int) {
-        if items.count > 1 {
-            items.remove(at: index)
-        } else {
-            items[index] = ""
+            .buttonStyle(.plain)
+            .foregroundStyle(.blue)
         }
     }
 }
@@ -444,8 +434,9 @@ struct EditableListSection: View {
 // MARK: - Preview
 
 #Preview {
-    ThesisFormView(
-        mode: .add(asset: Asset(ticker: "AAPL", name: "Apple Inc."))
+    let question = ResearchQuestion(questionText: "Can AAPL sustain services revenue growth?")
+    return ScenarioFormView(
+        mode: .add(researchQuestion: question)
     ) { _ in }
 }
 

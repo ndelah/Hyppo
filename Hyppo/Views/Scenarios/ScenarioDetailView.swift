@@ -1,7 +1,7 @@
 /**
- ThesisDetailView displays the full detail of a selected thesis.
+ ScenarioDetailView displays the full detail of a selected scenario.
  
- Shows thesis content (statement, drivers, risks, etc.) at the top
+ Shows scenario content (statement, drivers, risks, etc.) at the top
  and the chronological timeline of log entries below.
  */
 
@@ -9,8 +9,8 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 
-/// Detail view for a selected thesis showing content and timeline
-struct ThesisDetailView: View {
+/// Detail view for a selected scenario showing content and timeline
+struct ScenarioDetailView: View {
     // MARK: - Environment
     
     @Environment(\.modelContext) private var modelContext
@@ -26,18 +26,18 @@ struct ThesisDetailView: View {
     
     // MARK: - Properties
     
-    @Bindable var thesis: Thesis
+    @Bindable var scenario: Scenario
     
     // MARK: - State
     
-    @State private var showingEditThesis = false
+    @State private var showingEditScenario = false
     @State private var showingAddLogEntry = false
     @State private var selectedLogEntry: LogEntry?
     @State private var showingLogEntryDetail = false
     @State private var logEntryForEvidence: LogEntry?
     
     // Section expansion states
-    @State private var isThesisStatementExpanded = true
+    @State private var isScenarioStatementExpanded = true
     @State private var isKeyDriversExpanded = true
     @State private var isInvalidationRulesExpanded = true
     @State private var isCatalystsExpanded = true
@@ -55,18 +55,18 @@ struct ThesisDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                // Thesis header
-                thesisHeader
+                // Scenario header
+                scenarioHeader
                 
                 Divider()
                 
                 // Review reminder section
-                ReviewReminderView(thesis: thesis)
+                ReviewReminderView(scenario: scenario)
                 
                 Divider()
                 
-                // Thesis content sections
-                thesisContent
+                // Scenario content sections
+                scenarioContent
                 
                 Divider()
                 
@@ -75,7 +75,7 @@ struct ThesisDetailView: View {
             }
             .padding()
         }
-        .navigationTitle(thesis.title)
+        .navigationTitle(scenario.title)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 // Review wizard
@@ -88,7 +88,7 @@ struct ThesisDetailView: View {
                 
                 // Export to Markdown
                 Button {
-                    markdownContent = ExportService.shared.exportThesisToMarkdown(thesis)
+                    markdownContent = ExportService.shared.exportScenarioToMarkdown(scenario)
                     showingMarkdownExport = true
                 } label: {
                     Label("Export", systemImage: "square.and.arrow.up")
@@ -96,7 +96,7 @@ struct ThesisDetailView: View {
                 .help("Export to Markdown")
                 
                 Button {
-                    showingEditThesis = true
+                    showingEditScenario = true
                 } label: {
                     Label("Edit", systemImage: "pencil")
                 }
@@ -108,15 +108,15 @@ struct ThesisDetailView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingEditThesis) {
-            if thesis.asset != nil {
-                ThesisFormView(mode: .edit(thesis)) { _ in }
+        .sheet(isPresented: $showingEditScenario) {
+            if scenario.researchQuestion != nil {
+                ScenarioFormView(mode: .edit(scenario)) { _ in }
             }
         }
         .sheet(isPresented: $showingAddLogEntry) {
-            LogEntryFormView(mode: .add(thesis: thesis)) { newLogEntry in
+            LogEntryFormView(mode: .add(scenario: scenario)) { newLogEntry in
                 modelContext.insert(newLogEntry)
-                newLogEntry.thesis = thesis
+                newLogEntry.scenario = scenario
             }
         }
         .sheet(item: $selectedLogEntry) { logEntry in
@@ -132,16 +132,16 @@ struct ThesisDetailView: View {
             isPresented: $showingMarkdownExport,
             document: MarkdownDocument(content: markdownContent),
             contentType: .text,
-            defaultFilename: "\(thesis.asset?.ticker ?? "thesis")_\(sanitizedThesisTitle).md"
+            defaultFilename: "\(scenario.researchQuestion?.asset?.ticker ?? "scenario")_\(sanitizedScenarioTitle).md"
         ) { _ in }
         .sheet(isPresented: $showingReviewWizard) {
-            ReviewWizardView(thesis: thesis) { }
+            ReviewWizardView(scenario: scenario) { }
         }
     }
     
-    /// Sanitized thesis title for filename
-    private var sanitizedThesisTitle: String {
-        thesis.title
+    /// Sanitized scenario title for filename
+    private var sanitizedScenarioTitle: String {
+        scenario.title
             .lowercased()
             .replacingOccurrences(of: " ", with: "_")
             .replacingOccurrences(of: "/", with: "-")
@@ -152,15 +152,15 @@ struct ThesisDetailView: View {
     
     // MARK: - Subviews
     
-    private var thesisHeader: some View {
+    private var scenarioHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Title and type
             HStack {
-                Image(systemName: thesis.thesisType.iconName)
+                Image(systemName: scenario.scenarioType.iconName)
                     .font(.title2)
                     .foregroundStyle(typeColor)
                 
-                Text(thesis.title)
+                Text(scenario.title)
                     .font(.title2)
                     .fontWeight(.bold)
                 
@@ -170,47 +170,55 @@ struct ThesisDetailView: View {
                 statusBadge
             }
             
-            // Asset reference
-            if let asset = thesis.asset {
-                Text("Asset: \(asset.ticker) - \(asset.name)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+            // Research question and asset reference
+            if let question = scenario.researchQuestion {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Question: \(question.questionText)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                    if let asset = question.asset {
+                        Text("Asset: \(asset.ticker) - \(asset.name)")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
             }
             
             // Metadata row
             HStack(spacing: 16) {
-                if let confidence = thesis.confidence {
+                if let confidence = scenario.confidence {
                     Label(confidence.shortLabel, systemImage: "gauge")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 
-                Label("v\(thesis.versionNumber)", systemImage: "number")
+                Label("v\(scenario.versionNumber)", systemImage: "number")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
-                Label("\(thesis.logEntriesCount) logs", systemImage: "note.text")
+                Label("\(scenario.logEntriesCount) logs", systemImage: "note.text")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
                 Spacer()
                 
-                Text("Updated \(thesis.updatedAt.formatted(date: .abbreviated, time: .shortened))")
+                Text("Updated \(scenario.updatedAt.formatted(date: .abbreviated, time: .shortened))")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
         }
     }
     
-    private var thesisContent: some View {
+    private var scenarioContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Thesis statement
+            // Scenario statement
             CollapsibleSection(
-                title: "Thesis Statement",
+                title: "Scenario Statement",
                 iconName: "text.quote",
-                isExpanded: $isThesisStatementExpanded
+                isExpanded: $isScenarioStatementExpanded
             ) {
-                Text(thesis.thesisStatement)
+                Text(scenario.scenarioStatement)
                     .font(.body)
             }
             
@@ -219,10 +227,10 @@ struct ThesisDetailView: View {
                 title: "Key Drivers",
                 iconName: "arrow.up.forward",
                 isExpanded: $isKeyDriversExpanded,
-                itemCount: thesis.keyDrivers.count
+                itemCount: scenario.keyDrivers.count
             ) {
                 VStack(alignment: .leading, spacing: 6) {
-                    ForEach(thesis.keyDrivers, id: \.self) { driver in
+                    ForEach(scenario.keyDrivers, id: \.self) { driver in
                         BulletPoint(text: driver)
                     }
                 }
@@ -233,25 +241,25 @@ struct ThesisDetailView: View {
                 title: "Invalidation Rules",
                 iconName: "xmark.circle",
                 isExpanded: $isInvalidationRulesExpanded,
-                itemCount: thesis.invalidationRules.count
+                itemCount: scenario.invalidationRules.count
             ) {
                 VStack(alignment: .leading, spacing: 6) {
-                    ForEach(thesis.invalidationRules, id: \.self) { rule in
+                    ForEach(scenario.invalidationRules, id: \.self) { rule in
                         BulletPoint(text: rule, color: .red)
                     }
                 }
             }
             
             // Catalysts (if any)
-            if !thesis.catalysts.isEmpty {
+            if !scenario.catalysts.isEmpty {
                 CollapsibleSection(
                     title: "Catalysts",
                     iconName: "bolt",
                     isExpanded: $isCatalystsExpanded,
-                    itemCount: thesis.catalysts.count
+                    itemCount: scenario.catalysts.count
                 ) {
                     VStack(alignment: .leading, spacing: 6) {
-                        ForEach(thesis.catalysts, id: \.self) { catalyst in
+                        ForEach(scenario.catalysts, id: \.self) { catalyst in
                             BulletPoint(text: catalyst, color: .orange)
                         }
                     }
@@ -259,15 +267,15 @@ struct ThesisDetailView: View {
             }
             
             // Key risks (if any)
-            if !thesis.keyRisks.isEmpty {
+            if !scenario.keyRisks.isEmpty {
                 CollapsibleSection(
                     title: "Key Risks",
                     iconName: "exclamationmark.triangle",
                     isExpanded: $isKeyRisksExpanded,
-                    itemCount: thesis.keyRisks.count
+                    itemCount: scenario.keyRisks.count
                 ) {
                     VStack(alignment: .leading, spacing: 6) {
-                        ForEach(thesis.keyRisks, id: \.self) { risk in
+                        ForEach(scenario.keyRisks, id: \.self) { risk in
                             BulletPoint(text: risk, color: .yellow)
                         }
                     }
@@ -292,7 +300,7 @@ struct ThesisDetailView: View {
         .onAppear {
             // Set initial expansion state based on density preference
             let shouldExpand = displayDensity.expandSectionsByDefault
-            isThesisStatementExpanded = shouldExpand
+            isScenarioStatementExpanded = shouldExpand
             isKeyDriversExpanded = shouldExpand
             isInvalidationRulesExpanded = shouldExpand
             isCatalystsExpanded = shouldExpand
@@ -301,12 +309,12 @@ struct ThesisDetailView: View {
     }
     
     private var allSectionsExpanded: Bool {
-        isThesisStatementExpanded && isKeyDriversExpanded && isInvalidationRulesExpanded
+        isScenarioStatementExpanded && isKeyDriversExpanded && isInvalidationRulesExpanded
     }
     
     private func toggleAllSections() {
         let newState = !allSectionsExpanded
-        isThesisStatementExpanded = newState
+        isScenarioStatementExpanded = newState
         isKeyDriversExpanded = newState
         isInvalidationRulesExpanded = newState
         isCatalystsExpanded = newState
@@ -315,7 +323,7 @@ struct ThesisDetailView: View {
     
     /// Filtered log entries based on user preferences
     private var filteredLogEntries: [LogEntry] {
-        var entries = thesis.sortedLogEntries
+        var entries = scenario.sortedLogEntries
         if !showSystemLogs {
             entries = entries.filter { !$0.isSystemGenerated }
         }
@@ -333,7 +341,7 @@ struct ThesisDetailView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
-                if !showSystemLogs && thesis.sortedLogEntries.count != filteredLogEntries.count {
+                if !showSystemLogs && scenario.sortedLogEntries.count != filteredLogEntries.count {
                     Text("• filtered")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
@@ -374,8 +382,8 @@ struct ThesisDetailView: View {
             if filteredLogEntries.isEmpty {
                 EmptyStateView(
                     iconName: "note.text",
-                    title: thesis.sortedLogEntries.isEmpty ? "No Log Entries" : "No Visible Entries",
-                    description: thesis.sortedLogEntries.isEmpty
+                    title: scenario.sortedLogEntries.isEmpty ? "No Log Entries" : "No Visible Entries",
+                    description: scenario.sortedLogEntries.isEmpty
                         ? "Start documenting your research by adding log entries."
                         : "System-generated logs are hidden. Enable them in Settings.",
                     actionTitle: "Add Log Entry"
@@ -405,9 +413,9 @@ struct ThesisDetailView: View {
     
     private var statusBadge: some View {
         HStack(spacing: 4) {
-            Image(systemName: thesis.status.iconName)
+            Image(systemName: scenario.status.iconName)
                 .font(.caption)
-            Text(thesis.status.displayName)
+            Text(scenario.status.displayName)
                 .font(.caption)
                 .fontWeight(.medium)
         }
@@ -419,7 +427,7 @@ struct ThesisDetailView: View {
     }
     
     private var typeColor: Color {
-        switch thesis.thesisType {
+        switch scenario.scenarioType {
         case .bull: return .green
         case .bear: return .red
         case .base: return .blue
@@ -428,7 +436,7 @@ struct ThesisDetailView: View {
     }
     
     private var statusColor: Color {
-        switch thesis.status {
+        switch scenario.status {
         case .active: return .green
         case .onHold: return .orange
         case .invalidated: return .red
@@ -458,7 +466,7 @@ struct ThesisDetailView: View {
 
 // MARK: - Collapsible Section
 
-/// Reusable collapsible section component for thesis content
+/// Reusable collapsible section component for scenario content
 private struct CollapsibleSection<Content: View>: View {
     let title: String
     let iconName: String
@@ -774,7 +782,7 @@ struct LogEntryDetailSheet: View {
             }
         }
         .sheet(isPresented: $showingEditLogEntry) {
-            if let thesis = logEntry.thesis {
+            if logEntry.scenario != nil {
                 LogEntryFormView(mode: .edit(logEntry)) { _ in }
             }
         }
@@ -835,10 +843,10 @@ struct EvidenceRow: View {
 // MARK: - Preview
 
 #Preview {
-    let thesis = Thesis(
-        thesisType: .bull,
-        title: "Cloud Growth Thesis",
-        thesisStatement: "Apple's services segment will continue to grow at 15%+ annually as the installed base expands.",
+    let scenario = Scenario(
+        scenarioType: .bull,
+        title: "Cloud Growth Scenario",
+        scenarioStatement: "Apple's services segment will continue to grow at 15%+ annually as the installed base expands.",
         keyDrivers: ["Growing installed base", "High switching costs", "App Store dominance"],
         invalidationRules: ["Services growth falls below 10%", "Major regulatory action against App Store"],
         catalysts: ["New subscription service launch", "iPhone sales exceed expectations"],
@@ -846,7 +854,7 @@ struct EvidenceRow: View {
         confidence: 4
     )
     
-    return ThesisDetailView(thesis: thesis)
-        .modelContainer(for: [Thesis.self, LogEntry.self, Evidence.self, ReviewReminder.self], inMemory: true)
+    return ScenarioDetailView(scenario: scenario)
+        .modelContainer(for: [Scenario.self, LogEntry.self, Evidence.self, ReviewReminder.self], inMemory: true)
 }
 

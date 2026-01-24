@@ -1,7 +1,7 @@
 /**
  NotificationService manages local macOS notifications for review reminders.
  
- Handles permission requests, scheduling notifications for thesis reviews,
+ Handles permission requests, scheduling notifications for scenario reviews,
  and responding to notification actions like snooze.
  */
 
@@ -23,7 +23,7 @@ final class NotificationService: NSObject, ObservableObject {
     
     // MARK: - Constants
     
-    private let notificationCategoryId = "THESIS_REVIEW"
+    private let notificationCategoryId = "SCENARIO_REVIEW"
     private let snoozeActionId = "SNOOZE_ACTION"
     private let reviewActionId = "REVIEW_ACTION"
     
@@ -107,13 +107,13 @@ final class NotificationService: NSObject, ObservableObject {
     // MARK: - Scheduling Notifications
     
     /**
-     Schedules a notification for a thesis review reminder.
+     Schedules a notification for a scenario review reminder.
      
      - Parameters:
        - reminder: The review reminder to schedule
-       - thesis: The thesis being reminded about
+       - scenario: The scenario being reminded about
      */
-    func scheduleNotification(for reminder: ReviewReminder, thesis: Thesis) {
+    func scheduleNotification(for reminder: ReviewReminder, scenario: Scenario) {
         guard isAuthorized else {
             DebugLogger.warning(
                 location: "NotificationService:scheduleNotification",
@@ -132,12 +132,12 @@ final class NotificationService: NSObject, ObservableObject {
         }
         
         let content = UNMutableNotificationContent()
-        content.title = "Thesis Review Due"
-        content.body = "Time to review your \(thesis.thesisType.displayName.lowercased()) thesis: \"\(thesis.title)\""
+        content.title = "Scenario Review Due"
+        content.body = "Time to review your \(scenario.scenarioType.displayName.lowercased()) scenario: \"\(scenario.title)\""
         content.sound = .default
         content.categoryIdentifier = notificationCategoryId
         content.userInfo = [
-            "thesisId": thesis.thesisId.uuidString,
+            "scenarioId": scenario.scenarioId.uuidString,
             "reminderId": reminder.reminderId.uuidString
         ]
         
@@ -164,8 +164,8 @@ final class NotificationService: NSObject, ObservableObject {
             } else {
                 DebugLogger.info(
                     location: "NotificationService:scheduleNotification",
-                    message: "Scheduled notification for thesis review",
-                    data: ["thesisTitle": thesis.title, "dueDate": dueDate.description]
+                    message: "Scheduled notification for scenario review",
+                    data: ["scenarioTitle": scenario.title, "dueDate": dueDate.description]
                 )
             }
         }
@@ -200,11 +200,11 @@ final class NotificationService: NSObject, ObservableObject {
      
      - Parameters:
        - reminder: The updated reminder
-       - thesis: The thesis being reminded about
+       - scenario: The scenario being reminded about
      */
-    func rescheduleNotification(for reminder: ReviewReminder, thesis: Thesis) {
+    func rescheduleNotification(for reminder: ReviewReminder, scenario: Scenario) {
         cancelNotification(for: reminder)
-        scheduleNotification(for: reminder, thesis: thesis)
+        scheduleNotification(for: reminder, scenario: scenario)
     }
 }
 
@@ -251,13 +251,13 @@ extension NotificationService: UNUserNotificationCenterDelegate {
             )
             
         case reviewActionId, UNNotificationDefaultActionIdentifier:
-            // Post notification for app to open the thesis
-            if let thesisIdString = userInfo["thesisId"] as? String,
-               let thesisId = UUID(uuidString: thesisIdString) {
+            // Post notification for app to open the scenario
+            if let scenarioIdString = userInfo["scenarioId"] as? String,
+               let scenarioId = UUID(uuidString: scenarioIdString) {
                 NotificationCenter.default.post(
-                    name: .openThesisForReview,
+                    name: .openScenarioForReview,
                     object: nil,
-                    userInfo: ["thesisId": thesisId, "reminderId": reminderId]
+                    userInfo: ["scenarioId": scenarioId, "reminderId": reminderId]
                 )
             }
             
@@ -275,7 +275,7 @@ extension Notification.Name {
     /// Posted when user taps snooze on a review notification
     static let snoozeReviewReminder = Notification.Name("snoozeReviewReminder")
     
-    /// Posted when user taps to open thesis for review
-    static let openThesisForReview = Notification.Name("openThesisForReview")
+    /// Posted when user taps to open scenario for review
+    static let openScenarioForReview = Notification.Name("openScenarioForReview")
 }
 

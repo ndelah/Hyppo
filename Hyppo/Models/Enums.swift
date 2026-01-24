@@ -7,15 +7,15 @@
 
 import Foundation
 
-// MARK: - Thesis Enums
+// MARK: - Scenario Enums
 
 /**
- Represents the type/scenario of a thesis.
+ Represents the type/scenario of a scenario.
  
- Users can create multiple theses per asset to represent different
+ Users can create multiple scenarios per research question to represent different
  investment scenarios (bull case, bear case, base case, or custom).
  */
-enum ThesisType: String, Codable, CaseIterable, Identifiable {
+enum ScenarioType: String, Codable, CaseIterable, Identifiable {
     case base = "Base"
     case bull = "Bull"
     case bear = "Bear"
@@ -23,7 +23,7 @@ enum ThesisType: String, Codable, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
-    /// Display label for the thesis type
+    /// Display label for the scenario type
     var displayName: String { rawValue }
     
     /// Icon name for visual representation
@@ -35,15 +35,25 @@ enum ThesisType: String, Codable, CaseIterable, Identifiable {
         case .custom: return "square.and.pencil"
         }
     }
+    
+    /// Sort order for displaying scenarios
+    var sortOrder: Int {
+        switch self {
+        case .bull: return 0
+        case .base: return 1
+        case .bear: return 2
+        case .custom: return 3
+        }
+    }
 }
 
 /**
- Represents the lifecycle status of a thesis.
+ Represents the lifecycle status of a scenario.
  
- A thesis progresses through these states as the user validates
+ A scenario progresses through these states as the user validates
  or invalidates their investment hypothesis over time.
  */
-enum ThesisStatus: String, Codable, CaseIterable, Identifiable {
+enum ScenarioStatus: String, Codable, CaseIterable, Identifiable {
     case active = "Active"
     case onHold = "On Hold"
     case invalidated = "Invalidated"
@@ -74,6 +84,11 @@ enum ThesisStatus: String, Codable, CaseIterable, Identifiable {
         }
     }
 }
+
+// MARK: - Legacy Type Aliases (for compatibility during migration)
+
+typealias ThesisType = ScenarioType
+typealias ThesisStatus = ScenarioStatus
 
 // MARK: - Log Entry Enums
 

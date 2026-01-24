@@ -1,5 +1,5 @@
 /**
- ReviewReminderView displays and manages the review reminder for a thesis.
+ ReviewReminderView displays and manages the review reminder for a scenario.
  
  Shows the current reminder status, allows configuring cadence,
  and provides actions for snoozing and completing reviews.
@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftData
 
-/// View for displaying and managing a thesis review reminder
+/// View for displaying and managing a scenario review reminder
 struct ReviewReminderView: View {
     // MARK: - Environment
     
@@ -16,7 +16,7 @@ struct ReviewReminderView: View {
     
     // MARK: - Properties
     
-    @Bindable var thesis: Thesis
+    @Bindable var scenario: Scenario
     
     // MARK: - State
     
@@ -43,10 +43,10 @@ struct ReviewReminderView: View {
                     .controlSize(.small)
             }
             
-            if let reminder = thesis.reviewReminder, reminder.isEnabled {
+            if let reminder = scenario.reviewReminder, reminder.isEnabled {
                 // Status and actions
                 reminderContent(reminder)
-            } else if thesis.reviewReminder == nil {
+            } else if scenario.reviewReminder == nil {
                 // No reminder set up yet
                 noReminderView
             } else {
@@ -58,7 +58,7 @@ struct ReviewReminderView: View {
         .background(Color(nsColor: .controlBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .sheet(isPresented: $showingCadenceSheet) {
-            CadenceConfigSheet(thesis: thesis)
+            CadenceConfigSheet(scenario: scenario)
         }
     }
     
@@ -66,7 +66,7 @@ struct ReviewReminderView: View {
     
     private var reminderEnabledBinding: Binding<Bool> {
         Binding(
-            get: { thesis.reviewReminder?.isEnabled ?? false },
+            get: { scenario.reviewReminder?.isEnabled ?? false },
             set: { newValue in
                 if newValue {
                     enableReminder()
@@ -167,10 +167,10 @@ struct ReviewReminderView: View {
             .controlSize(.small)
         }
         .sheet(isPresented: $showingReviewWizard) {
-            ReviewWizardView(thesis: thesis) {
+            ReviewWizardView(scenario: scenario) {
                 // Wizard handles everything, just reschedule notification
-                if let r = thesis.reviewReminder {
-                    notificationService.rescheduleNotification(for: r, thesis: thesis)
+                if let r = scenario.reviewReminder {
+                    notificationService.rescheduleNotification(for: r, scenario: scenario)
                 }
             }
         }
@@ -226,27 +226,27 @@ struct ReviewReminderView: View {
     // MARK: - Actions
     
     private func enableReminder() {
-        if thesis.reviewReminder == nil {
+        if scenario.reviewReminder == nil {
             let reminder = ReviewReminder(cadence: .weekly, isEnabled: true)
             modelContext.insert(reminder)
-            thesis.reviewReminder = reminder
+            scenario.reviewReminder = reminder
             
             // Request notification permission if needed
             notificationService.requestAuthorization { granted in
                 if granted {
-                    notificationService.scheduleNotification(for: reminder, thesis: thesis)
+                    notificationService.scheduleNotification(for: reminder, scenario: scenario)
                 }
             }
         } else {
-            thesis.reviewReminder?.setEnabled(true)
-            if let reminder = thesis.reviewReminder {
-                notificationService.scheduleNotification(for: reminder, thesis: thesis)
+            scenario.reviewReminder?.setEnabled(true)
+            if let reminder = scenario.reviewReminder {
+                notificationService.scheduleNotification(for: reminder, scenario: scenario)
             }
         }
     }
     
     private func disableReminder() {
-        if let reminder = thesis.reviewReminder {
+        if let reminder = scenario.reviewReminder {
             reminder.setEnabled(false)
             notificationService.cancelNotification(for: reminder)
         }
@@ -254,24 +254,24 @@ struct ReviewReminderView: View {
     
     private func quickCompleteReview(_ reminder: ReviewReminder) {
         reminder.completeReview()
-        notificationService.rescheduleNotification(for: reminder, thesis: thesis)
+        notificationService.rescheduleNotification(for: reminder, scenario: scenario)
         
         // Create a simple review log entry (for quick complete without wizard)
         let logEntry = LogEntry.createReviewLog(
             outcome: ReviewOutcome.reinforce,
-            summary: "Quick review completed - thesis still valid",
-            confidence: thesis.confidenceCurrent
+            summary: "Quick review completed - scenario still valid",
+            confidence: scenario.confidenceCurrent
         )
         modelContext.insert(logEntry)
-        logEntry.thesis = thesis
+        logEntry.scenario = scenario
         
-        // Update thesis
-        thesis.lastReviewedAt = Date()
+        // Update scenario
+        scenario.lastReviewedAt = Date()
     }
     
     private func snooze(_ reminder: ReviewReminder, days: Int) {
         reminder.snooze(days: days)
-        notificationService.rescheduleNotification(for: reminder, thesis: thesis)
+        notificationService.rescheduleNotification(for: reminder, scenario: scenario)
     }
 }
 
@@ -282,7 +282,7 @@ struct CadenceConfigSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    @Bindable var thesis: Thesis
+    @Bindable var scenario: Scenario
     
     @State private var selectedCadence: ReviewCadence = .weekly
     @State private var customDays: Int = 14
@@ -363,7 +363,7 @@ struct CadenceConfigSheet: View {
         }
         .frame(width: 400, height: 400)
         .onAppear {
-            if let reminder = thesis.reviewReminder {
+            if let reminder = scenario.reviewReminder {
                 selectedCadence = reminder.cadence
                 customDays = reminder.customIntervalDays ?? 14
             }
@@ -371,12 +371,12 @@ struct CadenceConfigSheet: View {
     }
     
     private func saveCadence() {
-        if let reminder = thesis.reviewReminder {
+        if let reminder = scenario.reviewReminder {
             reminder.updateCadence(
                 selectedCadence,
                 customDays: selectedCadence == .custom ? customDays : nil
             )
-            notificationService.rescheduleNotification(for: reminder, thesis: thesis)
+            notificationService.rescheduleNotification(for: reminder, scenario: scenario)
         } else {
             let reminder = ReviewReminder(
                 cadence: selectedCadence,
@@ -384,15 +384,15 @@ struct CadenceConfigSheet: View {
                 isEnabled: true
             )
             modelContext.insert(reminder)
-            thesis.reviewReminder = reminder
-            notificationService.scheduleNotification(for: reminder, thesis: thesis)
+            scenario.reviewReminder = reminder
+            notificationService.scheduleNotification(for: reminder, scenario: scenario)
         }
     }
 }
 
 // MARK: - Due Badge View
 
-/// Small badge indicating a thesis review is due
+/// Small badge indicating a scenario review is due
 struct ReviewDueBadge: View {
     let reminder: ReviewReminder?
     
@@ -424,16 +424,16 @@ struct ReviewDueBadge: View {
 // MARK: - Preview
 
 #Preview {
-    let thesis = Thesis(
-        thesisType: .bull,
-        title: "Test Thesis",
-        thesisStatement: "Testing",
+    let scenario = Scenario(
+        scenarioType: .bull,
+        title: "Test Scenario",
+        scenarioStatement: "Testing",
         keyDrivers: ["Driver"],
         invalidationRules: ["Rule"]
     )
     
-    return ReviewReminderView(thesis: thesis)
+    return ReviewReminderView(scenario: scenario)
         .padding()
-        .modelContainer(for: [Thesis.self, ReviewReminder.self, LogEntry.self], inMemory: true)
+        .modelContainer(for: [Scenario.self, ReviewReminder.self, LogEntry.self], inMemory: true)
 }
 

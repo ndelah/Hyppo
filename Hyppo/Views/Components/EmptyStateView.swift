@@ -2,7 +2,7 @@
  EmptyStateView displays a placeholder when lists or content areas are empty.
  
  Used throughout the app to provide helpful guidance when the user
- hasn't created any content yet (no assets, no theses, no log entries).
+ hasn't created any content yet (no assets, no research questions, no log entries).
  */
 
 import SwiftUI
@@ -106,19 +106,30 @@ extension EmptyStateView {
         EmptyStateView(
             iconName: "building.2",
             title: "No Assets Yet",
-            description: "Start tracking a company by adding your first asset. You can then create theses and log your research.",
+            description: "Start tracking a company by adding your first asset. You can then formulate research questions and log your research.",
             actionTitle: "Add Asset",
             action: action
         )
     }
     
-    /// Empty state for the theses list
-    static func noTheses(action: @escaping () -> Void) -> EmptyStateView {
+    /// Empty state for the research questions list
+    static func noResearchQuestions(action: @escaping () -> Void) -> EmptyStateView {
         EmptyStateView(
-            iconName: "doc.text",
-            title: "No Theses Yet",
-            description: "Create a thesis to document your investment hypothesis. Add key drivers, risks, and invalidation rules.",
-            actionTitle: "Add Thesis",
+            iconName: "questionmark.circle",
+            title: "No Research Questions Yet",
+            description: "Formulate a research question about this investment. Then create scenarios (bull/base/bear) to explore possible outcomes.",
+            actionTitle: "Add Research Question",
+            action: action
+        )
+    }
+    
+    /// Empty state for the scenarios list
+    static func noScenarios(action: @escaping () -> Void) -> EmptyStateView {
+        EmptyStateView(
+            iconName: "arrow.up.arrow.down.circle",
+            title: "No Scenarios Yet",
+            description: "Create a scenario to document your investment hypothesis. Add key drivers, risks, and invalidation rules.",
+            actionTitle: "Add Scenario",
             action: action
         )
     }
@@ -159,7 +170,7 @@ extension EmptyStateView {
         EmptyStateView(
             iconName: "sidebar.left",
             title: "Select an Item",
-            description: "Choose an asset from the sidebar to view its details and theses."
+            description: "Choose an asset from the sidebar to view its research questions and scenarios."
         )
     }
 }
@@ -170,8 +181,12 @@ extension EmptyStateView {
     EmptyStateView.noAssets(action: {})
 }
 
-#Preview("No Theses") {
-    EmptyStateView.noTheses(action: {})
+#Preview("No Research Questions") {
+    EmptyStateView.noResearchQuestions(action: {})
+}
+
+#Preview("No Scenarios") {
+    EmptyStateView.noScenarios(action: {})
 }
 
 #Preview("No Selection") {

@@ -84,7 +84,7 @@ enum DisplayDensity: String, CaseIterable, Identifiable {
         }
     }
     
-    /// Whether to expand thesis sections by default
+    /// Whether to expand scenario sections by default
     var expandSectionsByDefault: Bool {
         switch self {
         case .compact: return false
@@ -215,7 +215,7 @@ private struct BackupSettingsTab: View {
             } header: {
                 Text("Export & Import")
             } footer: {
-                Text("Use the Export button on individual theses to export as Markdown.")
+                Text("Use the Export button on individual scenarios to export as Markdown.")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -250,7 +250,7 @@ private struct AboutSettingsTab: View {
                     .foregroundStyle(.secondary)
             }
             
-            Text("Track investment theses, not just portfolio performance.")
+            Text("Track investment research and scenarios, not just portfolio performance.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

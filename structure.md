@@ -19,10 +19,13 @@ Hyppo
 │   │   ├── Enums.swift
 │   │   ├── Evidence.swift
 │   │   ├── LogEntry.swift
-│   │   ├── Tag.swift
-│   │   └── Thesis.swift
+│   │   ├── ResearchQuestion.swift
+│   │   ├── ReviewReminder.swift
+│   │   ├── Scenario.swift
+│   │   └── Tag.swift
 │   ├── Utilities
-│   │   └── DebugLogger.swift
+│   │   ├── DebugLogger.swift
+│   │   └── SwiftDataStoreReset.swift
 │   ├── Views
 │   │   ├── Assets
 │   │   │   ├── AssetDetailView.swift
@@ -31,16 +34,26 @@ Hyppo
 │   │   │   └── EmptyStateView.swift
 │   │   ├── Evidence
 │   │   │   └── EvidenceFormView.swift
+│   │   ├── Export
+│   │   │   └── ExportImportView.swift
 │   │   ├── LogEntries
 │   │   │   └── LogEntryFormView.swift
 │   │   ├── Navigation
 │   │   │   ├── MainNavigationView.swift
 │   │   │   └── SidebarView.swift
+│   │   ├── ResearchQuestions
+│   │   │   ├── ResearchQuestionDetailView.swift
+│   │   │   └── ResearchQuestionFormView.swift
+│   │   ├── Reviews
+│   │   │   ├── ReviewReminderView.swift
+│   │   │   └── ReviewWizardView.swift
+│   │   ├── Scenarios
+│   │   │   ├── ScenarioDetailView.swift
+│   │   │   └── ScenarioFormView.swift
 │   │   ├── Settings
 │   │   │   └── SettingsView.swift
-│   │   └── Theses
-│   │       ├── ThesisDetailView.swift
-│   │       └── ThesisFormView.swift
+│   │   └── Tags
+│   │       └── TagManagementView.swift
 │   ├── ContentView.swift
 │   └── HyppoApp.swift
 ├── Hyppo.xcodeproj
@@ -60,7 +73,7 @@ Hyppo
 ├── business_case.md
 ├── feedback.md
 ├── project_scope.md
-└── release_note.md
+└── structure.md
 ```
 
 

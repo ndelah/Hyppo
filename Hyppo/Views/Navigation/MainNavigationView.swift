@@ -1,8 +1,8 @@
 /**
  MainNavigationView is the root navigation container for the app.
  
- Provides a three-column layout: sidebar (assets), content (theses/logs),
- and detail (thesis detail). On smaller windows, columns collapse appropriately.
+ Provides a three-column layout: sidebar (assets), content (research questions),
+ and detail (research question detail or scenario detail). On smaller windows, columns collapse appropriately.
  */
 
 import SwiftUI
@@ -17,13 +17,14 @@ struct MainNavigationView: View {
     // MARK: - State
     
     @State private var selectedAsset: Asset?
-    @State private var selectedThesis: Thesis?
+    @State private var selectedResearchQuestion: ResearchQuestion?
+    @State private var selectedScenario: Scenario?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     
     // Shortcut-triggered sheets
     @State private var showingAddAssetSheet = false
     @State private var showingAddLogSheet = false
-    @State private var showingNoThesisAlert = false
+    @State private var showingNoScenarioAlert = false
     
     // MARK: - Body
     
@@ -33,31 +34,40 @@ struct MainNavigationView: View {
             SidebarView(selectedAsset: $selectedAsset)
                 .navigationSplitViewColumnWidth(min: 200, ideal: 250, max: 350)
         } content: {
-            // Content - Thesis list for selected asset
+            // Content - Research Questions for selected asset
             if let asset = selectedAsset {
-                AssetDetailView(asset: asset, selectedThesis: $selectedThesis)
+                AssetDetailView(asset: asset, selectedResearchQuestion: $selectedResearchQuestion)
                     .navigationSplitViewColumnWidth(min: 300, ideal: 350, max: 450)
             } else {
                 EmptyStateView.noSelection
             }
         } detail: {
-            // Detail - Thesis detail view
-            if let thesis = selectedThesis {
-                ThesisDetailView(thesis: thesis)
+            // Detail - Research Question detail (with scenarios) or Scenario detail
+            if let scenario = selectedScenario {
+                ScenarioDetailView(scenario: scenario)
+            } else if let question = selectedResearchQuestion {
+                ResearchQuestionDetailView(researchQuestion: question, selectedScenario: $selectedScenario)
             } else if selectedAsset != nil {
                 EmptyStateView(
-                    iconName: "doc.text",
-                    title: "Select a Thesis",
-                    description: "Choose a thesis from the list to view its details and timeline."
+                    iconName: "questionmark.circle",
+                    title: "Select a Research Question",
+                    description: "Choose a research question from the list to view its scenarios."
                 )
             } else {
                 EmptyStateView.noSelection
             }
         }
         .onChange(of: selectedAsset) { oldValue, newValue in
-            // Clear thesis selection when asset changes
+            // Clear research question and scenario selection when asset changes
             if oldValue != newValue {
-                selectedThesis = nil
+                selectedResearchQuestion = nil
+                selectedScenario = nil
+            }
+        }
+        .onChange(of: selectedResearchQuestion) { oldValue, newValue in
+            // Clear scenario selection when research question changes
+            if oldValue != newValue {
+                selectedScenario = nil
             }
         }
         // Handle menu shortcut notifications
@@ -65,10 +75,10 @@ struct MainNavigationView: View {
             showingAddAssetSheet = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .addLogEntry)) { _ in
-            if selectedThesis != nil {
+            if selectedScenario != nil {
                 showingAddLogSheet = true
             } else {
-                showingNoThesisAlert = true
+                showingNoScenarioAlert = true
             }
         }
         // Shortcut-triggered sheets
@@ -79,17 +89,17 @@ struct MainNavigationView: View {
             }
         }
         .sheet(isPresented: $showingAddLogSheet) {
-            if let thesis = selectedThesis {
-                LogEntryFormView(mode: .add(thesis: thesis)) { newLogEntry in
+            if let scenario = selectedScenario {
+                LogEntryFormView(mode: .add(scenario: scenario)) { newLogEntry in
                     modelContext.insert(newLogEntry)
-                    newLogEntry.thesis = thesis
+                    newLogEntry.scenario = scenario
                 }
             }
         }
-        .alert("No Thesis Selected", isPresented: $showingNoThesisAlert) {
+        .alert("No Scenario Selected", isPresented: $showingNoScenarioAlert) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Please select a thesis first to add a log entry. Use ⌘⇧L after selecting a thesis.")
+            Text("Please select a scenario first to add a log entry. Use ⌘⇧L after selecting a scenario.")
         }
     }
 }
@@ -98,8 +108,11 @@ struct MainNavigationView: View {
 
 #Preview {
     MainNavigationView()
-        .modelContainer(for: [Asset.self, Thesis.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
+        .modelContainer(for: [Asset.self, ResearchQuestion.self, Scenario.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
 }
+
+
+
 
 
 

@@ -1,5 +1,5 @@
 /**
- ReviewWizardView provides a guided review workflow for theses.
+ ReviewWizardView provides a guided review workflow for scenarios.
  
  Walks the user through reviewing key drivers, checking invalidation rules,
  and deciding on an outcome (reinforce/revise/invalidate). Generates a
@@ -15,11 +15,11 @@ import SwiftData
 func reviewOutcomeDescription(_ outcome: ReviewOutcome) -> String {
     switch outcome {
     case .reinforce:
-        return "Thesis remains valid. Strengthen conviction based on evidence."
+        return "Scenario remains valid. Strengthen conviction based on evidence."
     case .revise:
-        return "Thesis needs updates. Some assumptions have changed."
+        return "Scenario needs updates. Some assumptions have changed."
     case .invalidate:
-        return "Thesis is no longer valid. An invalidation rule was triggered."
+        return "Scenario is no longer valid. An invalidation rule was triggered."
     }
 }
 
@@ -39,7 +39,7 @@ func reviewOutcomeColor(_ outcome: ReviewOutcome) -> Color {
     }
 }
 
-func reviewOutcomeThesisStatus(_ outcome: ReviewOutcome) -> ThesisStatus? {
+func reviewOutcomeScenarioStatus(_ outcome: ReviewOutcome) -> ScenarioStatus? {
     switch outcome {
     case .reinforce: return nil
     case .revise: return nil
@@ -77,7 +77,7 @@ struct ReviewWizardView: View {
     
     // MARK: - Properties
     
-    let thesis: Thesis
+    let scenario: Scenario
     let onComplete: () -> Void
     
     // MARK: - State
@@ -152,7 +152,7 @@ struct ReviewWizardView: View {
                 completeReview()
             }
         } message: {
-            Text("This will create a review log entry and update the thesis. Continue?")
+            Text("This will create a review log entry and update the scenario. Continue?")
         }
     }
     
@@ -233,29 +233,29 @@ struct ReviewWizardView: View {
     
     private var overviewStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Thesis info
+            // Scenario info
             GroupBox {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Image(systemName: thesis.thesisType.iconName)
-                            .foregroundStyle(thesisTypeColor)
-                        Text(thesis.title)
+                        Image(systemName: scenario.scenarioType.iconName)
+                            .foregroundStyle(scenarioTypeColor)
+                        Text(scenario.title)
                             .font(.headline)
                         Spacer()
-                        Text(thesis.status.displayName)
+                        Text(scenario.status.displayName)
                             .font(.caption)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(thesisStatusColor.opacity(0.15))
-                            .foregroundStyle(thesisStatusColor)
+                            .background(scenarioStatusColor.opacity(0.15))
+                            .foregroundStyle(scenarioStatusColor)
                             .clipShape(Capsule())
                     }
                     
-                    Text(thesis.thesisStatement)
+                    Text(scenario.scenarioStatement)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     
-                    if let lastReview = thesis.lastReviewedAt {
+                    if let lastReview = scenario.lastReviewedAt {
                         Text("Last reviewed: \(lastReview.formatted(date: .abbreviated, time: .shortened))")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
@@ -284,9 +284,9 @@ struct ReviewWizardView: View {
             
             // Quick stats
             HStack(spacing: 24) {
-                statBox(title: "Key Drivers", value: "\(thesis.keyDrivers.count)", icon: "arrow.up.forward")
-                statBox(title: "Invalidation Rules", value: "\(thesis.invalidationRules.count)", icon: "xmark.circle")
-                statBox(title: "Log Entries", value: "\(thesis.logEntriesCount)", icon: "note.text")
+                statBox(title: "Key Drivers", value: "\(scenario.keyDrivers.count)", icon: "arrow.up.forward")
+                statBox(title: "Invalidation Rules", value: "\(scenario.invalidationRules.count)", icon: "xmark.circle")
+                statBox(title: "Log Entries", value: "\(scenario.logEntriesCount)", icon: "note.text")
             }
         }
     }
@@ -514,15 +514,15 @@ struct ReviewWizardView: View {
                 // Confidence
                 summaryRow(
                     label: "Confidence",
-                    value: "\(thesis.confidenceCurrent ?? 3) → \(newConfidence)",
-                    isWarning: newConfidence < (thesis.confidenceCurrent ?? 3)
+                    value: "\(scenario.confidenceCurrent ?? 3) → \(newConfidence)",
+                    isWarning: newConfidence < (scenario.confidenceCurrent ?? 3)
                 )
                 
                 // Status change (if invalidating)
                 if selectedOutcome == .invalidate {
                     summaryRow(
                         label: "Status Change",
-                        value: "\(thesis.status.displayName) → Invalidated",
+                        value: "\(scenario.status.displayName) → Invalidated",
                         isWarning: true
                     )
                 }
@@ -598,9 +598,9 @@ struct ReviewWizardView: View {
     // MARK: - Helpers
     
     private func initializeAssessments() {
-        driverAssessments = thesis.keyDrivers.map { DriverAssessment(driver: $0) }
-        ruleChecks = thesis.invalidationRules.map { RuleCheck(rule: $0) }
-        newConfidence = thesis.confidenceCurrent ?? 3
+        driverAssessments = scenario.keyDrivers.map { DriverAssessment(driver: $0) }
+        ruleChecks = scenario.invalidationRules.map { RuleCheck(rule: $0) }
+        newConfidence = scenario.confidenceCurrent ?? 3
     }
     
     private var suggestedOutcome: ReviewOutcome? {
@@ -616,9 +616,9 @@ struct ReviewWizardView: View {
         }
     }
     
-    /// Color for the thesis type
-    private var thesisTypeColor: Color {
-        switch thesis.thesisType {
+    /// Color for the scenario type
+    private var scenarioTypeColor: Color {
+        switch scenario.scenarioType {
         case .bull: return .green
         case .bear: return .red
         case .base: return .blue
@@ -626,9 +626,9 @@ struct ReviewWizardView: View {
         }
     }
     
-    /// Color for the thesis status
-    private var thesisStatusColor: Color {
-        switch thesis.status {
+    /// Color for the scenario status
+    private var scenarioStatusColor: Color {
+        switch scenario.status {
         case .active: return .green
         case .onHold: return .orange
         case .invalidated: return .red
@@ -662,7 +662,7 @@ struct ReviewWizardView: View {
         body += "\n"
         
         // Confidence
-        let oldConfidence = thesis.confidenceCurrent ?? 3
+        let oldConfidence = scenario.confidenceCurrent ?? 3
         if newConfidence != oldConfidence {
             body += "### Confidence Update\n"
             body += "Changed from \(oldConfidence)/5 to \(newConfidence)/5\n\n"
@@ -688,20 +688,20 @@ struct ReviewWizardView: View {
             occurredAt: Date(),
             isSystemGenerated: false
         )
-        logEntry.thesis = thesis
+        logEntry.scenario = scenario
         modelContext.insert(logEntry)
         
-        // Update thesis
-        thesis.confidenceCurrent = newConfidence
-        thesis.lastReviewedAt = Date()
+        // Update scenario
+        scenario.confidenceCurrent = newConfidence
+        scenario.lastReviewedAt = Date()
         
         // Update status if invalidating
         if selectedOutcome == .invalidate {
-            _ = thesis.updateStatus(.invalidated)
+            _ = scenario.updateStatus(.invalidated)
         }
         
         // Update review reminder if exists
-        if let reminder = thesis.reviewReminder {
+        if let reminder = scenario.reviewReminder {
             reminder.completeReview()
         }
         
@@ -847,15 +847,15 @@ private struct OutcomeSelectionCard: View {
 // MARK: - Preview
 
 #Preview {
-    let thesis = Thesis(
-        thesisType: .bull,
+    let scenario = Scenario(
+        scenarioType: .bull,
         title: "Revenue Growth Acceleration",
-        thesisStatement: "Company will see 20% revenue growth driven by new product launches.",
+        scenarioStatement: "Company will see 20% revenue growth driven by new product launches.",
         keyDrivers: ["New product adoption", "Market expansion", "Pricing power"],
         invalidationRules: ["Revenue growth falls below 10%", "Market share loss > 5%"]
     )
     
-    return ReviewWizardView(thesis: thesis) { }
-        .modelContainer(for: [Thesis.self, LogEntry.self, Tag.self], inMemory: true)
+    return ReviewWizardView(scenario: scenario) { }
+        .modelContainer(for: [Scenario.self, LogEntry.self, Tag.self], inMemory: true)
 }
 

@@ -1,14 +1,14 @@
 /**
  AssetDetailView displays the detail view for a selected asset.
  
- Shows asset information header and lists all theses for the asset,
- allowing the user to select a thesis for detailed viewing.
+ Shows asset information header and lists all research questions for the asset,
+ allowing the user to select a research question for detailed viewing.
  */
 
 import SwiftUI
 import SwiftData
 
-/// Detail view for a selected asset showing its theses
+/// Detail view for a selected asset showing its research questions
 struct AssetDetailView: View {
     // MARK: - Environment
     
@@ -17,20 +17,20 @@ struct AssetDetailView: View {
     // MARK: - Properties
     
     @Bindable var asset: Asset
-    @Binding var selectedThesis: Thesis?
+    @Binding var selectedResearchQuestion: ResearchQuestion?
     
     // MARK: - State
     
-    @State private var showingAddThesis = false
+    @State private var showingAddQuestion = false
     @State private var showingEditAsset = false
     @State private var searchText = ""
-    @State private var statusFilter: ThesisStatus? = nil
+    @State private var statusFilter: ResearchQuestionStatus? = nil
     
     // MARK: - Computed Properties
     
-    /// Filtered and sorted theses
-    private var filteredTheses: [Thesis] {
-        var result = asset.theses ?? []
+    /// Filtered and sorted research questions
+    private var filteredQuestions: [ResearchQuestion] {
+        var result = asset.researchQuestions ?? []
         
         // Filter by status
         if let status = statusFilter {
@@ -40,9 +40,9 @@ struct AssetDetailView: View {
         // Filter by search
         if !searchText.isEmpty {
             let searchLower = searchText.lowercased()
-            result = result.filter { thesis in
-                thesis.title.lowercased().contains(searchLower) ||
-                thesis.thesisStatement.lowercased().contains(searchLower)
+            result = result.filter { question in
+                question.questionText.lowercased().contains(searchLower) ||
+                (question.context?.lowercased().contains(searchLower) ?? false)
             }
         }
         
@@ -59,17 +59,27 @@ struct AssetDetailView: View {
             
             Divider()
             
-            // Theses list
-            if (asset.theses ?? []).isEmpty {
-                EmptyStateView.noTheses {
-                    showingAddThesis = true
+            // Inline search bar
+            if !(asset.researchQuestions ?? []).isEmpty {
+                searchBar
+                Divider()
+            }
+            
+            // Research questions list
+            if (asset.researchQuestions ?? []).isEmpty {
+                EmptyStateView(
+                    iconName: "questionmark.circle",
+                    title: "No Research Questions",
+                    description: "Start by adding a research question about this asset.",
+                    actionTitle: "Add Research Question"
+                ) {
+                    showingAddQuestion = true
                 }
             } else {
-                thesesList
+                questionsList
             }
         }
         .navigationTitle(asset.ticker)
-        .searchable(text: $searchText, prompt: "Search theses")
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 // Status filter menu
@@ -78,7 +88,7 @@ struct AssetDetailView: View {
                         statusFilter = nil
                     }
                     Divider()
-                    ForEach(ThesisStatus.allCases) { status in
+                    ForEach(ResearchQuestionStatus.allCases) { status in
                         Button {
                             statusFilter = status
                         } label: {
@@ -93,16 +103,16 @@ struct AssetDetailView: View {
                     Label("Filter", systemImage: statusFilter == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
                 }
                 
-                Button(action: { showingAddThesis = true }) {
-                    Label("Add Thesis", systemImage: "plus")
+                Button(action: { showingAddQuestion = true }) {
+                    Label("Add Research Question", systemImage: "plus")
                 }
             }
         }
-        .sheet(isPresented: $showingAddThesis) {
-            ThesisFormView(mode: .add(asset: asset)) { newThesis in
-                modelContext.insert(newThesis)
-                newThesis.asset = asset
-                selectedThesis = newThesis
+        .sheet(isPresented: $showingAddQuestion) {
+            ResearchQuestionFormView(mode: .add) { newQuestion in
+                modelContext.insert(newQuestion)
+                newQuestion.asset = asset
+                selectedResearchQuestion = newQuestion
             }
         }
         .sheet(isPresented: $showingEditAsset) {
@@ -111,6 +121,27 @@ struct AssetDetailView: View {
     }
     
     // MARK: - Subviews
+    
+    /// Inline search bar to avoid duplicate toolbar search items
+    private var searchBar: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("Search research questions", text: $searchText)
+                .textFieldStyle(.plain)
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(8)
+        .background(Color(nsColor: .controlBackgroundColor))
+    }
     
     private var assetHeader: some View {
         HStack(spacing: 16) {
@@ -141,7 +172,7 @@ struct AssetDetailView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    Text("• \(asset.thesesCount) \(asset.thesesCount == 1 ? "thesis" : "theses")")
+                    Text("• \(asset.researchQuestionsCount) \(asset.researchQuestionsCount == 1 ? "question" : "questions")")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -161,21 +192,21 @@ struct AssetDetailView: View {
         .background(Color(nsColor: .controlBackgroundColor))
     }
     
-    private var thesesList: some View {
-        List(selection: $selectedThesis) {
-            if filteredTheses.isEmpty && !searchText.isEmpty {
-                Text("No matching theses")
+    private var questionsList: some View {
+        List(selection: $selectedResearchQuestion) {
+            if filteredQuestions.isEmpty && !searchText.isEmpty {
+                Text("No matching research questions")
                     .foregroundStyle(.secondary)
                     .padding()
             } else {
-                ForEach(filteredTheses) { thesis in
-                    ThesisRowView(thesis: thesis)
-                        .tag(thesis)
+                ForEach(filteredQuestions) { question in
+                    ResearchQuestionRowView(question: question)
+                        .tag(question)
                         .contextMenu {
-                            thesisContextMenu(for: thesis)
+                            questionContextMenu(for: question)
                         }
                 }
-                .onDelete(perform: deleteTheses)
+                .onDelete(perform: deleteQuestions)
             }
         }
         .listStyle(.inset)
@@ -184,7 +215,7 @@ struct AssetDetailView: View {
     // MARK: - Context Menu
     
     @ViewBuilder
-    private func thesisContextMenu(for thesis: Thesis) -> some View {
+    private func questionContextMenu(for question: ResearchQuestion) -> some View {
         Button {
             // Edit - handled elsewhere
         } label: {
@@ -194,11 +225,11 @@ struct AssetDetailView: View {
         Divider()
         
         Menu("Change Status") {
-            ForEach(ThesisStatus.allCases) { status in
+            ForEach(ResearchQuestionStatus.allCases) { status in
                 Button {
-                    changeThesisStatus(thesis, to: status)
+                    question.status = status
                 } label: {
-                    if thesis.status == status {
+                    if question.status == status {
                         Label(status.displayName, systemImage: "checkmark")
                     } else {
                         Text(status.displayName)
@@ -210,7 +241,7 @@ struct AssetDetailView: View {
         Divider()
         
         Button(role: .destructive) {
-            deleteThesis(thesis)
+            deleteQuestion(question)
         } label: {
             Label("Delete", systemImage: "trash")
         }
@@ -218,58 +249,41 @@ struct AssetDetailView: View {
     
     // MARK: - Actions
     
-    private func deleteTheses(at offsets: IndexSet) {
+    private func deleteQuestions(at offsets: IndexSet) {
         for index in offsets {
-            let thesis = filteredTheses[index]
-            if selectedThesis == thesis {
-                selectedThesis = nil
+            let question = filteredQuestions[index]
+            if selectedResearchQuestion == question {
+                selectedResearchQuestion = nil
             }
-            modelContext.delete(thesis)
+            modelContext.delete(question)
         }
     }
     
-    private func deleteThesis(_ thesis: Thesis) {
-        if selectedThesis == thesis {
-            selectedThesis = nil
+    private func deleteQuestion(_ question: ResearchQuestion) {
+        if selectedResearchQuestion == question {
+            selectedResearchQuestion = nil
         }
-        modelContext.delete(thesis)
-    }
-    
-    private func changeThesisStatus(_ thesis: Thesis, to newStatus: ThesisStatus) {
-        // Update status and get the old status for logging
-        if let oldStatus = thesis.updateStatus(newStatus) {
-            // Create auto-generated log entry for the status change
-            let logEntry = LogEntry.createStatusChangeLog(
-                fromStatus: oldStatus,
-                toStatus: newStatus
-            )
-            modelContext.insert(logEntry)
-            logEntry.thesis = thesis
-        }
+        modelContext.delete(question)
     }
 }
 
-// MARK: - Thesis Row View
+// MARK: - Research Question Row View
 
-/// Row view for displaying a thesis in the list
-struct ThesisRowView: View {
-    let thesis: Thesis
+/// Row view for displaying a research question in the list
+struct ResearchQuestionRowView: View {
+    let question: ResearchQuestion
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Title and type/status
+            // Question text and status
             HStack {
-                // Type icon
-                Image(systemName: thesis.thesisType.iconName)
-                    .foregroundStyle(typeColor)
+                Image(systemName: question.status.iconName)
+                    .foregroundStyle(statusColor)
                     .font(.body)
                 
-                Text(thesis.title)
+                Text(question.questionText)
                     .font(.headline)
-                    .lineLimit(1)
-                
-                // Review due badge
-                ReviewDueBadge(reminder: thesis.reviewReminder)
+                    .lineLimit(2)
                 
                 Spacer()
                 
@@ -277,30 +291,32 @@ struct ThesisRowView: View {
                 statusBadge
             }
             
-            // Thesis statement preview
-            Text(thesis.thesisStatement)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+            // Context preview
+            if let context = question.context, !context.isEmpty {
+                Text(context)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
             
             // Metadata row
             HStack(spacing: 12) {
-                // Confidence
-                if let confidence = thesis.confidence {
+                // Priority
+                if let priority = question.priority {
                     HStack(spacing: 4) {
-                        Image(systemName: "gauge")
+                        Image(systemName: "star.fill")
                             .font(.caption)
-                        Text(confidence.shortLabel)
+                        Text("\(priority)/5")
                             .font(.caption)
                     }
                     .foregroundStyle(.secondary)
                 }
                 
-                // Log entries count
+                // Scenarios count
                 HStack(spacing: 4) {
-                    Image(systemName: "note.text")
+                    Image(systemName: "arrow.up.arrow.down.circle")
                         .font(.caption)
-                    Text("\(thesis.logEntriesCount)")
+                    Text("\(question.scenariosCount)")
                         .font(.caption)
                 }
                 .foregroundStyle(.secondary)
@@ -308,7 +324,7 @@ struct ThesisRowView: View {
                 Spacer()
                 
                 // Last updated
-                Text(thesis.updatedAt.formatted(date: .abbreviated, time: .omitted))
+                Text(question.updatedAt.formatted(date: .abbreviated, time: .omitted))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -316,20 +332,11 @@ struct ThesisRowView: View {
         .padding(.vertical, 4)
     }
     
-    private var typeColor: Color {
-        switch thesis.thesisType {
-        case .bull: return .green
-        case .bear: return .red
-        case .base: return .blue
-        case .custom: return .purple
-        }
-    }
-    
     private var statusBadge: some View {
         HStack(spacing: 4) {
-            Image(systemName: thesis.status.iconName)
+            Image(systemName: question.status.iconName)
                 .font(.caption2)
-            Text(thesis.status.displayName)
+            Text(question.status.displayName)
                 .font(.caption)
         }
         .padding(.horizontal, 8)
@@ -340,11 +347,10 @@ struct ThesisRowView: View {
     }
     
     private var statusColor: Color {
-        switch thesis.status {
-        case .active: return .green
-        case .onHold: return .orange
-        case .invalidated: return .red
-        case .archived: return .gray
+        switch question.status {
+        case .open: return .blue
+        case .answered: return .green
+        case .parked: return .gray
         }
     }
 }
@@ -352,10 +358,12 @@ struct ThesisRowView: View {
 // MARK: - Preview
 
 #Preview {
-    AssetDetailView(
-        asset: Asset(ticker: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", currency: "USD"),
-        selectedThesis: .constant(nil)
+    let asset = Asset(ticker: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", currency: "USD")
+    return AssetDetailView(
+        asset: asset,
+        selectedResearchQuestion: .constant(nil)
     )
-    .modelContainer(for: [Asset.self, Thesis.self, ReviewReminder.self], inMemory: true)
+    .modelContainer(for: [Asset.self, ResearchQuestion.self, Scenario.self, ReviewReminder.self], inMemory: true)
 }
+
 

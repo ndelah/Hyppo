@@ -1,5 +1,5 @@
 /**
- Tag model for categorizing assets, theses, log entries, and evidence.
+ Tag model for categorizing assets, scenarios, log entries, and evidence.
  
  Tags provide a flexible way to organize and filter content
  across the application using user-defined labels.
@@ -32,8 +32,8 @@ final class Tag {
     /// Assets associated with this tag
     @Relationship(inverse: \Asset.tags) var assets: [Asset]?
     
-    /// Theses associated with this tag
-    @Relationship(inverse: \Thesis.tags) var theses: [Thesis]?
+    /// Scenarios associated with this tag
+    @Relationship(inverse: \Scenario.tags) var scenarios: [Scenario]?
     
     /// Log entries associated with this tag
     @Relationship(inverse: \LogEntry.tags) var logEntries: [LogEntry]?
