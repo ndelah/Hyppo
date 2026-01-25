@@ -2,7 +2,8 @@
  Hyppo application entry point.
  
  Configures the SwiftData model container with all entity types
- and installs the root navigation shell. Provides Settings window access.
+ and installs the root navigation shell. Provides Settings window access
+ and Quick Capture HUD functionality.
  */
 
 import SwiftUI
@@ -10,6 +11,10 @@ import SwiftData
 
 @main
 struct HyppoApp: App {
+    // MARK: - Quick Capture Service
+    
+    @StateObject private var quickCaptureService = QuickCaptureService.shared
+    
     // MARK: - Initialization
     
     init() {
@@ -116,6 +121,10 @@ struct HyppoApp: App {
         // Main application window
         WindowGroup {
             MainNavigationView()
+                .sheet(isPresented: $quickCaptureService.isHUDVisible) {
+                    QuickCaptureHUD(service: quickCaptureService)
+                        .modelContainer(sharedModelContainer)
+                }
         }
         .modelContainer(sharedModelContainer)
         .windowStyle(.automatic)
@@ -137,6 +146,13 @@ struct HyppoApp: App {
                     NotificationCenter.default.post(name: .addLogEntry, object: nil)
                 }
                 .keyboardShortcut("l", modifiers: [.command, .shift])
+                
+                Divider()
+                
+                Button("Quick Capture") {
+                    quickCaptureService.showHUD()
+                }
+                .keyboardShortcut("h", modifiers: [.command, .shift])
             }
             
             CommandGroup(after: .sidebar) {
