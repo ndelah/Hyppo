@@ -119,8 +119,8 @@ Asset (1) ───────────────────────�
 
 ### 8.3 End-to-end flows and required fields
 
-#### 🟢 Flow 1 — Frame the Problem (Start Research)
-*Status: Data Model Complete, Views In Progress*
+#### 🟡 Flow 1 — Frame the Problem (Start Research)
+*Status: Data Model Complete, Views In Progress — ⚠️ NEEDS CLARIFICATION*
 
 **User flow:** Add Asset → Create Research Question → Define Hypothesis → Add Drivers → Add Kill Criteria.
 
@@ -134,6 +134,15 @@ Asset (1) ───────────────────────�
    - Add 2-3 Drivers (minimum required).
    - Add 1+ Kill Criteria.
 5) View: Research Question detail shows thesis, drivers, kill criteria.
+
+**⚠️ Open Questions (Driver Outline Editor):**
+- Should drivers be edited **inline** in ResearchQuestionFormView, or in a **separate modal/sheet**?
+- Is **drag-and-drop reordering** required, or are move up/down buttons sufficient?
+- For sub-drivers: **visually indented** with expand/collapse toggles, or **flat list** with parent labels?
+
+**⚠️ Open Questions (Research Wizard):**
+- Is this a **replacement** for ResearchQuestionFormView, or an **optional guided mode** ("Start with Wizard" button)?
+- How strict should validation be? Can users **skip steps**, or must they complete all before saving?
 
 **Fields required (UI + backend)**
 - **ResearchQuestion**
@@ -185,7 +194,7 @@ Asset (1) ───────────────────────�
   - Backend: evidenceId, driverId (nullable), researchQuestionId (fallback), sentimentRaw, sourceTypeRaw, createdAt, updatedAt, capturedAt, evidenceType, urlRaw, urlNormalized, domain, sourceTitle, snippetText, annotationText.
 
 #### 🟡 Flow 4 — Interpret Results (Conviction Assessment)
-*Status: Data Model Complete, Views Pending*
+*Status: Data Model Complete, Views Pending — ⚠️ NEEDS CLARIFICATION*
 
 **User flow:** View Conviction Health Dashboard → Identify blind spots → Trigger review if needed.
 
@@ -204,6 +213,11 @@ Asset (1) ───────────────────────�
   - Per Driver: supportingCount, contradictingCount, neutralCount.
   - Overall: totalSupporting, totalContradicting, driversWithNoEvidence.
   - Display: conviction meter, blind spot alerts.
+
+**⚠️ Open Questions (Conviction Health Dashboard):**
+- **Visual style**: Simple text counts (e.g., "3 supporting, 1 contradicting") vs. progress bars vs. mini bar charts?
+- **Placement**: Embedded in ResearchQuestionDetailView as a collapsible section, or a separate tab/view?
+- **Blind spot alerts**: Inline warning icons next to drivers, or a dedicated "Blind Spots" section at the top?
 
 #### 🟢 Flow 5 — Review and Decide
 *Status: Fully Specified & Implemented (needs Conviction Health integration)*
@@ -333,13 +347,18 @@ To measure the effectiveness of Hyppo and validate the McKinsey Mind workflow:
 - Multiple tickers per research question (many-to-many) — future enhancement.
 
 ## 14. Next Steps
-1. **Complete Driver Outline Editor** — Collapsible 2-level hierarchy UI for managing Drivers.
-2. **Build Research Wizard** — Guided multi-step flow for Framing and Design phases.
-3. **Build Conviction Health Dashboard** — Visual summary of evidence per Driver.
-4. **Update Quick Capture** — Add Driver destination picker.
-5. **Update Review Wizard** — Integrate Conviction Health display.
-6. **Write Migration Logic** — Transform existing keyDrivers/invalidationRules to new models.
-7. **Update Export** — Include Drivers, Kill Criteria, and evidence sentiment in exports.
+
+### ⚠️ Blocked (Needs Clarification)
+1. **Driver Outline Editor** — Needs UX decisions on inline vs modal editing, drag-drop, hierarchy display.
+2. **Research Wizard** — Needs UX decisions on replacement vs optional mode, validation strictness.
+3. **Conviction Health Dashboard** — Needs UX decisions on visual style, placement, alert display.
+
+### ✅ Ready to Implement
+4. **Update Evidence Form** — Add Driver picker, sentiment picker, sourceType picker.
+5. **Update Quick Capture** — Add Driver destination picker.
+6. **Update Review Wizard** — Integrate Conviction Health display.
+7. **Write Migration Logic** — Transform existing keyDrivers/invalidationRules to new models.
+8. **Update Export** — Include Drivers, Kill Criteria, and evidence sentiment in exports.
 
 ---
 
