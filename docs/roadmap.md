@@ -40,7 +40,6 @@ This document tracks the implementation status of features across different deve
     - [x] Confidence filtering with star-based UI.
     - [x] Date range filtering.
 - [x] **Markdown Export**:
-
     - [x] Export individual scenarios or assets to Markdown.
 
 ## MVP 2: Workflow Support
@@ -71,6 +70,50 @@ This document tracks the implementation status of features across different deve
 - [ ] **Scenario Comparison**:
     - [ ] Side-by-side comparison of drivers and invalidation rules.
 
+## MVP 2.5: McKinsey Mind Framework 🆕
+*Goal: Implement hypothesis-driven research workflow inspired by the McKinsey Mind 5-step process.*
+
+### Data Model (Complete)
+- [x] **Driver Model**: 2-level hierarchy (Drivers and Sub-drivers) with research plan fields.
+    - [x] Parent-child relationships for hierarchical structure.
+    - [x] Validation questions, data sources, and thresholds per driver.
+    - [x] Relationship to ResearchQuestion.
+- [x] **KillCriteria Model**: Falsifiability conditions that would invalidate a thesis.
+    - [x] Threshold and context fields.
+    - [x] Relationship to ResearchQuestion.
+- [x] **Evidence Enhancements**:
+    - [x] `EvidenceSentiment` enum (Supporting, Contradicting, Neutral).
+    - [x] `SourceType` enum (Article, Filing, Earnings Call, Analyst Report, etc.).
+    - [x] Direct linkage from Evidence to Driver (for blind spot detection).
+- [x] **ResearchQuestion Updates**:
+    - [x] Relationships to Drivers and KillCriteria.
+    - [x] Removed deprecated fields (old keyDrivers/invalidationRules arrays).
+
+### Views (In Progress)
+- [ ] **Driver Outline Editor**: Collapsible outline for 2-level Driver hierarchy.
+    - [ ] Add/edit/delete drivers and sub-drivers inline.
+    - [ ] Drag-and-drop reordering.
+    - [ ] Expand/collapse controls.
+- [ ] **Research Wizard**: Guided multi-step wizard for McKinsey workflow.
+    - [ ] Step 1 (Framing): Thesis statement, initial hypothesis, prompt for assumptions.
+    - [ ] Step 2 (Design): Define drivers with validation questions, sources, thresholds.
+    - [ ] Step 3 (Summary): Review research plan before execution.
+- [ ] **Research Plan Table**: Flat tabular view of the issue tree.
+    - [ ] Columns: Driver, Validation Questions, Data Sources, Thresholds, Status.
+    - [ ] Inline editing of cells.
+- [ ] **Conviction Health Dashboard**: Visual summary of evidence balance per driver.
+    - [ ] Supporting vs. contradicting evidence count per driver.
+    - [ ] Blind spot alerts (drivers with zero evidence).
+    - [ ] Overall conviction meter.
+- [ ] **Evidence Form Updates**: Driver picker, sentiment, source type.
+- [ ] **Quick Capture Updates**: Driver destination picker.
+- [ ] **Review Wizard Integration**: Conviction health in review flow.
+
+### Migration
+- [ ] **Data Migration**: Transform existing data to new schema.
+    - [ ] Migrate old keyDrivers strings to Driver objects.
+    - [ ] Migrate old invalidationRules to KillCriteria objects.
+
 ## MVP 3: Premium Features
 *Goal: Add analytical depth and AI-assisted insights.*
 
@@ -86,4 +129,19 @@ This document tracks the implementation status of features across different deve
     - [ ] Price change alerts (trigger reviews on +/- X% moves).
     - [ ] External API option (Yahoo Finance/Alpha Vantage).
 - [ ] **Polished Exports**: Premium investor memo templates.
+
+---
+
+## Current Sprint: McKinsey Mind Views
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Driver Outline Editor | 🟡 In Progress | Collapsible 2-level hierarchy UI |
+| Research Wizard | ⚪️ Pending | Frame + Design steps |
+| Research Plan Table | ⚪️ Pending | Flat alternative to outline |
+| Conviction Health Dashboard | ⚪️ Pending | Evidence roll-up per driver |
+| Evidence Form Updates | ⚪️ Pending | Driver picker, sentiment, sourceType |
+| Quick Capture Driver Picker | ⚪️ Pending | Link evidence directly to driver |
+| Review Wizard Integration | ⚪️ Pending | Show conviction health |
+| Migration Logic | ⚪️ Pending | Existing data transformation |
 

@@ -2,12 +2,16 @@
 ## Statement of Work (macOS)
 
 ## 1. Project summary
-Hyppo is a native macOS application for tracking **investment research questions and scenarios**, not portfolio performance. Users track companies (assets), create research questions, formulate scenarios (e.g., base/bull/bear) to answer those questions, and append timestamped log entries with evidence links, short snippets, and local attachments. The result is a searchable, chronological record of what the user believed, when they believed it, and what information led them to reinforce, revise, or invalidate a scenario.
+Hyppo is a native macOS application for **hypothesis-driven investment research**, not portfolio performance tracking. The app implements a structured research workflow inspired by the McKinsey Mind methodology, guiding users through: Framing the problem → Designing the analysis → Gathering data → Interpreting results → Presenting ideas.
+
+Users track companies (assets), formulate research questions with explicit hypotheses, define **Drivers** (load-bearing assumptions that must be true), specify **Kill Criteria** (falsifiability conditions), and collect evidence linked directly to drivers. The result is a searchable, chronological record of what the user believed, why they believed it, what evidence supported or contradicted their thesis, and how their conviction evolved.
 
 ## 2. Objectives
-- [x] **Fast Capture:** Make research question and scenario capture fast enough for daily use.
+- [x] **Fast Capture:** Make research question and evidence capture fast enough for daily use.
 - [x] **Audit Trail:** Preserve a high-integrity audit trail of beliefs, evidence, and revisions (via timestamped Log Entries).
-- [x] **Scenario Support:** Support multiple scenarios per research question and enable lightweight comparison.
+- [x] **Hypothesis-Driven Structure:** Force users to articulate specific, testable assumptions (Drivers) before gathering data.
+- [x] **Falsifiability:** Require Kill Criteria that define what would prove the thesis wrong.
+- [x] **Blind Spot Detection:** Link evidence to specific Drivers to reveal gaps in research coverage.
 - [x] **Clean UI:** Keep the UI clean even when entries carry rich metadata (using display density and collapsible sections).
 - [x] **Offline & Persistence:** Operate fully offline with robust local persistence (SwiftData) and backups (JSON export/import).
 - [ ] **Premium Path:** Provide a premium upgrade path without bloating core workflows.
@@ -15,18 +19,39 @@ Hyppo is a native macOS application for tracking **investment research questions
 ## 3. Target users and Pareto workflow
 Target users are research-driven retail investors and semi-pro analysts who take notes, read filings/news, and revisit decisions.
 
-The product currently supports this end-to-end workflow:
-1) [x] **Asset Tracking:** Choose/track a company (start research or ongoing coverage).
-2) [x] **Question Formulation:** Formulate a research question (what do I need to understand about this investment?).
-3) [x] **Scenario Creation:** Create scenarios (bull/base/bear) exploring different possible outcomes.
-4) [x] **Evidence Collection:** Collect key evidence (article, filing, note, KPI, quote) via quick capture and clipboard detection.
-5) [x] **Thesis Management:** Write or update scenarios (what must be true; catalysts; risks; invalidation rules).
-6) [x] **Structured Review:** Revisit (scheduled review or prompted by new evidence) and decide: reinforce, revise, or invalidate (via Review Wizard).
+### McKinsey Mind Investment Workflow (5 Steps)
+
+**1. Framing the Problem** — Develop a hypothesis to structure the research.
+- Define the research question (what do I need to understand about this investment?).
+- Formulate an initial hypothesis (thesis statement).
+- Identify key Drivers: "What assumptions must be true for this hypothesis to hold?"
+- Define Kill Criteria: "What data would prove me wrong?"
+
+**2. Designing the Analysis** — Create a research plan to prove/disprove the hypothesis.
+- For each Driver, define:
+  - Validation questions (what specific questions need answers?)
+  - Data sources (filings, earnings calls, industry reports, etc.)
+  - Thresholds (what values would validate or invalidate?)
+- Prioritize drivers by importance and uncertainty.
+
+**3. Gathering Data** — Collect evidence linked to specific Drivers.
+- Use Quick Capture to log articles, filings, KPIs, quotes.
+- Tag each piece of evidence with sentiment (Supporting, Contradicting, Neutral).
+- Link evidence directly to the Driver it validates or challenges.
+
+**4. Interpreting Results** — Assess conviction based on accumulated evidence.
+- Review Conviction Health Dashboard per Driver.
+- Identify blind spots (drivers with no evidence).
+- Trigger structured reviews when evidence materially changes.
+
+**5. Presenting Ideas** — Export structured research memos.
+- Markdown/PDF exports with thesis, drivers, evidence, and conclusion.
+- Timeline of conviction changes and key decision points.
 
 ## 4. Deliverables
 - [x] **macOS App:** Native macOS application (SwiftUI/SwiftData).
 - [x] **Persistence:** Local data model and persistence layer using SwiftData.
-- [x] **Core UI Flows:** Assets, Research Questions, Scenarios, Scenario Detail, Timeline, Global Search, Settings.
+- [x] **Core UI Flows:** Assets, Research Questions, Drivers, Evidence, Timeline, Global Search, Settings.
 - [x] **Export/Import:** Export (JSON, Markdown) and local backup mechanism (JSON import).
 - [ ] **Test Suite:** Test suite and release checklist.
 - [ ] **Documentation:** User documentation: onboarding, privacy statement, help.
@@ -36,7 +61,8 @@ The product currently supports this end-to-end workflow:
 - Automated trading, signals, or buy/sell recommendations.
 - Multi-user collaboration or shared workspaces.
 - Cross-platform clients (iOS/web) during initial phases.
-- Always-on automated web scraping or news ingestion in MVP 1.
+- Always-on automated web scraping or news ingestion.
+- Logic tree visualization (users can create externally if needed).
 
 ## 6. Non-negotiable constraints
 - **Local-only operation:** all core functionality works entirely on-device; no required cloud services.
@@ -46,11 +72,12 @@ The product currently supports this end-to-end workflow:
 ## 7. Core design principles
 - Calm by default: quiet layout with minimal visual noise.
 - Progressive disclosure: show compact summaries first; reveal detail on demand.
-- One primary action per screen: the next step is always obvious (Add Asset / Add Research Question / Add Scenario / Add Log).
+- **Hypothesis-first:** Users must articulate assumptions before gathering data.
+- **Falsifiable by design:** Kill Criteria ensure theses can be disproven.
 - Fast capture: keyboard-first flows, minimal forms, autosaved drafts.
 - Opinionated structure + flexible text: structured fields for drivers/invalidation; freeform notes for nuance.
 - Strong hierarchy: typography and spacing carry meaning; color remains an accent.
-- Consistency: repeat patterns across assets, theses, and logs.
+- Consistency: repeat patterns across assets, research questions, and evidence.
 - Reversibility: undo where practical; confirmations for destructive actions.
 - Local resilience: export and backups are first-class features.
 - Accessibility: keyboard navigation and readable defaults.
@@ -58,163 +85,171 @@ The product currently supports this end-to-end workflow:
 ## 8. System overview
 
 ### 8.1 Core components
-- **UI (SwiftUI):** Assets, Asset Detail, Research Question Detail, Scenario Detail, Add/Edit sheets, Timeline, Global Search, Settings/Export.
+- **UI (SwiftUI):** Assets, Asset Detail, Research Question Detail, Driver Outline, Conviction Health, Evidence Timeline, Global Search, Settings/Export.
 - **Domain layer:** models and business rules (integrity constraints, lifecycle transitions, validation).
-- **Persistence:** SwiftData (or Core Data if advanced requirements emerge), local storage, optional encryption at rest.
+- **Persistence:** SwiftData with relationships: Asset → ResearchQuestion → Driver → Evidence.
 - **Search/indexing:** local full-text search (SQLite FTS or Spotlight where appropriate) plus facets/filters (Entity Type, Tag, Confidence, Date Range).
-- **Capture/attachments:** URL capture, snippet storage, optional local files (PDF/images) stored in the app sandbox.
-
+- **Capture/attachments:** URL capture, snippet storage, evidence sentiment and source type tracking.
 - **Export/backup:** JSON export/import; Markdown exports; versioned backup folder.
-- **Notifications (MVP 2):** local reminders for review cadence.
+- **Notifications:** local reminders for review cadence.
 
 ### 8.2 Core data model (conceptual)
-- **Asset:** a tracked company/security.
-- **Research Question:** an area of inquiry about an asset.
-- **Scenario:** a hypothesis (bull/base/bear/custom) answering a research question. Includes structured fields like Pre-Mortem analysis.
-- **Log Entry:** a point-in-time journal entry attached to a scenario.
 
-- **Evidence:** a link/snippet/KPI/quote attached to a log entry.
-- **Review Reminder:** local schedule metadata for scenario review.
+```
+Asset (1) ──────────────────────────> (N) ResearchQuestion
+                                           │
+                                           ├──> (N) Driver (2-level hierarchy)
+                                           │         │
+                                           │         └──> (N) Evidence
+                                           │
+                                           ├──> (N) KillCriteria
+                                           │
+                                           ├──> (N) LogEntry
+                                           │
+                                           └──> (N) ReviewReminder
+```
+
+- **Asset:** a tracked company/security.
+- **ResearchQuestion:** an area of inquiry about an asset, containing a thesis statement.
+- **Driver:** a load-bearing assumption that must be true for the thesis to hold. Supports 2-level hierarchy (parent driver → sub-drivers).
+- **KillCriteria:** a specific condition that would invalidate the thesis.
+- **Evidence:** a link/snippet/KPI/quote linked to a specific Driver with sentiment (Supporting/Contradicting/Neutral).
+- **LogEntry:** a point-in-time journal entry for tracking research progress.
+- **ReviewReminder:** local schedule metadata for periodic review.
 
 ### 8.3 End-to-end flows and required fields
 
-#### 🟢 Flow 1 — Choose/track a company and formulate research question (start coverage)
-*Status: Fully Specified & Implemented*
+#### 🟢 Flow 1 — Frame the Problem (Start Research)
+*Status: Data Model Complete, Views In Progress*
 
-**User flow:** Open app → Add Asset → Create research question → Create scenario → Add first log → (optional) attach evidence → View timeline.
+**User flow:** Add Asset → Create Research Question → Define Hypothesis → Add Drivers → Add Kill Criteria.
 
 **Steps**
 1) First launch: empty state with Add Asset.
 2) Add Asset: ticker/name (optional tags) → Save.
 3) Add Research Question: question text + context → Save.
-4) Add Scenario: choose type (bull/base/bear) → complete structured scenario → Save.
-5) Add Log Entry: title/body (optional tags/confidence/type) → Save.
-6) Attach Evidence (optional): add URL (optional snippet/annotation) → Save.
-7) View: timeline shows compact markers; expand to read; global search available.
-8) Export/backup (optional): export JSON/Markdown; enable a backup folder.
+4) **Research Wizard Step 1 (Frame):**
+   - Define thesis statement (initial hypothesis).
+   - Prompt: "What assumptions must be true for this hypothesis to hold?"
+   - Add 2-3 Drivers (minimum required).
+   - Add 1+ Kill Criteria.
+5) View: Research Question detail shows thesis, drivers, kill criteria.
 
 **Fields required (UI + backend)**
-- **Asset**
-  - UI: ticker (required), name (required), exchange (optional), currency (optional), tags (optional).
-  - Backend: assetId, tickerNormalized, createdAt, updatedAt, archivedAt (optional), tagIds.
-- **Research Question**
-  - UI: questionText (required), context (optional), priority (optional 1–5), status (default Open).
-  - Backend: questionId, assetId, questionText, context, statusRaw, conclusion, priority, createdAt, updatedAt.
-- **Scenario**
-  - UI: scenarioType (bull/base/bear/custom), title, scenarioStatement (required), keyDrivers (required list), invalidationRules (required list), catalysts (optional), keyRisks (optional), preMortemText (optional), confidence (optional 1–5), status (default Active).
-  - Backend: scenarioId, researchQuestionId, createdAt, updatedAt, lastUpdatedAt, lastReviewedAt (optional), status, statusChangedAt, confidenceCurrent, preMortemText, versionNumber.
-- **Log Entry**
-  - UI: occurredAt (default now), title (required), body (required), entryType (Observation/Update/Risk/Catalyst/Review), tags (optional), confidence (optional 1–5), indicators (evidence count, attachment count).
-  - Backend: logEntryId, scenarioId, createdAt, updatedAt, occurredAt, entryType, tagIds, confidence, isSystemGenerated, isPinned (optional).
-- **Evidence (when attached)**
-  - UI: url (required), displayTitle (optional), evidenceType, snippetText (optional, limited), userAnnotation (optional).
-  - Backend: evidenceId, logEntryId, capturedAt, urlRaw, urlNormalized, domain, sourceTitle, snippetText, annotationText, tagIds.
+- **ResearchQuestion**
+  - UI: questionText (required), context (optional), thesisStatement (required), priority (optional 1–5), status (default Open).
+  - Backend: questionId, assetId, questionText, context, thesisStatement, statusRaw, conclusion, priority, createdAt, updatedAt.
+- **Driver**
+  - UI: text (required), context (optional), validationQuestions (optional list), dataSources (optional list), thresholds (optional list).
+  - Backend: driverId, researchQuestionId, parentDriverId (for sub-drivers), text, context, validationQuestionsData, dataSourcesData, thresholdsData, createdAt, updatedAt.
+- **KillCriteria**
+  - UI: text (required), context (optional), threshold (optional).
+  - Backend: ruleId, researchQuestionId, text, context, threshold, createdAt, updatedAt.
 
-#### 🟢 Flow 2 — Collect key evidence (Quick Capture)
-*Status: Fully Specified (see docs/QuickCapture_Wireframe.md) & Implemented*
+#### 🟡 Flow 2 — Design the Analysis (Research Plan)
+*Status: Data Model Complete, Views Pending*
 
-**User flow:** Copy URL/snippet → Quick Capture → pick destination → Save → index → jump to entry.
+**User flow:** For each Driver → Define validation questions → Identify data sources → Set thresholds.
 
 **Steps**
-1) Start capture: user copies URL/snippet from browser/PDF and triggers Quick Capture (menu bar or shortcut).
-2) Choose destination: pick/create Asset; pick/create Research Question; pick/create Scenario; attach to a new log (default) or an existing log.
-3) Describe evidence: URL (required), auto title (editable), evidence type, snippet/annotation, tags.
-4) Save: write Evidence locally; link to log entry; update scenario lastUpdatedAt; index for search.
-5) Confirm: lightweight confirmation with "Go to entry."
+1) Open Research Question → Navigate to Driver Outline or Research Plan Table.
+2) For each Driver:
+   - Add validation questions (what do I need to answer?).
+   - Add potential data sources (10-K, earnings call, industry report, etc.).
+   - Set thresholds (what values validate or invalidate?).
+3) Prioritize drivers by importance (order in outline).
+4) View: Research Plan Table shows all drivers with their planned analyses.
 
 **Fields required (UI + backend)**
-- **Quick Capture inputs**
-  - UI: url (required), displayTitle (auto/editable), evidenceType (Article/Filing/KPI/Quote/Note), snippetText (optional, limited), userAnnotation (optional), tags (optional).
-  - Backend: evidenceId, createdAt, updatedAt, capturedAt, evidenceType, urlRaw, urlNormalized, domain, sourceTitle, snippetText, annotationText, tagIds.
-- **Destination context selector**
-  - UI: Asset picker/search + inline create (ticker, name, tags); Research Question picker/search + inline create (question text, context); Scenario picker/search + inline create (type, title, minimal scenarioStatement); attachTo (new log by default vs existing log).
-  - Backend: selectedAssetId, selectedResearchQuestionId, selectedScenarioId, selectedLogEntryId (or createNewLogEntry flag).
-- **Auto-created Log Entry (when attachTo=new log)**
-  - UI: log title preset (editable), entryType default Observation, occurredAt default now.
-  - Backend: logEntryId, scenarioId, occurredAt, entryType, isSystemGenerated=false.
-- **KPI evidence (only when evidenceType=KPI)**
-  - UI: metricName (required), value (required), unit (optional), period (e.g., Q3 2025), optional comparison note.
-  - Backend: metricName, metricValue, metricUnit, metricPeriod, metricNote (optional).
-- **File attachments (MVP 2)**
-  - UI: file picker, filename, note.
-  - Backend: attachmentId, parentType (log/evidence), parentId, fileBookmark/pathReference, mimeType, fileSize.
+- **Driver (research plan fields)**
+  - UI: validationQuestions (list of strings), dataSources (list of strings), thresholds (list of strings).
+  - Backend: validationQuestionsData (JSON-encoded), dataSourcesData (JSON-encoded), thresholdsData (JSON-encoded).
 
-#### 🟡 Flow 3 — Write or update scenario (structured hypothesis)
-*Status: Fully Specified & Partially Implemented (Auto-logs active)*
+#### 🟢 Flow 3 — Gather Data (Evidence Collection)
+*Status: Data Model Complete, Views Partially Complete*
 
-**User flow:** Create scenario → later edit → app records revision as an audit log.
+**User flow:** Copy URL/snippet → Quick Capture → Link to Driver → Set sentiment → Save.
 
 **Steps**
-1) Create/open scenario: Asset → Research Question → Scenario list → select or Add Scenario.
-2) Write scenario (first time): fill required structure → Save; optionally create an initial system log entry.
-3) Update scenario: Edit Scenario → change fields → Save.
-4) Record revision: app generates an Update log entry summarizing changes and confidence deltas; re-index.
-5) View: current scenario displayed at the top; timeline shows the revision entry.
+1) Start capture: user copies URL/snippet from browser/PDF and triggers Quick Capture (⌘⇧H).
+2) Choose destination: Asset → Research Question → **Driver** (new: link directly to driver).
+3) Describe evidence: URL, title, evidence type, snippet, annotation.
+4) **Set sentiment:** Supporting, Contradicting, or Neutral.
+5) **Set source type:** Article, Filing, Earnings Call, Analyst Report, etc.
+6) Save: write Evidence linked to Driver; update timestamps; index for search.
+7) Confirm: lightweight confirmation with "Go to entry."
 
 **Fields required (UI + backend)**
-- **Scenario (structured content)**
-  - UI (minimum): scenarioType, title, scenarioStatement, keyDrivers, invalidationRules.
-  - UI (optional): catalysts, keyRisks, preMortemText, confidence (1–5), status.
-  - UI (display-only): lastUpdatedAt, lastReviewedAt, versionNumber.
-  - Backend: scenarioId, researchQuestionId, createdAt, updatedAt, lastUpdatedAt, lastReviewedAt, status, statusChangedAt, confidenceCurrent, preMortemText, versionNumber.
-- **Revision inputs (when editing)**
-  - UI: revisionNote (short "what/why changed"), effectiveDate (default now).
-  - Backend: editedAt, editedFrom (manual vs review), changedFieldKeys, previousVersionNumber.
-- **Automatic revision Log Entry (system generated)**
-  - UI (display): entryType=Update, diffSummary, confidenceBefore/After (if changed), related evidence links.
-  - Backend: logEntryId, scenarioId, occurredAt, entryType=Update, isSystemGenerated=true, diffSummaryText, confidenceBefore, confidenceAfter, relatedEvidenceIds.
+- **Evidence**
+  - UI: url (required for non-notes), displayTitle (auto/editable), evidenceType, snippetText (optional), annotationText (optional), **sentiment** (required), **sourceType** (optional), **driver** (recommended).
+  - Backend: evidenceId, driverId (nullable), researchQuestionId (fallback), sentimentRaw, sourceTypeRaw, createdAt, updatedAt, capturedAt, evidenceType, urlRaw, urlNormalized, domain, sourceTitle, snippetText, annotationText.
 
-#### 🟢 Flow 4 — Revisit (review and decide)
-*Status: Fully Specified & Implemented*
+#### 🟡 Flow 4 — Interpret Results (Conviction Assessment)
+*Status: Data Model Complete, Views Pending*
 
-**User flow:** Trigger review → see a compact snapshot → choose outcome → answer minimal prompts → commit a review log.
+**User flow:** View Conviction Health Dashboard → Identify blind spots → Trigger review if needed.
 
 **Steps**
-1) Trigger review: scheduled notification (MVP 2) or manual Review button; optionally "Review now" after evidence capture.
-2) Review pack: scenario summary + recent logs + recent evidence + current status/confidence.
+1) Open Research Question → View Conviction Health Dashboard.
+2) See per-driver breakdown:
+   - Count of supporting evidence.
+   - Count of contradicting evidence.
+   - Neutral evidence noted separately.
+3) Identify blind spots: Drivers with zero evidence flagged.
+4) Review conviction: Overall balance suggests confidence level.
+5) If evidence materially changes conviction, trigger Review Wizard.
+
+**Fields required (UI + backend)**
+- **Conviction Health (computed)**
+  - Per Driver: supportingCount, contradictingCount, neutralCount.
+  - Overall: totalSupporting, totalContradicting, driversWithNoEvidence.
+  - Display: conviction meter, blind spot alerts.
+
+#### 🟢 Flow 5 — Review and Decide
+*Status: Fully Specified & Implemented (needs Conviction Health integration)*
+
+**User flow:** Trigger review → See conviction health → Choose outcome → Commit review log.
+
+**Steps**
+1) Trigger review: scheduled notification or manual Review button.
+2) **Review pack:** Research Question summary + **Conviction Health per Driver** + recent evidence.
 3) Decide: Reinforce / Revise / Invalidate.
 4) Guided prompts: minimal structured answers for the chosen outcome.
-5) Commit: create Review log entry; if revise, update scenario and increment version; if invalidate, set status and timestamp; update lastReviewedAt and next reminder.
-6) Return: highlight the review entry on the timeline.
+5) Commit: create Review log entry; update confidence and status as needed.
 
 **Fields required (UI + backend)**
-- **Review trigger and schedule (MVP 2)**
-  - UI: reviewCadence, nextReviewDueAt, snooze, disable reminders.
-  - Backend: reminderId, scenarioId, scheduleRule, nextReviewDueAt, lastNotifiedAt, isEnabled.
-- **Review pack (snapshot)**
-  - UI: scenarioSummary, currentStatus, currentConfidence, lastReviewedAt, recentLogsSinceLastReview, evidenceSinceLastReview.
-  - Backend: derived from occurredAt/capturedAt + scenario.lastReviewedAt.
-- **Decision outcome**
-  - UI: outcome enum (Reinforce, Revise, Invalidate).
-  - Backend: reviewOutcome, statusBefore/statusAfter, confidenceBefore/confidenceAfter.
-- **Prompt answers (structured capture)**
-  - Reinforce UI: whatStrengthened, supportingEvidenceNotes, confidenceAfter.
-  - Revise UI: whatChanged, driverChanged (pick/freeform), riskOrCatalystMoved, inline scenario edits, confidenceAfter.
-  - Invalidate UI: invalidationTriggered (pick/freeform), whatWasMissed, takeaways.
-  - Backend: reviewAnswerPayload (structured JSON), invalidationRuleId or invalidationText, changedDriverKey (optional), lessonsLearnedText.
-- **Review Log Entry (created on commit)**
-  - UI (display): entryType=Review, outcome badge, short summary, evidence links.
-  - Backend: logEntryId, scenarioId, occurredAt, entryType=Review, reviewOutcome, reviewAnswerPayload, relatedEvidenceIds.
-- **Scenario updates resulting from review**
-  - UI: updated status/confidence; updated scenario fields if revised.
-  - Backend: scenario.lastReviewedAt, scenario.lastUpdatedAt, scenario.status/statusChangedAt (if changed), scenario.confidenceCurrent, scenario.versionNumber++ (if revised).
+- Same as existing Review flow, plus:
+- **Conviction Health integration:**
+  - Display per-driver evidence balance in review pack.
+  - Highlight drivers with new contradicting evidence.
+
+#### 🟢 Flow 6 — Present Ideas (Export)
+*Status: Partially Implemented*
+
+**User flow:** Select Research Question → Export to Markdown/PDF.
+
+**Steps**
+1) Open Research Question → Export menu.
+2) Choose format: Markdown, PDF, JSON.
+3) Export includes: Thesis, Drivers (with sub-drivers), Kill Criteria, Evidence timeline, Conviction summary.
 
 ## 9. Architecture (macOS-first)
 **Recommended baseline**
 - UI: SwiftUI.
-- Persistence: SwiftData (Core Data if advanced requirements emerge).
+- Persistence: SwiftData with relationships (Asset → ResearchQuestion → Driver → Evidence).
 - Search: local full-text search via SQLite FTS or Spotlight indexing.
 - App structure: MVVM (or TCA if state complexity grows).
 - Import/export: JSON and Markdown; backups compatible with Time Machine.
 - Optional later: CloudKit sync (opt-in), AI via Core ML (local) or remote API (explicit opt-in).
 
 ## 10. Product Phases (Roadmap)
-The development of Hyppo is structured into four distinct phases, moving from core infrastructure to advanced analytical tools. For a detailed list of features and their current implementation status, see [roadmap.md](roadmap.md).
+The development of Hyppo is structured into distinct phases, moving from core infrastructure to the McKinsey Mind framework to advanced analytical tools. For a detailed list of features and their current implementation status, see [roadmap.md](roadmap.md).
 
 ### 🟢 MVP 0: Foundations
 **Goal:** Establish the core navigation shell, local persistence layer, and basic CRUD operations for all primary entities.
 - Focus on macOS-native feel and robust data integrity.
-- Establish the "Asset → Research Question → Scenario → Log" hierarchy.
+- Establish the "Asset → Research Question" hierarchy.
+- *Status: Complete.*
 
 ### 🟢 MVP 1: Core Workflow
 **Goal:** Enable the primary research journaling workflow, allowing users to track their investment logic over time.
@@ -226,7 +261,14 @@ The development of Hyppo is structured into four distinct phases, moving from co
 **Goal:** Streamline the "Quick Capture" of evidence and formalize the "Review Loop" to ensure research stays current.
 - Focus on reducing friction for daily use (Global shortcuts, snippets).
 - Implement guided review wizards to help users update or invalidate their theses.
-- *Status: In Progress — Review Mode, Pre-Mortem, and Quick Capture (⌘⇧H) implemented. Draft support, enhanced evidence (snippets/attachments), and scenario comparison pending.*
+- *Status: Complete — Review Mode, Pre-Mortem, and Quick Capture (⌘⇧H) implemented.*
+
+### 🟡 MVP 2.5: McKinsey Mind Framework
+**Goal:** Implement hypothesis-driven research workflow with Drivers, Kill Criteria, and evidence-to-driver linkage.
+- Data Model: Driver (2-level hierarchy), KillCriteria, Evidence sentiment/sourceType — **Complete.**
+- Views: Driver Outline, Research Wizard, Research Plan Table, Conviction Health — **In Progress.**
+- Migration: Existing data transformation — **Pending.**
+- *Status: In Progress — Data model complete, views in progress.*
 
 ### ⚪️ MVP 3: Premium Features
 **Goal:** Provide advanced analytical depth and AI-assisted insights for power users.
@@ -242,53 +284,62 @@ The development of Hyppo is structured into four distinct phases, moving from co
 - Release notes and help/privacy docs updated.
 
 ## 11.1 Success Metrics
-To measure the effectiveness of Hyppo and validate the workflow improvements identified in the validation report, the following metrics should be tracked (where technically feasible):
+To measure the effectiveness of Hyppo and validate the McKinsey Mind workflow:
 
-### Quick Capture Friction (MVP 2)
-- **Target:** Time from shortcut/keyboard trigger to save completion < 5 seconds
-- **Measurement:** Track capture abandonment rate (started but not completed)
-- **Goal:** < 20% abandonment rate for Quick Capture flows
+### Hypothesis Quality
+- **Target:** 100% of Research Questions have ≥2 Drivers and ≥1 Kill Criteria.
+- **Measurement:** Track Research Questions created with/without complete structure.
+- **Goal:** Enforce structured hypothesis articulation.
 
-### Evidence Collection Rate
-- **Target:** Average evidence items per week per active user
-- **Measurement:** Track evidence creation frequency over time
-- **Goal:** Establish baseline in MVP 1, aim for 2x increase with Quick Capture in MVP 2
+### Evidence Coverage (Blind Spot Detection)
+- **Target:** < 20% of Drivers have zero evidence after 7 days.
+- **Measurement:** Track drivers with evidenceCount = 0.
+- **Goal:** Identify and alert on research blind spots.
+
+### Evidence Balance
+- **Target:** Balanced evidence (not >80% supporting or contradicting).
+- **Measurement:** Track sentiment distribution per Research Question.
+- **Goal:** Prevent confirmation bias.
+
+### Quick Capture Friction
+- **Target:** Time from shortcut to save < 5 seconds.
+- **Measurement:** Track capture abandonment rate.
+- **Goal:** < 20% abandonment rate.
 
 ### Review Completion Rate
-- **Target:** % of scheduled reviews that are completed (not just snoozed)
-- **Measurement:** Track review reminders vs. completed reviews
-- **Goal:** > 70% completion rate for scheduled reviews
+- **Target:** > 70% of scheduled reviews completed.
+- **Measurement:** Track review reminders vs. completed reviews.
 
-### Search Effectiveness
-- **Target:** Users can find relevant information within 3 search queries
-- **Measurement:** Track search result click-through rate
-- **Goal:** > 60% of searches result in user navigating to a result
-
-### Data Retention
-- **Target:** Users maintain active research (at least 1 log entry per month)
-- **Measurement:** Track monthly active users with new log entries
-- **Goal:** > 50% of users remain active after 3 months
-
-**Note:** Metrics collection should respect privacy constraints. Consider opt-in analytics or local-only tracking that users can review.
+**Note:** Metrics collection should respect privacy constraints. Consider opt-in analytics or local-only tracking.
 
 ## 12. Risks and Mitigations
-- **Scope creep:** Lock MVP 1 to journaling + search + export.
+- **Scope creep:** Lock McKinsey framework to core workflow; defer advanced analytics to MVP 3.
+- **Complexity for new users:** Provide guided wizard; allow skipping optional fields.
+- **Migration risk:** Test migration thoroughly; keep backup of old data format.
 - **Storage complexity:** Keep schema minimal; plan migrations early.
 - **Copyright:** Store links and short snippets with attribution.
 - **Premium AI:** Additive and opt-in; never required for core.
 
 ## 13. Parking Lot (Explicitly Deferred)
+- Logic tree visualization (external tools can be used).
 - Stock-specific news dashboard/feed (auto-ingested) tied to tracked theses.
-- Continuous automated internet “scouring” / research collector.
+- Continuous automated internet "scouring" / research collector.
 - Large-scale sentiment analysis of external articles.
 - Cross-device sync and an iPhone companion app.
 - Web app and/or self-hosted server edition.
 - Brokerage integrations and performance overlays.
 - Social/community features.
 - Multi-user teams/workspaces.
+- Multiple tickers per research question (many-to-many) — future enhancement.
 
 ## 14. Next Steps
-Convert MVP 1 into a sprint plan (Sprint 0 setup; Sprint 1 CRUD; Sprint 2 timeline; Sprint 3 search/export) and create wireframes for: Asset list, Research Question detail, Scenario detail, Add Log, Timeline (collapsed/expanded), and Global Search.
+1. **Complete Driver Outline Editor** — Collapsible 2-level hierarchy UI for managing Drivers.
+2. **Build Research Wizard** — Guided multi-step flow for Framing and Design phases.
+3. **Build Conviction Health Dashboard** — Visual summary of evidence per Driver.
+4. **Update Quick Capture** — Add Driver destination picker.
+5. **Update Review Wizard** — Integrate Conviction Health display.
+6. **Write Migration Logic** — Transform existing keyDrivers/invalidationRules to new models.
+7. **Update Export** — Include Drivers, Kill Criteria, and evidence sentiment in exports.
 
 ---
 
@@ -300,5 +351,5 @@ Convert MVP 1 into a sprint plan (Sprint 0 setup; Sprint 1 CRUD; Sprint 2 timeli
   - Use 🟡 for Partially Specified or In Progress.
   - Use ⚪️ for Not Started or Requires Clarification.
 - **Roadmap Alignment:** Ensure the high-level phase statuses in **Section 10** match the granular progress in `roadmap.md`.
-- **Thoroughness:** If you modify a data model or a UI flow, verify if it impacts the "Fields required" or "Steps" listed in this document.
+- **McKinsey Framework:** The 5-step workflow (Frame → Design → Gather → Interpret → Present) is the core abstraction. All features should support this flow.
 
