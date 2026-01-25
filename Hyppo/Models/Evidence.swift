@@ -39,6 +39,12 @@ final class Evidence {
     /// User's annotation or notes about the evidence
     var annotationText: String?
     
+    /// Sentiment of the evidence relative to the driver
+    var sentimentRaw: String
+    
+    /// Source taxonomy of the evidence
+    var sourceTypeRaw: String
+    
     /// Timestamp when the evidence was captured
     var capturedAt: Date
     
@@ -67,7 +73,10 @@ final class Evidence {
     
     // MARK: - Relationships
     
-    /// Parent log entry this evidence belongs to
+    /// Parent driver this evidence belongs to
+    var driver: Driver?
+    
+    /// Parent log entry this evidence belongs to (deprecated, kept for migration)
     var logEntry: LogEntry?
     
     /// Tags associated with this evidence
@@ -88,12 +97,16 @@ final class Evidence {
     init(
         url: String?,
         evidenceType: EvidenceType,
+        sentiment: EvidenceSentiment = .neutral,
+        sourceType: SourceType = .other,
         displayTitle: String? = nil,
         snippetText: String? = nil,
         annotationText: String? = nil
     ) {
         self.evidenceId = UUID()
         self.evidenceTypeRaw = evidenceType.rawValue
+        self.sentimentRaw = sentiment.rawValue
+        self.sourceTypeRaw = sourceType.rawValue
         self.urlRaw = url?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.urlNormalized = url?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         self.domain = Evidence.extractDomain(from: url)
@@ -145,6 +158,18 @@ final class Evidence {
     var evidenceType: EvidenceType {
         get { EvidenceType(rawValue: evidenceTypeRaw) ?? .note }
         set { evidenceTypeRaw = newValue.rawValue }
+    }
+    
+    /// Sentiment as enum
+    var sentiment: EvidenceSentiment {
+        get { EvidenceSentiment(rawValue: sentimentRaw) ?? .neutral }
+        set { sentimentRaw = newValue.rawValue }
+    }
+    
+    /// Source type as enum
+    var sourceType: SourceType {
+        get { SourceType(rawValue: sourceTypeRaw) ?? .other }
+        set { sourceTypeRaw = newValue.rawValue }
     }
     
     /// Returns the best available title for display

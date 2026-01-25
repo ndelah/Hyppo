@@ -33,6 +33,11 @@ struct QuickCaptureState {
     // Destination selection
     var selectedAsset: Asset?
     var selectedResearchQuestion: ResearchQuestion?
+    var selectedDriver: Driver?
+    
+    // Metadata
+    var sentiment: EvidenceSentiment = .neutral
+    var sourceType: SourceType = .other
     
     // UI state
     var isCompactMode: Bool = false
@@ -49,6 +54,8 @@ struct QuickCaptureState {
         snippetText = ""
         annotationText = ""
         evidenceType = .article
+        sentiment = .neutral
+        sourceType = .other
         metricName = ""
         metricValue = ""
         metricUnit = ""
@@ -62,6 +69,7 @@ struct QuickCaptureState {
         resetInputs()
         selectedAsset = nil
         selectedResearchQuestion = nil
+        selectedDriver = nil
         isCompactMode = false
         showInlineAssetForm = false
         showInlineQuestionForm = false
@@ -109,6 +117,9 @@ final class QuickCaptureService: ObservableObject {
     
     /// Last used research question ID
     private var lastQuestionId: UUID?
+    
+    /// Last used driver ID
+    private var lastDriverId: UUID?
     
     /// Last used evidence type
     private var lastEvidenceType: EvidenceType = .article
@@ -242,6 +253,16 @@ final class QuickCaptureService: ObservableObject {
                 state.selectedResearchQuestion = question
             }
         }
+        
+        // Restore last driver
+        if let driverId = lastDriverId, state.selectedResearchQuestion != nil {
+            let descriptor = FetchDescriptor<Driver>(
+                predicate: #Predicate { $0.driverId == driverId }
+            )
+            if let driver = try? modelContext.fetch(descriptor).first {
+                state.selectedDriver = driver
+            }
+        }
     }
     
     // MARK: - Save Operations
@@ -257,6 +278,12 @@ final class QuickCaptureService: ObservableObject {
         // Must have an asset selected
         guard state.selectedAsset != nil else {
             state.validationError = "Please select an asset"
+            return false
+        }
+        
+        // Must have a driver selected
+        guard state.selectedDriver != nil else {
+            state.validationError = "Please select an assumption"
             return false
         }
         
@@ -354,14 +381,14 @@ final class QuickCaptureService: ObservableObject {
         
         // Create evidence
         let evidence = createEvidence()
-        evidence.logEntry = logEntry
+        evidence.driver = state.selectedDriver
         modelContext.insert(evidence)
         
-        // Update log entry's relationship
-        if logEntry.evidenceItems == nil {
-            logEntry.evidenceItems = []
+        // Update driver's relationship
+        if state.selectedDriver?.evidence == nil {
+            state.selectedDriver?.evidence = []
         }
-        logEntry.evidenceItems?.append(evidence)
+        state.selectedDriver?.evidence?.append(evidence)
         
         // Update timestamps
         researchQuestion.updatedAt = Date()
@@ -384,6 +411,7 @@ final class QuickCaptureService: ObservableObject {
             // Remember last used values
             lastAssetId = state.selectedAsset?.assetId
             lastQuestionId = state.selectedResearchQuestion?.questionId
+            lastDriverId = state.selectedDriver?.driverId
             lastEvidenceType = state.evidenceType
             lastSaveTime = Date()
             
@@ -461,9 +489,10 @@ final class QuickCaptureService: ObservableObject {
      Creates the Evidence object from current state.
      */
     private func createEvidence() -> Evidence {
+        let evidence: Evidence
         switch state.evidenceType {
         case .kpi:
-            return Evidence(
+            evidence = Evidence(
                 metricName: state.metricName,
                 metricValue: state.metricValue,
                 metricUnit: state.metricUnit.isEmpty ? nil : state.metricUnit,
@@ -474,14 +503,20 @@ final class QuickCaptureService: ObservableObject {
             )
             
         default:
-            return Evidence(
+            evidence = Evidence(
                 url: state.url.isEmpty ? nil : state.url,
                 evidenceType: state.evidenceType,
+                sentiment: state.sentiment,
+                sourceType: state.sourceType,
                 displayTitle: state.displayTitle.isEmpty ? nil : state.displayTitle,
                 snippetText: state.snippetText.isEmpty ? nil : state.snippetText,
                 annotationText: state.annotationText.isEmpty ? nil : state.annotationText
             )
         }
+        
+        evidence.sentiment = state.sentiment
+        evidence.sourceType = state.sourceType
+        return evidence
     }
 }
 

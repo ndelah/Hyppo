@@ -31,6 +31,7 @@ struct DestinationPicker: View {
     
     @Binding var selectedAsset: Asset?
     @Binding var selectedResearchQuestion: ResearchQuestion?
+    @Binding var selectedDriver: Driver?
     @Binding var showInlineAssetForm: Bool
     @Binding var showInlineQuestionForm: Bool
     
@@ -83,6 +84,11 @@ struct DestinationPicker: View {
             if selectedAsset != nil {
                 questionPickerSection
             }
+            
+            // Driver Picker Section (only if question selected)
+            if selectedResearchQuestion != nil {
+                driverPickerSection
+            }
         }
     }
     
@@ -117,6 +123,7 @@ struct DestinationPicker: View {
                             Button {
                                 selectedAsset = asset
                                 selectedResearchQuestion = nil
+                                selectedDriver = nil
                                 assetSearchText = ""
                             } label: {
                                 HStack {
@@ -201,6 +208,7 @@ struct DestinationPicker: View {
                         // Optional - can skip question selection
                         Button {
                             selectedResearchQuestion = nil
+                            selectedDriver = nil
                             questionSearchText = ""
                         } label: {
                             HStack {
@@ -219,6 +227,7 @@ struct DestinationPicker: View {
                         ForEach(availableQuestions) { question in
                             Button {
                                 selectedResearchQuestion = question
+                                selectedDriver = nil
                                 questionSearchText = ""
                             } label: {
                                 HStack {
@@ -280,6 +289,62 @@ struct DestinationPicker: View {
                     }
                     .buttonStyle(.plain)
                     .help("Create new research question")
+                }
+            }
+        }
+    }
+    // MARK: - Driver Picker Section
+    
+    @ViewBuilder
+    private var driverPickerSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Assumption", systemImage: "target")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            Menu {
+                if let rq = selectedResearchQuestion {
+                    ForEach(rq.topLevelDrivers) { driver in
+                        driverMenu(driver)
+                    }
+                }
+            } label: {
+                HStack {
+                    if let driver = selectedDriver {
+                        Text(driver.title)
+                            .lineLimit(1)
+                    } else {
+                        Text("Select assumption...")
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(Color(.controlBackgroundColor))
+                .cornerRadius(6)
+            }
+            .menuStyle(.borderlessButton)
+        }
+    }
+    
+    @ViewBuilder
+    private func driverMenu(_ driver: Driver) -> some View {
+        Button {
+            selectedDriver = driver
+        } label: {
+            Text(driver.title)
+        }
+        
+        if let subs = driver.subDrivers, !subs.isEmpty {
+            ForEach(subs) { sub in
+                Button {
+                    selectedDriver = sub
+                } label: {
+                    Text("  → \(sub.title)")
                 }
             }
         }
@@ -462,6 +527,7 @@ struct InlineQuestionForm: View {
 struct CompactDestinationDisplay: View {
     let asset: Asset?
     let researchQuestion: ResearchQuestion?
+    let driver: Driver?
     var onTap: () -> Void
     
     var body: some View {
@@ -481,6 +547,14 @@ struct CompactDestinationDisplay: View {
                         Text(question.questionText)
                             .lineLimit(1)
                             .foregroundStyle(.secondary)
+                        
+                        if let driver = driver {
+                            Text("→")
+                                .foregroundStyle(.secondary)
+                            Text(driver.title)
+                                .lineLimit(1)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 } else {
                     Text("Select destination")

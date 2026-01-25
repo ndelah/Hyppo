@@ -93,6 +93,70 @@ enum LogEntryType: String, Codable, CaseIterable, Identifiable {
 // MARK: - Evidence Enums
 
 /**
+ Represents the sentiment of an evidence item relative to its parent driver.
+ */
+enum EvidenceSentiment: String, Codable, CaseIterable, Identifiable {
+    case supporting = "Supporting"
+    case contradicting = "Contradicting"
+    case neutral = "Neutral"
+    
+    var id: String { rawValue }
+    
+    /// Icon name for visual representation
+    var iconName: String {
+        switch self {
+        case .supporting: return "plus.circle.fill"
+        case .contradicting: return "minus.circle.fill"
+        case .neutral: return "circle"
+        }
+    }
+    
+    /// Color identifier for UI theming
+    var colorName: String {
+        switch self {
+        case .supporting: return "green"
+        case .contradicting: return "red"
+        case .neutral: return "gray"
+        }
+    }
+}
+
+/**
+ Represents the source taxonomy for investment research.
+ */
+enum SourceType: String, Codable, CaseIterable, Identifiable {
+    case secFiling = "SEC Filing"
+    case earningsCall = "Earnings Call"
+    case analystReport = "Analyst Report"
+    case newsArticle = "News Article"
+    case industryReport = "Industry Report"
+    case managementCommentary = "Management"
+    case dataProvider = "Data Provider"
+    case personalNote = "Note"
+    case other = "Other"
+    
+    var id: String { rawValue }
+    
+    /// Display label for the source type
+    var displayName: String { rawValue }
+    
+    /// Icon name for visual representation
+    var iconName: String {
+        switch self {
+        case .secFiling: return "doc.text.fill"
+        case .earningsCall: return "phone.fill"
+        case .analystReport: return "chart.line.uptrend.xyaxis"
+        case .newsArticle: return "newspaper.fill"
+        case .industryReport: return "building.2.fill"
+        case .managementCommentary: return "person.2.fill"
+        case .dataProvider: return "server.rack"
+        case .personalNote: return "note.text"
+        case .other: return "ellipsis.circle"
+        }
+    }
+}
+
+/**
  Represents the type of evidence attached to a log entry.
  
  Evidence types help categorize the source material that

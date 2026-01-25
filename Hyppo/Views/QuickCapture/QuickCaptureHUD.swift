@@ -141,9 +141,37 @@ struct QuickCaptureHUD: View {
         DestinationPicker(
             selectedAsset: $service.state.selectedAsset,
             selectedResearchQuestion: $service.state.selectedResearchQuestion,
+            selectedDriver: $service.state.selectedDriver,
             showInlineAssetForm: $service.state.showInlineAssetForm,
             showInlineQuestionForm: $service.state.showInlineQuestionForm
         )
+        
+        // Sentiment and Source Type
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Sentiment")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker("Sentiment", selection: $service.state.sentiment) {
+                    ForEach(EvidenceSentiment.allCases) { s in
+                        Label(s.rawValue, systemImage: s.iconName).tag(s)
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Source")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker("Source", selection: $service.state.sourceType) {
+                    ForEach(SourceType.allCases) { s in
+                        Label(s.displayName, systemImage: s.iconName).tag(s)
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+        }
         
         // Evidence Type Selection
         evidenceTypeSection
@@ -172,7 +200,8 @@ struct QuickCaptureHUD: View {
         // Compact destination display
         CompactDestinationDisplay(
             asset: service.state.selectedAsset,
-            researchQuestion: service.state.selectedResearchQuestion
+            researchQuestion: service.state.selectedResearchQuestion,
+            driver: service.state.selectedDriver
         ) {
             withAnimation(.easeInOut(duration: 0.2)) {
                 service.state.isCompactMode = false

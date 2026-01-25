@@ -42,14 +42,9 @@ struct ResearchQuestionFormView: View {
     // MARK: - State
     
     @State private var questionText: String = ""
-    @State private var context: String = ""
     @State private var thesisStatement: String = ""
-    @State private var keyDrivers: [String] = [""]
-    @State private var invalidationRules: [String] = [""]
-    @State private var catalysts: [String] = []
-    @State private var keyRisks: [String] = []
-    @State private var scenarios: [SimpleScenario] = []
-    @State private var preMortemText: String = ""
+    @State private var drivers: [DriverDTO] = []
+    @State private var killCriteria: [KillCriteriaDTO] = []
     @State private var confidence: Int? = nil
     @State private var priority: Int? = nil
     @State private var validationErrors: [String] = []
@@ -63,14 +58,32 @@ struct ResearchQuestionFormView: View {
         // Pre-populate for edit mode
         if case .edit(let question) = mode {
             _questionText = State(initialValue: question.questionText)
-            _context = State(initialValue: question.context ?? "")
             _thesisStatement = State(initialValue: question.thesisStatement ?? "")
-            _keyDrivers = State(initialValue: question.keyDrivers.isEmpty ? [""] : question.keyDrivers)
-            _invalidationRules = State(initialValue: question.invalidationRules.isEmpty ? [""] : question.invalidationRules)
-            _catalysts = State(initialValue: question.catalysts)
-            _keyRisks = State(initialValue: question.keyRisks)
-            _scenarios = State(initialValue: question.scenarios)
-            _preMortemText = State(initialValue: question.preMortemText ?? "")
+            
+            let dtos = (question.drivers ?? []).filter { $0.parentDriver == nil }.map { d in
+                DriverDTO(
+                    title: d.title,
+                    description: d.driverDescription ?? "",
+                    validationQuestion: d.validationQuestion ?? "",
+                    dataSources: d.dataSources ?? [],
+                    proofThreshold: d.proofThreshold ?? "",
+                    subDrivers: (d.subDrivers ?? []).map { sd in
+                        DriverDTO(
+                            title: sd.title,
+                            description: sd.driverDescription ?? "",
+                            validationQuestion: sd.validationQuestion ?? "",
+                            dataSources: sd.dataSources ?? [],
+                            proofThreshold: sd.proofThreshold ?? "",
+                            isSubDriver: true
+                        )
+                    }
+                )
+            }
+            _drivers = State(initialValue: dtos)
+            
+            let kcDtos = (question.killCriteria ?? []).map { KillCriteriaDTO(condition: $0.condition) }
+            _killCriteria = State(initialValue: kcDtos)
+            
             _confidence = State(initialValue: question.confidenceCurrent)
             _priority = State(initialValue: question.priority)
         }
@@ -101,16 +114,29 @@ struct ResearchQuestionFormView: View {
                     thesisStatementSection
                     
                     // Key drivers section
-                    keyDriversSection
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Assumptions")
+                            .font(.headline)
+                        DriverOutlineView(drivers: $drivers, prompt: "What assumptions must be true?")
+                    }
                     
                     // Invalidation rules section
-                    invalidationRulesSection
-                    
-                    // Scenarios section
-                    scenariosSection
-                    
-                    // Optional sections
-                    optionalSections
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Kill Criteria")
+                            .font(.headline)
+                        ForEach(killCriteria.indices, id: \.self) { index in
+                            HStack {
+                                TextField("Condition", text: $killCriteria[index].condition)
+                                    .textFieldStyle(.roundedBorder)
+                                Button { killCriteria.remove(at: index) } label: {
+                                    Image(systemName: "minus.circle.fill").foregroundStyle(.red)
+                                }.buttonStyle(.plain)
+                            }
+                        }
+                        Button { killCriteria.append(KillCriteriaDTO(condition: "")) } label: {
+                            Label("Add Kill Criteria", systemImage: "plus.circle").font(.caption)
+                        }.buttonStyle(.plain).foregroundStyle(.blue)
+                    }
                     
                     // Confidence section
                     confidenceSection
@@ -393,53 +419,76 @@ struct ResearchQuestionFormView: View {
             return
         }
         
-        // Clean up arrays - remove empty items
-        let cleanDrivers = keyDrivers.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        let cleanRules = invalidationRules.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        let cleanCatalysts = catalysts.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        let cleanRisks = keyRisks.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        let cleanScenarios = scenarios.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        
-        let trimmedContext = context.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedThesis = thesisStatement.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedPreMortem = preMortemText.trimmingCharacters(in: .whitespacesAndNewlines)
         
         // Create or update
         switch mode {
         case .add:
             let question = ResearchQuestion(
                 questionText: trimmedQuestion,
-                context: trimmedContext.isEmpty ? nil : trimmedContext,
                 thesisStatement: trimmedThesis.isEmpty ? nil : trimmedThesis,
-                keyDrivers: cleanDrivers,
-                invalidationRules: cleanRules,
-                catalysts: cleanCatalysts.isEmpty ? nil : cleanCatalysts,
-                keyRisks: cleanRisks.isEmpty ? nil : cleanRisks,
-                scenarios: cleanScenarios.isEmpty ? nil : cleanScenarios,
                 confidence: confidence,
                 priority: priority
             )
-            question.preMortemText = trimmedPreMortem.isEmpty ? nil : trimmedPreMortem
+            saveDriversAndCriteria(to: question)
             onSave(question)
             
         case .edit(let question):
             question.update(
                 questionText: trimmedQuestion,
-                context: trimmedContext.isEmpty ? nil : trimmedContext,
+                context: nil,
                 thesisStatement: trimmedThesis.isEmpty ? nil : trimmedThesis,
-                keyDrivers: cleanDrivers,
-                invalidationRules: cleanRules,
-                catalysts: cleanCatalysts.isEmpty ? nil : cleanCatalysts,
-                keyRisks: cleanRisks.isEmpty ? nil : cleanRisks,
-                scenarios: cleanScenarios.isEmpty ? nil : cleanScenarios,
                 confidence: confidence,
                 priority: priority
             )
-            question.preMortemText = trimmedPreMortem.isEmpty ? nil : trimmedPreMortem
+            
+            // Clear existing and re-save
+            question.drivers?.forEach { modelContext.delete($0) }
+            question.killCriteria?.forEach { modelContext.delete($0) }
+            
+            saveDriversAndCriteria(to: question)
             onSave(question)
         }
         
         dismiss()
+    }
+    
+    private func saveDriversAndCriteria(to rq: ResearchQuestion) {
+        for (index, d) in drivers.enumerated() {
+            if !d.title.isEmpty {
+                let driver = Driver(
+                    title: d.title,
+                    driverDescription: d.description,
+                    position: index,
+                    validationQuestion: d.validationQuestion,
+                    dataSources: d.dataSources,
+                    proofThreshold: d.proofThreshold
+                )
+                driver.researchQuestion = rq
+                
+                for (subIndex, sd) in d.subDrivers.enumerated() {
+                    if !sd.title.isEmpty {
+                        let subDriver = Driver(
+                            title: sd.title,
+                            driverDescription: sd.description,
+                            position: subIndex,
+                            validationQuestion: sd.validationQuestion,
+                            dataSources: sd.dataSources,
+                            proofThreshold: sd.proofThreshold,
+                            parentDriver: driver
+                        )
+                        subDriver.researchQuestion = rq
+                    }
+                }
+            }
+        }
+        
+        for kc in killCriteria {
+            if !kc.condition.isEmpty {
+                let criteria = KillCriteria(condition: kc.condition)
+                criteria.researchQuestion = rq
+            }
+        }
     }
 }
 

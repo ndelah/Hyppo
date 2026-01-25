@@ -51,20 +51,30 @@ func reviewOutcomeResearchQuestionStatus(_ outcome: ReviewOutcome) -> ResearchQu
 
 /// Tracks assessment of each key driver
 struct DriverAssessment: Identifiable {
-    let id = UUID()
-    let driver: String
+    let id: UUID
+    let title: String
     var isStillValid: Bool = true
     var notes: String = ""
+    
+    init(driver: Driver) {
+        self.id = driver.driverId
+        self.title = driver.title
+    }
 }
 
 // MARK: - Rule Check
 
 /// Tracks check of each invalidation rule
 struct RuleCheck: Identifiable {
-    let id = UUID()
-    let rule: String
+    let id: UUID
+    let condition: String
     var isTriggered: Bool = false
     var notes: String = ""
+    
+    init(criteria: KillCriteria) {
+        self.id = criteria.criteriaId
+        self.condition = criteria.condition
+    }
 }
 
 // MARK: - Review Wizard View
@@ -233,6 +243,9 @@ struct ReviewWizardView: View {
     
     private var overviewStep: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // Conviction Health Dashboard
+            ConvictionHealthView(drivers: researchQuestion.drivers ?? [])
+            
             // Research question info
             GroupBox {
                 VStack(alignment: .leading, spacing: 12) {
@@ -287,8 +300,8 @@ struct ReviewWizardView: View {
             
             // Quick stats
             HStack(spacing: 24) {
-                statBox(title: "Key Drivers", value: "\(researchQuestion.keyDrivers.count)", icon: "arrow.up.forward")
-                statBox(title: "Invalidation Rules", value: "\(researchQuestion.invalidationRules.count)", icon: "xmark.circle")
+                statBox(title: "Assumptions", value: "\(researchQuestion.drivers?.count ?? 0)", icon: "target")
+                statBox(title: "Kill Criteria", value: "\(researchQuestion.killCriteria?.count ?? 0)", icon: "xmark.circle")
                 statBox(title: "Log Entries", value: "\(researchQuestion.logEntriesCount)", icon: "note.text")
             }
         }
@@ -329,12 +342,12 @@ struct ReviewWizardView: View {
     
     private var driversStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("For each key driver, assess whether it remains valid:")
+            Text("For each assumption, assess whether it remains valid:")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             
             if driverAssessments.isEmpty {
-                Text("No key drivers defined for this research question.")
+                Text("No assumptions defined for this research question.")
                     .font(.subheadline)
                     .foregroundStyle(.tertiary)
                     .padding()
@@ -347,7 +360,7 @@ struct ReviewWizardView: View {
                 let validCount = driverAssessments.filter { $0.isStillValid }.count
                 HStack {
                     Spacer()
-                    Text("\(validCount) of \(driverAssessments.count) drivers still valid")
+                    Text("\(validCount) of \(driverAssessments.count) assumptions still valid")
                         .font(.caption)
                         .foregroundStyle(validCount == driverAssessments.count ? .green : .orange)
                 }
@@ -359,12 +372,12 @@ struct ReviewWizardView: View {
     
     private var rulesStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Check if any invalidation rules have been triggered:")
+            Text("Check if any kill criteria have been triggered:")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             
             if ruleChecks.isEmpty {
-                Text("No invalidation rules defined for this research question.")
+                Text("No kill criteria defined for this research question.")
                     .font(.subheadline)
                     .foregroundStyle(.tertiary)
                     .padding()
@@ -378,11 +391,11 @@ struct ReviewWizardView: View {
                 HStack {
                     Spacer()
                     if triggeredCount > 0 {
-                        Label("\(triggeredCount) rule(s) triggered!", systemImage: "exclamationmark.triangle.fill")
+                        Label("\(triggeredCount) criteria triggered!", systemImage: "exclamationmark.triangle.fill")
                             .font(.caption)
                             .foregroundStyle(.red)
                     } else {
-                        Label("No rules triggered", systemImage: "checkmark.circle.fill")
+                        Label("No criteria triggered", systemImage: "checkmark.circle.fill")
                             .font(.caption)
                             .foregroundStyle(.green)
                     }
@@ -515,11 +528,11 @@ struct ReviewWizardView: View {
                 // Drivers summary
                 let invalidDrivers = driverAssessments.filter { !$0.isStillValid }
                 summaryRow(
-                    label: "Drivers",
+                    label: "Assumptions",
                     value: driverAssessments.isEmpty
-                        ? "No drivers defined"
+                        ? "No assumptions defined"
                         : (invalidDrivers.isEmpty
-                            ? "All \(driverAssessments.count) drivers valid"
+                            ? "All \(driverAssessments.count) assumptions valid"
                             : "\(invalidDrivers.count) of \(driverAssessments.count) no longer valid"),
                     isWarning: !invalidDrivers.isEmpty
                 )
@@ -527,12 +540,12 @@ struct ReviewWizardView: View {
                 // Rules summary
                 let triggeredRules = ruleChecks.filter { $0.isTriggered }
                 summaryRow(
-                    label: "Invalidation Rules",
+                    label: "Kill Criteria",
                     value: ruleChecks.isEmpty
-                        ? "No rules defined"
+                        ? "No criteria defined"
                         : (triggeredRules.isEmpty
-                            ? "No rules triggered"
-                            : "\(triggeredRules.count) rule(s) triggered"),
+                            ? "No criteria triggered"
+                            : "\(triggeredRules.count) criteria triggered"),
                     isWarning: !triggeredRules.isEmpty
                 )
                 
@@ -623,8 +636,8 @@ struct ReviewWizardView: View {
     // MARK: - Helpers
     
     private func initializeAssessments() {
-        driverAssessments = researchQuestion.keyDrivers.map { DriverAssessment(driver: $0) }
-        ruleChecks = researchQuestion.invalidationRules.map { RuleCheck(rule: $0) }
+        driverAssessments = (researchQuestion.drivers ?? []).map { DriverAssessment(driver: $0) }
+        ruleChecks = (researchQuestion.killCriteria ?? []).map { RuleCheck(criteria: $0) }
         newConfidence = researchQuestion.confidenceCurrent ?? 3
     }
     
@@ -656,10 +669,10 @@ struct ReviewWizardView: View {
         
         // Drivers assessment
         if !driverAssessments.isEmpty {
-            body += "### Key Drivers Assessment\n"
+            body += "### Assumptions Assessment\n"
             for assessment in driverAssessments {
                 let status = assessment.isStillValid ? "✅" : "❌"
-                body += "- \(status) \(assessment.driver)\n"
+                body += "- \(status) \(assessment.title)\n"
                 if !assessment.notes.isEmpty {
                     body += "  - Note: \(assessment.notes)\n"
                 }
@@ -669,10 +682,10 @@ struct ReviewWizardView: View {
         
         // Rules check
         if !ruleChecks.isEmpty {
-            body += "### Invalidation Rules Check\n"
+            body += "### Kill Criteria Check\n"
             for check in ruleChecks {
                 let status = check.isTriggered ? "⚠️ TRIGGERED" : "✓ Not triggered"
-                body += "- \(status): \(check.rule)\n"
+                body += "- \(status): \(check.condition)\n"
                 if !check.notes.isEmpty {
                     body += "  - Note: \(check.notes)\n"
                 }
@@ -747,7 +760,7 @@ private struct DriverAssessmentCard: View {
                 }
                 .buttonStyle(.plain)
                 
-                Text(assessment.driver)
+                Text(assessment.title)
                     .font(.subheadline)
                 
                 Spacer()
@@ -792,7 +805,7 @@ private struct RuleCheckCard: View {
                 }
                 .buttonStyle(.plain)
                 
-                Text(ruleCheck.rule)
+                Text(ruleCheck.condition)
                     .font(.subheadline)
                     .foregroundStyle(ruleCheck.isTriggered ? .red : .primary)
                 
@@ -868,11 +881,9 @@ private struct OutcomeSelectionCard: View {
 #Preview {
     let question = ResearchQuestion(
         questionText: "Can AAPL sustain services revenue growth?",
-        thesisStatement: "Company will see 20% revenue growth driven by new product launches.",
-        keyDrivers: ["New product adoption", "Market expansion", "Pricing power"],
-        invalidationRules: ["Revenue growth falls below 10%", "Market share loss > 5%"]
+        thesisStatement: "Company will see 20% revenue growth driven by new product launches."
     )
     
     return ReviewWizardView(researchQuestion: question) { }
-        .modelContainer(for: [ResearchQuestion.self, LogEntry.self, Tag.self], inMemory: true)
+        .modelContainer(for: [ResearchQuestion.self, LogEntry.self, Tag.self, Driver.self, KillCriteria.self], inMemory: true)
 }

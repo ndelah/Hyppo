@@ -46,6 +46,9 @@ struct EvidenceFormView: View {
     @State private var displayTitle: String = ""
     @State private var snippetText: String = ""
     @State private var annotationText: String = ""
+    @State private var sentiment: EvidenceSentiment = .neutral
+    @State private var sourceType: SourceType = .other
+    @State private var selectedDriver: Driver?
     
     // KPI-specific fields
     @State private var metricName: String = ""
@@ -69,6 +72,9 @@ struct EvidenceFormView: View {
             _displayTitle = State(initialValue: evidence.displayTitle ?? "")
             _snippetText = State(initialValue: evidence.snippetText ?? "")
             _annotationText = State(initialValue: evidence.annotationText ?? "")
+            _sentiment = State(initialValue: evidence.sentiment)
+            _sourceType = State(initialValue: evidence.sourceType)
+            _selectedDriver = State(initialValue: evidence.driver)
             _metricName = State(initialValue: evidence.metricName ?? "")
             _metricValue = State(initialValue: evidence.metricValue ?? "")
             _metricUnit = State(initialValue: evidence.metricUnit ?? "")
@@ -80,6 +86,8 @@ struct EvidenceFormView: View {
     // MARK: - Computed Properties
     
     private var isValid: Bool {
+        guard selectedDriver != nil else { return false }
+        
         switch evidenceType {
         case .kpi:
             return !metricName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
@@ -92,12 +100,12 @@ struct EvidenceFormView: View {
         }
     }
     
-    private var logEntryTitle: String {
+    private var researchQuestion: ResearchQuestion? {
         switch mode {
-        case .add(let logEntry):
-            return logEntry.title
+        case .add(let rq):
+            return rq
         case .edit(let evidence):
-            return evidence.logEntry?.title ?? "Unknown Log Entry"
+            return evidence.driver?.researchQuestion
         }
     }
     
@@ -113,14 +121,45 @@ struct EvidenceFormView: View {
             // Form content
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Log entry reference
-                    HStack {
-                        Text("Log Entry:")
+                    // Driver picker
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Target Assumption (Required)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(logEntryTitle)
-                            .font(.caption)
-                            .fontWeight(.medium)
+                        
+                        if let rq = researchQuestion {
+                            DriverPicker(selectedDriver: $selectedDriver, drivers: rq.topLevelDrivers)
+                        } else {
+                            Text("No research question found")
+                                .foregroundStyle(.red)
+                        }
+                    }
+                    
+                    // Sentiment and Source Type
+                    HStack(spacing: 16) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Sentiment")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Picker("Sentiment", selection: $sentiment) {
+                                ForEach(EvidenceSentiment.allCases) { s in
+                                    Label(s.rawValue, systemImage: s.iconName).tag(s)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Source Type")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Picker("Source", selection: $sourceType) {
+                                ForEach(SourceType.allCases) { s in
+                                    Label(s.displayName, systemImage: s.iconName).tag(s)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                        }
                     }
                     
                     // Evidence type picker
@@ -425,6 +464,53 @@ struct EvidenceFormView: View {
         }
         
         dismiss()
+    }
+}
+
+struct DriverPicker: View {
+    @Binding var selectedDriver: Driver?
+    let drivers: [Driver]
+    
+    var body: some View {
+        Menu {
+            ForEach(drivers) { driver in
+                driverMenu(driver)
+            }
+        } label: {
+            HStack {
+                if let selected = selectedDriver {
+                    Text(selected.title)
+                } else {
+                    Text("Select Assumption")
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.up.down")
+                    .font(.caption)
+            }
+            .padding(8)
+            .background(Color(nsColor: .controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+    }
+    
+    @ViewBuilder
+    private func driverMenu(_ driver: Driver) -> some View {
+        Button {
+            selectedDriver = driver
+        } label: {
+            Text(driver.title)
+        }
+        
+        if let subs = driver.subDrivers, !subs.isEmpty {
+            ForEach(subs) { sub in
+                Button {
+                    selectedDriver = sub
+                } label: {
+                    Text("  → \(sub.title)")
+                }
+            }
+        }
     }
 }
 

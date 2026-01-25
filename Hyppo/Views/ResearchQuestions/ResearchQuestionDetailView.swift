@@ -67,8 +67,20 @@ struct ResearchQuestionDetailView: View {
                 
                 Divider()
                 
-                // Thesis content sections
-                thesisContent
+                // Conviction Health Dashboard
+                ConvictionHealthView(drivers: researchQuestion.drivers ?? [])
+                
+                Divider()
+                
+                // Research plan table
+                CollapsibleSection(
+                    title: "Research Plan",
+                    iconName: "tablecells",
+                    isExpanded: .constant(true)
+                ) {
+                    ResearchPlanTableView(drivers: researchQuestion.drivers ?? [])
+                        .frame(height: 200)
+                }
                 
                 Divider()
                 
@@ -119,22 +131,21 @@ struct ResearchQuestionDetailView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingEditQuestion) {
-            ResearchQuestionFormView(mode: .edit(researchQuestion)) { _ in }
-        }
         .sheet(isPresented: $showingAddLogEntry) {
             LogEntryFormView(mode: .add(researchQuestion: researchQuestion)) { newLogEntry in
                 modelContext.insert(newLogEntry)
                 newLogEntry.researchQuestion = researchQuestion
             }
         }
+        .sheet(isPresented: $showingEditQuestion) {
+            ResearchWizardView(asset: researchQuestion.asset!, onSave: { _ in })
+        }
         .sheet(item: $selectedLogEntry) { logEntry in
             LogEntryDetailSheet(logEntry: logEntry)
         }
         .sheet(item: $logEntryForEvidence) { logEntry in
-            EvidenceFormView(mode: .add(logEntry: logEntry)) { newEvidence in
+            EvidenceFormView(mode: .add(researchQuestion: researchQuestion)) { newEvidence in
                 modelContext.insert(newEvidence)
-                newEvidence.logEntry = logEntry
             }
         }
         .sheet(isPresented: $showingReviewWizard) {
@@ -859,9 +870,8 @@ struct LogEntryDetailSheet: View {
         }
         .frame(minWidth: 500, minHeight: 400)
         .sheet(isPresented: $showingAddEvidence) {
-            EvidenceFormView(mode: .add(logEntry: logEntry)) { newEvidence in
+            EvidenceFormView(mode: .add(researchQuestion: logEntry.researchQuestion!)) { newEvidence in
                 modelContext.insert(newEvidence)
-                newEvidence.logEntry = logEntry
             }
         }
         .sheet(isPresented: $showingEditLogEntry) {

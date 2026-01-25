@@ -88,58 +88,18 @@ final class ResearchQuestion {
     /// The core thesis statement - what must be true for this investment to work
     var thesisStatement: String?
     
-    /// Key drivers that support the thesis (stored as JSON array)
-    var keyDriversData: Data?
-    
-    /// Rules that would invalidate the thesis (stored as JSON array)
-    var invalidationRulesData: Data?
-    
-    /// Optional catalysts that could trigger price movement (stored as JSON array)
-    var catalystsData: Data?
-    
-    /// Optional key risks to the thesis (stored as JSON array)
-    var keyRisksData: Data?
-    
-    /// Simple scenarios representing different outcomes (stored as JSON array)
-    var scenariosData: Data?
-    
-    /// Optional pre-mortem text: "Imagine you've lost 50% on this investment. What went wrong?"
-    var preMortemText: String?
-    
-    /// Current confidence level (1-5, optional)
-    var confidenceCurrent: Int?
-    
-    /// Current status of the research question
-    var statusRaw: String
-    
-    /// Conclusion or answer summary once the question is resolved
-    var conclusion: String?
-    
-    /// Priority level (1-5, optional)
-    var priority: Int?
-    
-    /// Version number for tracking revisions
-    var versionNumber: Int
-    
-    /// Timestamp when the question was created
-    var createdAt: Date
-    
-    /// Timestamp when the question was last updated
-    var updatedAt: Date
-    
-    /// Timestamp when the content was last meaningfully updated
-    var lastUpdatedAt: Date
-    
-    /// Optional timestamp of the last review
-    var lastReviewedAt: Date?
-    
-    /// Timestamp when the status was last changed
-    var statusChangedAt: Date
-    
     // MARK: - Relationships
     
     /// Parent asset this research question belongs to
     var asset: Asset?
+    
+    /// Drivers (assumptions) supporting the thesis
+    @Relationship(deleteRule: .cascade, inverse: \Driver.researchQuestion)
+    var drivers: [Driver]?
+    
+    /// Kill criteria that would invalidate the thesis
+    @Relationship(deleteRule: .cascade, inverse: \KillCriteria.researchQuestion)
+    var killCriteria: [KillCriteria]?
     
     /// Log entries for this research question (ordered chronologically)
     @Relationship(deleteRule: .cascade) var logEntries: [LogEntry]?
@@ -171,11 +131,6 @@ final class ResearchQuestion {
         questionText: String,
         context: String? = nil,
         thesisStatement: String? = nil,
-        keyDrivers: [String] = [],
-        invalidationRules: [String] = [],
-        catalysts: [String]? = nil,
-        keyRisks: [String]? = nil,
-        scenarios: [SimpleScenario]? = nil,
         confidence: Int? = nil,
         priority: Int? = nil
     ) {
@@ -183,11 +138,6 @@ final class ResearchQuestion {
         self.questionText = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
         self.context = context?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.thesisStatement = thesisStatement?.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.keyDriversData = keyDrivers.isEmpty ? nil : try? JSONEncoder().encode(keyDrivers)
-        self.invalidationRulesData = invalidationRules.isEmpty ? nil : try? JSONEncoder().encode(invalidationRules)
-        self.catalystsData = catalysts.flatMap { $0.isEmpty ? nil : try? JSONEncoder().encode($0) }
-        self.keyRisksData = keyRisks.flatMap { $0.isEmpty ? nil : try? JSONEncoder().encode($0) }
-        self.scenariosData = scenarios.flatMap { $0.isEmpty ? nil : try? JSONEncoder().encode($0) }
         self.confidenceCurrent = confidence
         self.statusRaw = ResearchQuestionStatus.active.rawValue
         self.priority = priority
@@ -210,70 +160,19 @@ final class ResearchQuestion {
         }
     }
     
-    /// Key drivers as string array
-    var keyDrivers: [String] {
-        get {
-            guard let data = keyDriversData else { return [] }
-            return (try? JSONDecoder().decode([String].self, from: data)) ?? []
-        }
-        set {
-            keyDriversData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue)
-        }
+    /// Top-level drivers (those without a parent)
+    var topLevelDrivers: [Driver] {
+        drivers?.filter { $0.parentDriver == nil }.sorted { $0.position < $1.position } ?? []
     }
     
-    /// Invalidation rules as string array
-    var invalidationRules: [String] {
-        get {
-            guard let data = invalidationRulesData else { return [] }
-            return (try? JSONDecoder().decode([String].self, from: data)) ?? []
-        }
-        set {
-            invalidationRulesData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue)
-        }
+    /// Returns true if the question has at least 2 drivers
+    var hasMinimumDrivers: Bool {
+        (drivers?.count ?? 0) >= 2
     }
     
-    /// Catalysts as string array
-    var catalysts: [String] {
-        get {
-            guard let data = catalystsData else { return [] }
-            return (try? JSONDecoder().decode([String].self, from: data)) ?? []
-        }
-        set {
-            catalystsData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue)
-        }
-    }
-    
-    /// Key risks as string array
-    var keyRisks: [String] {
-        get {
-            guard let data = keyRisksData else { return [] }
-            return (try? JSONDecoder().decode([String].self, from: data)) ?? []
-        }
-        set {
-            keyRisksData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue)
-        }
-    }
-    
-    /// Scenarios as SimpleScenario array
-    var scenarios: [SimpleScenario] {
-        get {
-            guard let data = scenariosData else { return [] }
-            return (try? JSONDecoder().decode([SimpleScenario].self, from: data)) ?? []
-        }
-        set {
-            scenariosData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue)
-        }
-    }
-    
-    /// Confidence level as enum
-    var confidence: ConfidenceLevel? {
-        get {
-            guard let value = confidenceCurrent else { return nil }
-            return ConfidenceLevel(rawValue: value)
-        }
-        set {
-            confidenceCurrent = newValue?.rawValue
-        }
+    /// Returns true if the question has at least 1 kill criteria
+    var hasKillCriteria: Bool {
+        (killCriteria?.count ?? 0) >= 1
     }
     
     /// Returns the count of log entries for this research question
@@ -325,22 +224,12 @@ final class ResearchQuestion {
         questionText: String,
         context: String?,
         thesisStatement: String?,
-        keyDrivers: [String],
-        invalidationRules: [String],
-        catalysts: [String]?,
-        keyRisks: [String]?,
-        scenarios: [SimpleScenario]?,
         confidence: Int?,
         priority: Int?
     ) {
         self.questionText = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
         self.context = context?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.thesisStatement = thesisStatement?.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.keyDrivers = keyDrivers
-        self.invalidationRules = invalidationRules
-        self.catalysts = catalysts ?? []
-        self.keyRisks = keyRisks ?? []
-        self.scenarios = scenarios ?? []
         self.confidenceCurrent = confidence
         self.priority = priority
         self.versionNumber += 1
