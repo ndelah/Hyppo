@@ -4,7 +4,7 @@ Generated from `/Users/ndelahou/Documents/Programming/apps/Hyppo`.
 
 Notes:
 - `.git` (and similar metadata/build folders) are intentionally excluded from this view to keep it readable.
-- Last updated: January 2026 (MVP 2.5 McKinsey Mind Framework in progress)
+- Last updated: January 2026 (MVP 2.5 McKinsey Mind Framework views complete)
 
 ```
 Hyppo
@@ -112,9 +112,9 @@ Hyppo
 - **Evidence**: Now links to Driver (not just ResearchQuestion), includes sentiment and sourceType
 - **ResearchQuestion**: Relationships to Drivers and KillCriteria; deprecated old keyDrivers/invalidationRules arrays
 
-### New Views (In Progress)
-- **DriverOutlineView**: Collapsible outline editor for driver hierarchy
-- **ResearchWizardView**: Guided multi-step wizard for framing and design
-- **ResearchPlanTableView**: Flat tabular view of research plan
-- **ConvictionHealthView**: Evidence balance dashboard per driver
+### New Views (Complete)
+- **DriverOutlineView**: Collapsible outline editor with drag-and-drop reordering
+- **ResearchWizardView**: 3-step guided wizard (Frame → Design → Review)
+- **ResearchPlanTableView**: Flat tabular view with inline editing
+- **ConvictionHealthView**: Evidence balance dashboard with blind spot alerts
 

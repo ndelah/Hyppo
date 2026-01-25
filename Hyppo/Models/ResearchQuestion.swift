@@ -9,6 +9,38 @@
 import Foundation
 import SwiftData
 
+// MARK: - Scenarios Transformer
+
+/**
+ Value transformer for encoding/decoding SimpleScenario arrays to Data.
+ */
+final class ScenariosTransformer: ValueTransformer {
+    override class func transformedValueClass() -> AnyClass {
+        NSData.self
+    }
+    
+    override class func allowsReverseTransformation() -> Bool {
+        true
+    }
+    
+    override func transformedValue(_ value: Any?) -> Any? {
+        guard let scenarios = value as? [SimpleScenario] else { return nil }
+        return try? JSONEncoder().encode(scenarios)
+    }
+    
+    override func reverseTransformedValue(_ value: Any?) -> Any? {
+        guard let data = value as? Data else { return nil }
+        return try? JSONDecoder().decode([SimpleScenario].self, from: data)
+    }
+    
+    static func register() {
+        ValueTransformer.setValueTransformer(
+            ScenariosTransformer(),
+            forName: NSValueTransformerName("ScenariosTransformer")
+        )
+    }
+}
+
 // MARK: - Simple Scenario Structure
 
 /**
@@ -87,6 +119,62 @@ final class ResearchQuestion {
     
     /// The core thesis statement - what must be true for this investment to work
     var thesisStatement: String?
+    
+    /// Current confidence level (1-5)
+    var confidenceCurrent: Int?
+    
+    /// Raw status value for persistence
+    var statusRaw: String
+    
+    /// Priority level (1-5)
+    var priority: Int?
+    
+    /// Version number for tracking updates
+    var versionNumber: Int
+    
+    /// Timestamp when the question was created
+    var createdAt: Date
+    
+    /// Timestamp when the question was last updated
+    var updatedAt: Date
+    
+    /// Alias for updatedAt for compatibility
+    var lastUpdatedAt: Date
+    
+    /// Timestamp when the status last changed
+    var statusChangedAt: Date
+    
+    /// Conclusion text when the question is resolved
+    var conclusion: String?
+    
+    /// Timestamp of last review
+    var lastReviewedAt: Date?
+    
+    /// JSON-encoded scenarios array
+    @Attribute(.transformable(by: ScenariosTransformer.self))
+    private var scenariosData: Data?
+    
+    /// Scenarios for this research question
+    var scenarios: [SimpleScenario] {
+        get {
+            guard let data = scenariosData else { return [] }
+            return (try? JSONDecoder().decode([SimpleScenario].self, from: data)) ?? []
+        }
+        set {
+            scenariosData = try? JSONEncoder().encode(newValue)
+        }
+    }
+    
+    /// Confidence level as enum
+    var confidence: ConfidenceLevel? {
+        get {
+            guard let value = confidenceCurrent else { return nil }
+            return ConfidenceLevel(rawValue: value)
+        }
+        set {
+            confidenceCurrent = newValue?.rawValue
+        }
+    }
     
     // MARK: - Relationships
     

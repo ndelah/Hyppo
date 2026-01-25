@@ -187,11 +187,31 @@ struct GlobalSearchView: View {
     private func matchesSearch(question: ResearchQuestion) -> Bool {
         if searchText.isEmpty { return true }
         let searchLower = searchText.lowercased()
-        return question.questionText.lowercased().contains(searchLower) ||
-               (question.context?.lowercased().contains(searchLower) ?? false) ||
-               (question.thesisStatement?.lowercased().contains(searchLower) ?? false) ||
-               question.keyDrivers.joined(separator: " ").lowercased().contains(searchLower) ||
-               question.invalidationRules.joined(separator: " ").lowercased().contains(searchLower)
+        
+        // Search in basic fields
+        if question.questionText.lowercased().contains(searchLower) ||
+           (question.context?.lowercased().contains(searchLower) ?? false) ||
+           (question.thesisStatement?.lowercased().contains(searchLower) ?? false) {
+            return true
+        }
+        
+        // Search in drivers
+        if let drivers = question.drivers {
+            let driverText = drivers.map { $0.title }.joined(separator: " ")
+            if driverText.lowercased().contains(searchLower) {
+                return true
+            }
+        }
+        
+        // Search in kill criteria
+        if let criteria = question.killCriteria {
+            let criteriaText = criteria.map { $0.condition }.joined(separator: " ")
+            if criteriaText.lowercased().contains(searchLower) {
+                return true
+            }
+        }
+        
+        return false
     }
     
     private func matchesSearch(logEntry: LogEntry) -> Bool {

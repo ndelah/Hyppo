@@ -138,13 +138,13 @@ struct ResearchQuestionDetailView: View {
             }
         }
         .sheet(isPresented: $showingEditQuestion) {
-            ResearchWizardView(asset: researchQuestion.asset!, onSave: { _ in })
+            ResearchQuestionFormView(mode: .edit(researchQuestion), asset: researchQuestion.asset) { _ in }
         }
         .sheet(item: $selectedLogEntry) { logEntry in
             LogEntryDetailSheet(logEntry: logEntry)
         }
         .sheet(item: $logEntryForEvidence) { logEntry in
-            EvidenceFormView(mode: .add(researchQuestion: researchQuestion)) { newEvidence in
+            EvidenceFormView(mode: .addToLogEntry(logEntry: logEntry)) { newEvidence in
                 modelContext.insert(newEvidence)
             }
         }
@@ -251,33 +251,39 @@ struct ResearchQuestionDetailView: View {
                 }
             }
             
-            // Key drivers
-            if !researchQuestion.keyDrivers.isEmpty {
+            // Key drivers (now using Driver model)
+            if !(researchQuestion.drivers?.isEmpty ?? true) {
                 CollapsibleSection(
-                    title: "Key Drivers",
-                    iconName: "arrow.up.forward",
+                    title: "Assumptions",
+                    iconName: "target",
                     isExpanded: $isKeyDriversExpanded,
-                    itemCount: researchQuestion.keyDrivers.count
+                    itemCount: researchQuestion.drivers?.count ?? 0
                 ) {
                     VStack(alignment: .leading, spacing: 3) {
-                        ForEach(researchQuestion.keyDrivers, id: \.self) { driver in
-                            BulletPoint(text: driver)
+                        ForEach(researchQuestion.topLevelDrivers) { driver in
+                            BulletPoint(text: driver.title)
+                            if let subs = driver.subDrivers, !subs.isEmpty {
+                                ForEach(subs) { sub in
+                                    BulletPoint(text: "→ \(sub.title)", color: .secondary)
+                                        .padding(.leading, 16)
+                                }
+                            }
                         }
                     }
                 }
             }
             
-            // Invalidation rules
-            if !researchQuestion.invalidationRules.isEmpty {
+            // Kill criteria (formerly invalidation rules)
+            if !(researchQuestion.killCriteria?.isEmpty ?? true) {
                 CollapsibleSection(
-                    title: "Invalidation Rules",
+                    title: "Kill Criteria",
                     iconName: "xmark.circle",
                     isExpanded: $isInvalidationRulesExpanded,
-                    itemCount: researchQuestion.invalidationRules.count
+                    itemCount: researchQuestion.killCriteria?.count ?? 0
                 ) {
                     VStack(alignment: .leading, spacing: 3) {
-                        ForEach(researchQuestion.invalidationRules, id: \.self) { rule in
-                            BulletPoint(text: rule, color: .red)
+                        ForEach(researchQuestion.killCriteria ?? []) { criteria in
+                            BulletPoint(text: criteria.condition, color: .red)
                         }
                     }
                 }
@@ -299,48 +305,15 @@ struct ResearchQuestionDetailView: View {
                 }
             }
             
-            // Catalysts (if any)
-            if !researchQuestion.catalysts.isEmpty {
+            // Conviction Health Dashboard
+            if !(researchQuestion.drivers?.isEmpty ?? true) {
                 CollapsibleSection(
-                    title: "Catalysts",
-                    iconName: "bolt",
+                    title: "Conviction Health",
+                    iconName: "heart.text.square",
                     isExpanded: $isCatalystsExpanded,
-                    itemCount: researchQuestion.catalysts.count
-                ) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        ForEach(researchQuestion.catalysts, id: \.self) { catalyst in
-                            BulletPoint(text: catalyst, color: .orange)
-                        }
-                    }
-                }
-            }
-            
-            // Key risks (if any)
-            if !researchQuestion.keyRisks.isEmpty {
-                CollapsibleSection(
-                    title: "Key Risks",
-                    iconName: "exclamationmark.triangle",
-                    isExpanded: $isKeyRisksExpanded,
-                    itemCount: researchQuestion.keyRisks.count
-                ) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        ForEach(researchQuestion.keyRisks, id: \.self) { risk in
-                            BulletPoint(text: risk, color: .yellow)
-                        }
-                    }
-                }
-            }
-            
-            // Pre-Mortem (if any)
-            if let preMortem = researchQuestion.preMortemText, !preMortem.isEmpty {
-                CollapsibleSection(
-                    title: "Pre-Mortem",
-                    iconName: "exclamationmark.triangle.fill",
-                    isExpanded: $isPreMortemExpanded,
                     itemCount: nil
                 ) {
-                    Text(preMortem)
-                        .font(.subheadline)
+                    ConvictionHealthView(drivers: researchQuestion.drivers ?? [], isCompact: true)
                         .foregroundStyle(.secondary)
                         .padding(.vertical, 2)
                 }
@@ -870,7 +843,7 @@ struct LogEntryDetailSheet: View {
         }
         .frame(minWidth: 500, minHeight: 400)
         .sheet(isPresented: $showingAddEvidence) {
-            EvidenceFormView(mode: .add(researchQuestion: logEntry.researchQuestion!)) { newEvidence in
+            EvidenceFormView(mode: .addToLogEntry(logEntry: logEntry)) { newEvidence in
                 modelContext.insert(newEvidence)
             }
         }
@@ -935,24 +908,17 @@ struct EvidenceRow: View {
 
 // MARK: - Preview
 
-#Preview {
-    let question = ResearchQuestion(
-        questionText: "Can AAPL sustain services revenue growth?",
-        context: "Services now represent 20% of revenue",
-        thesisStatement: "Apple's services segment will continue to grow at 15%+ annually as the installed base expands.",
-        keyDrivers: ["Growing installed base", "High switching costs", "App Store dominance"],
-        invalidationRules: ["Services growth falls below 10%", "Major regulatory action against App Store"],
-        catalysts: ["New subscription service launch", "iPhone sales exceed expectations"],
-        keyRisks: ["Regulatory pressure", "Competition from Android"],
-        confidence: 4,
-        priority: 4
-    )
-    question.scenarios = [
-        SimpleScenario(type: .bull, title: "Services growth accelerates to 20%+"),
-        SimpleScenario(type: .base, title: "Services growth maintains 15%"),
-        SimpleScenario(type: .bear, title: "Services growth slows to single digits")
-    ]
-    
-    return ResearchQuestionDetailView(researchQuestion: question)
-        .modelContainer(for: [Asset.self, ResearchQuestion.self, LogEntry.self, Evidence.self, ReviewReminder.self], inMemory: true)
+struct ResearchQuestionDetailView_Previews: PreviewProvider {
+    static var previews: some View {
+        let question = ResearchQuestion(
+            questionText: "Can AAPL sustain services revenue growth?",
+            context: "Services now represent 20% of revenue",
+            thesisStatement: "Apple's services segment will continue to grow at 15%+ annually as the installed base expands.",
+            confidence: 4,
+            priority: 4
+        )
+        
+        return ResearchQuestionDetailView(researchQuestion: question)
+            .modelContainer(for: [Asset.self, ResearchQuestion.self, LogEntry.self, Evidence.self, ReviewReminder.self, Driver.self, KillCriteria.self], inMemory: true)
+    }
 }

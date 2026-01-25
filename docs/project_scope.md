@@ -119,30 +119,25 @@ Asset (1) ───────────────────────�
 
 ### 8.3 End-to-end flows and required fields
 
-#### 🟡 Flow 1 — Frame the Problem (Start Research)
-*Status: Data Model Complete, Views In Progress — ⚠️ NEEDS CLARIFICATION*
+#### 🟢 Flow 1 — Frame the Problem (Start Research)
+*Status: Complete*
 
 **User flow:** Add Asset → Create Research Question → Define Hypothesis → Add Drivers → Add Kill Criteria.
 
 **Steps**
 1) First launch: empty state with Add Asset.
 2) Add Asset: ticker/name (optional tags) → Save.
-3) Add Research Question: question text + context → Save.
-4) **Research Wizard Step 1 (Frame):**
-   - Define thesis statement (initial hypothesis).
-   - Prompt: "What assumptions must be true for this hypothesis to hold?"
-   - Add 2-3 Drivers (minimum required).
-   - Add 1+ Kill Criteria.
-5) View: Research Question detail shows thesis, drivers, kill criteria.
+3) Add Research Question: question text + context → Save (or use Research Wizard).
+4) **Research Wizard (optional 3-step guided flow):**
+   - Step 1 (Frame): Research question, thesis statement, 2+ key assumptions.
+   - Step 2 (Design): Validation questions, data sources, thresholds, kill criteria.
+   - Step 3 (Review): Summary with readiness checklist before saving.
+5) View: Research Question detail shows thesis, drivers, kill criteria, conviction health.
 
-**⚠️ Open Questions (Driver Outline Editor):**
-- Should drivers be edited **inline** in ResearchQuestionFormView, or in a **separate modal/sheet**?
-- Is **drag-and-drop reordering** required, or are move up/down buttons sufficient?
-- For sub-drivers: **visually indented** with expand/collapse toggles, or **flat list** with parent labels?
-
-**⚠️ Open Questions (Research Wizard):**
-- Is this a **replacement** for ResearchQuestionFormView, or an **optional guided mode** ("Start with Wizard" button)?
-- How strict should validation be? Can users **skip steps**, or must they complete all before saving?
+**✅ Implemented:**
+- Driver Outline Editor with inline editing, drag-and-drop reordering, expand/collapse.
+- Research Wizard as optional guided mode ("Start with Wizard" button in form).
+- Validation requires 2+ assumptions and 1+ kill criteria before proceeding.
 
 **Fields required (UI + backend)**
 - **ResearchQuestion**
@@ -193,8 +188,8 @@ Asset (1) ───────────────────────�
   - UI: url (required for non-notes), displayTitle (auto/editable), evidenceType, snippetText (optional), annotationText (optional), **sentiment** (required), **sourceType** (optional), **driver** (recommended).
   - Backend: evidenceId, driverId (nullable), researchQuestionId (fallback), sentimentRaw, sourceTypeRaw, createdAt, updatedAt, capturedAt, evidenceType, urlRaw, urlNormalized, domain, sourceTitle, snippetText, annotationText.
 
-#### 🟡 Flow 4 — Interpret Results (Conviction Assessment)
-*Status: Data Model Complete, Views Pending — ⚠️ NEEDS CLARIFICATION*
+#### 🟢 Flow 4 — Interpret Results (Conviction Assessment)
+*Status: Complete*
 
 **User flow:** View Conviction Health Dashboard → Identify blind spots → Trigger review if needed.
 
@@ -208,16 +203,14 @@ Asset (1) ───────────────────────�
 4) Review conviction: Overall balance suggests confidence level.
 5) If evidence materially changes conviction, trigger Review Wizard.
 
-**Fields required (UI + backend)**
-- **Conviction Health (computed)**
-  - Per Driver: supportingCount, contradictingCount, neutralCount.
-  - Overall: totalSupporting, totalContradicting, driversWithNoEvidence.
-  - Display: conviction meter, blind spot alerts.
-
-**⚠️ Open Questions (Conviction Health Dashboard):**
-- **Visual style**: Simple text counts (e.g., "3 supporting, 1 contradicting") vs. progress bars vs. mini bar charts?
-- **Placement**: Embedded in ResearchQuestionDetailView as a collapsible section, or a separate tab/view?
-- **Blind spot alerts**: Inline warning icons next to drivers, or a dedicated "Blind Spots" section at the top?
+**✅ Implemented:**
+- **ConvictionHealthView** with:
+  - Overall health score (0-100) with status badge (Strong/Moderate/Weak/Critical).
+  - Evidence summary bar (colored segments for supporting/neutral/contradicting).
+  - Per-driver breakdown table with evidence count, balance, and status badges.
+  - Dedicated "Blind Spots" section with actionable driver list.
+  - Recent contradicting evidence highlights (last 7 days).
+  - Compact mode for review wizard integration.
 
 #### 🟢 Flow 5 — Review and Decide
 *Status: Fully Specified & Implemented (needs Conviction Health integration)*
@@ -277,12 +270,12 @@ The development of Hyppo is structured into distinct phases, moving from core in
 - Implement guided review wizards to help users update or invalidate their theses.
 - *Status: Complete — Review Mode, Pre-Mortem, and Quick Capture (⌘⇧H) implemented.*
 
-### 🟡 MVP 2.5: McKinsey Mind Framework
+### 🟢 MVP 2.5: McKinsey Mind Framework
 **Goal:** Implement hypothesis-driven research workflow with Drivers, Kill Criteria, and evidence-to-driver linkage.
 - Data Model: Driver (2-level hierarchy), KillCriteria, Evidence sentiment/sourceType — **Complete.**
-- Views: Driver Outline, Research Wizard, Research Plan Table, Conviction Health — **In Progress.**
+- Views: Driver Outline, Research Wizard, Research Plan Table, Conviction Health — **Complete.**
 - Migration: Existing data transformation — **Pending.**
-- *Status: In Progress — Data model complete, views in progress.*
+- *Status: Views Complete — Migration pending.*
 
 ### ⚪️ MVP 3: Premium Features
 **Goal:** Provide advanced analytical depth and AI-assisted insights for power users.
@@ -348,17 +341,17 @@ To measure the effectiveness of Hyppo and validate the McKinsey Mind workflow:
 
 ## 14. Next Steps
 
-### ⚠️ Blocked (Needs Clarification)
-1. **Driver Outline Editor** — Needs UX decisions on inline vs modal editing, drag-drop, hierarchy display.
-2. **Research Wizard** — Needs UX decisions on replacement vs optional mode, validation strictness.
-3. **Conviction Health Dashboard** — Needs UX decisions on visual style, placement, alert display.
+### ✅ Completed (MVP 2.5 Views)
+1. **Driver Outline Editor** — Inline editing with drag-drop, move up/down, expand/collapse, research plan details.
+2. **Research Wizard** — 3-step guided flow with "Start with Wizard" button, validation for 2+ assumptions and 1+ kill criteria.
+3. **Conviction Health Dashboard** — Health score, evidence summary, per-driver breakdown, dedicated blind spots section.
+4. **Research Plan Table** — Inline editing, blind spot indicators.
 
-### ✅ Ready to Implement
-4. **Update Evidence Form** — Add Driver picker, sentiment picker, sourceType picker.
-5. **Update Quick Capture** — Add Driver destination picker.
-6. **Update Review Wizard** — Integrate Conviction Health display.
+### ⚪️ Remaining
+5. **Update Evidence Form** — Add Driver picker, sentiment picker, sourceType picker.
+6. **Update Quick Capture** — Add Driver destination picker.
 7. **Write Migration Logic** — Transform existing keyDrivers/invalidationRules to new models.
-8. **Update Export** — Include Drivers, Kill Criteria, and evidence sentiment in exports.
+8. **Update Export** — Evidence sentiment in exports (drivers and kill criteria already included).
 
 ---
 

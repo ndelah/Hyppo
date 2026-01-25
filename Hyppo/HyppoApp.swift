@@ -21,7 +21,7 @@ struct HyppoApp: App {
         DebugLogger.info(
             location: "HyppoApp:init",
             message: "Hyppo app initializing",
-            data: ["models": "Asset, ResearchQuestion, LogEntry, Evidence, Tag, ReviewReminder"]
+            data: ["models": "Asset, ResearchQuestion, LogEntry, Evidence, Tag, ReviewReminder, Driver, KillCriteria"]
         )
     }
     
@@ -35,14 +35,16 @@ struct HyppoApp: App {
             data: ["isStoredInMemoryOnly": false]
         )
         
-        // Define the schema with all model types
+        // Define the schema with all model types (including McKinsey Mind framework models)
         let schema = Schema([
             Asset.self,
             ResearchQuestion.self,
             LogEntry.self,
             Evidence.self,
             Tag.self,
-            ReviewReminder.self
+            ReviewReminder.self,
+            Driver.self,
+            KillCriteria.self
         ])
         
         do {
@@ -125,6 +127,10 @@ struct HyppoApp: App {
                     QuickCaptureHUD(service: quickCaptureService)
                         .modelContainer(sharedModelContainer)
                 }
+                .task {
+                    // Run migration on first launch after update
+                    await runMigrationIfNeeded()
+                }
         }
         .modelContainer(sharedModelContainer)
         .windowStyle(.automatic)
@@ -166,6 +172,29 @@ struct HyppoApp: App {
         // Settings window
         Settings {
             SettingsView()
+        }
+    }
+}
+
+// MARK: - Migration
+
+extension HyppoApp {
+    /**
+     Runs data migration if needed on app launch.
+     
+     Migrates legacy data structures to the McKinsey Mind framework models.
+     */
+    @MainActor
+    private func runMigrationIfNeeded() async {
+        let modelContext = sharedModelContainer.mainContext
+        
+        let didMigrate = MigrationHelper.shared.migrateIfNeeded(modelContext: modelContext)
+        
+        if didMigrate {
+            DebugLogger.info(
+                location: "HyppoApp:runMigrationIfNeeded",
+                message: "Data migration completed on app launch"
+            )
         }
     }
 }

@@ -426,12 +426,10 @@ struct ReviewDueBadge: View {
 #Preview {
     let question = ResearchQuestion(
         questionText: "Can AAPL sustain services revenue growth?",
-        thesisStatement: "Apple's services segment will grow 15%+ annually",
-        keyDrivers: ["Growing installed base"],
-        invalidationRules: ["Services growth below 10%"]
+        thesisStatement: "Apple's services segment will grow 15%+ annually"
     )
     
-    return ReviewReminderView(researchQuestion: question)
+    ReviewReminderView(researchQuestion: question)
         .padding()
-        .modelContainer(for: [ResearchQuestion.self, ReviewReminder.self, LogEntry.self], inMemory: true)
+        .modelContainer(for: [ResearchQuestion.self, ReviewReminder.self, LogEntry.self, Driver.self, KillCriteria.self], inMemory: true)
 }

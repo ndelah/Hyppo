@@ -243,8 +243,8 @@ struct ReviewWizardView: View {
     
     private var overviewStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Conviction Health Dashboard
-            ConvictionHealthView(drivers: researchQuestion.drivers ?? [])
+            // Conviction Health Dashboard (compact version for overview)
+            ConvictionHealthView(drivers: researchQuestion.drivers ?? [], isCompact: true)
             
             // Research question info
             GroupBox {

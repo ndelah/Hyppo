@@ -10,20 +10,48 @@ import SwiftData
 
 /// Form mode for add vs edit
 enum EvidenceFormMode {
-    case add(logEntry: LogEntry)
+    /// Legacy mode: add evidence to a LogEntry (deprecated, kept for compatibility)
+    case addToLogEntry(logEntry: LogEntry)
+    /// Modern mode: add evidence directly to a Driver
+    case addToDriver(driver: Driver)
+    /// Edit existing evidence
     case edit(Evidence)
     
     var title: String {
         switch self {
-        case .add: return "Add Evidence"
+        case .addToLogEntry, .addToDriver: return "Add Evidence"
         case .edit: return "Edit Evidence"
         }
     }
     
     var saveButtonTitle: String {
         switch self {
-        case .add: return "Add"
+        case .addToLogEntry, .addToDriver: return "Add"
         case .edit: return "Save"
+        }
+    }
+    
+    /// Returns the target driver for this mode
+    var targetDriver: Driver? {
+        switch self {
+        case .addToDriver(let driver):
+            return driver
+        case .edit(let evidence):
+            return evidence.driver
+        case .addToLogEntry:
+            return nil
+        }
+    }
+    
+    /// Returns the research question for this mode
+    var researchQuestion: ResearchQuestion? {
+        switch self {
+        case .addToDriver(let driver):
+            return driver.researchQuestion
+        case .edit(let evidence):
+            return evidence.driver?.researchQuestion
+        case .addToLogEntry(let logEntry):
+            return logEntry.researchQuestion
         }
     }
 }
@@ -65,8 +93,16 @@ struct EvidenceFormView: View {
         self.mode = mode
         self.onSave = onSave
         
-        // Pre-populate for edit mode
-        if case .edit(let evidence) = mode {
+        // Pre-populate based on mode
+        switch mode {
+        case .addToDriver(let driver):
+            _selectedDriver = State(initialValue: driver)
+            
+        case .addToLogEntry:
+            // Legacy mode: no driver pre-selected
+            break
+            
+        case .edit(let evidence):
             _evidenceType = State(initialValue: evidence.evidenceType)
             _url = State(initialValue: evidence.urlRaw ?? "")
             _displayTitle = State(initialValue: evidence.displayTitle ?? "")
@@ -85,6 +121,14 @@ struct EvidenceFormView: View {
     
     // MARK: - Computed Properties
     
+    /// Whether the driver picker should be shown (hidden if driver is pre-selected in addToDriver mode)
+    private var showDriverPicker: Bool {
+        if case .addToDriver = mode {
+            return false // Driver is already selected
+        }
+        return true
+    }
+    
     private var isValid: Bool {
         guard selectedDriver != nil else { return false }
         
@@ -101,12 +145,7 @@ struct EvidenceFormView: View {
     }
     
     private var researchQuestion: ResearchQuestion? {
-        switch mode {
-        case .add(let rq):
-            return rq
-        case .edit(let evidence):
-            return evidence.driver?.researchQuestion
-        }
+        mode.researchQuestion
     }
     
     // MARK: - Body
@@ -121,17 +160,36 @@ struct EvidenceFormView: View {
             // Form content
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Driver picker
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Target Assumption (Required)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        if let rq = researchQuestion {
-                            DriverPicker(selectedDriver: $selectedDriver, drivers: rq.topLevelDrivers)
-                        } else {
-                            Text("No research question found")
-                                .foregroundStyle(.red)
+                    // Driver picker (shown unless driver is pre-selected in addToDriver mode)
+                    if showDriverPicker {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Target Assumption (Required)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            
+                            if let rq = researchQuestion {
+                                DriverPicker(selectedDriver: $selectedDriver, drivers: rq.topLevelDrivers)
+                            } else {
+                                Text("No research question found")
+                                    .foregroundStyle(.red)
+                            }
+                        }
+                    } else if let driver = selectedDriver {
+                        // Show selected driver as read-only
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Target Assumption")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            
+                            HStack {
+                                Image(systemName: "target")
+                                    .foregroundStyle(.secondary)
+                                Text(driver.title)
+                                    .fontWeight(.medium)
+                            }
+                            .padding(8)
+                            .background(Color(nsColor: .controlBackgroundColor))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
                     }
                     
@@ -410,7 +468,7 @@ struct EvidenceFormView: View {
         guard validate() else { return }
         
         switch mode {
-        case .add:
+        case .addToLogEntry, .addToDriver:
             let newEvidence: Evidence
             
             if evidenceType == .kpi {
@@ -427,11 +485,20 @@ struct EvidenceFormView: View {
                 newEvidence = Evidence(
                     url: evidenceType == .note && url.isEmpty ? nil : url,
                     evidenceType: evidenceType,
+                    sentiment: sentiment,
+                    sourceType: sourceType,
                     displayTitle: displayTitle.isEmpty ? nil : displayTitle,
                     snippetText: snippetText.isEmpty ? nil : snippetText,
                     annotationText: annotationText.isEmpty ? nil : annotationText
                 )
             }
+            
+            // Always set sentiment and sourceType
+            newEvidence.sentiment = sentiment
+            newEvidence.sourceType = sourceType
+            
+            // Set the driver relationship
+            newEvidence.driver = selectedDriver
             
             onSave(newEvidence)
             
@@ -458,6 +525,15 @@ struct EvidenceFormView: View {
                     snippetText: snippetText.isEmpty ? nil : snippetText,
                     annotationText: annotationText.isEmpty ? nil : annotationText
                 )
+            }
+            
+            // Update sentiment and sourceType
+            evidence.sentiment = sentiment
+            evidence.sourceType = sourceType
+            
+            // Update driver if changed
+            if evidence.driver !== selectedDriver {
+                evidence.driver = selectedDriver
             }
             
             onSave(evidence)
@@ -516,13 +592,22 @@ struct DriverPicker: View {
 
 // MARK: - Preview
 
-#Preview {
-    let logEntry = LogEntry(
-        title: "Test Log Entry",
-        body: "Testing the evidence form",
-        entryType: .observation
+#Preview("Add to Driver") {
+    let driver = Driver(title: "AI Demand Growth", position: 0)
+    
+    return EvidenceFormView(mode: .addToDriver(driver: driver)) { _ in }
+}
+
+#Preview("Edit Evidence") {
+    let evidence = Evidence(
+        url: "https://example.com/article",
+        evidenceType: .article,
+        sentiment: .supporting,
+        sourceType: .newsArticle,
+        displayTitle: "Sample Article",
+        snippetText: "Key finding from the article"
     )
     
-    return EvidenceFormView(mode: .add(logEntry: logEntry)) { _ in }
+    return EvidenceFormView(mode: .edit(evidence)) { _ in }
 }
 

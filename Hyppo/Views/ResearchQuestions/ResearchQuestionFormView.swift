@@ -33,32 +33,43 @@ struct ResearchQuestionFormView: View {
     // MARK: - Environment
     
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     
     // MARK: - Properties
     
     let mode: ResearchQuestionFormMode
+    let asset: Asset?
     let onSave: (ResearchQuestion) -> Void
     
     // MARK: - State
     
     @State private var questionText: String = ""
+    @State private var context: String = ""
     @State private var thesisStatement: String = ""
     @State private var drivers: [DriverDTO] = []
     @State private var killCriteria: [KillCriteriaDTO] = []
+    @State private var scenarios: [SimpleScenario] = []
+    @State private var catalysts: [String] = []
+    @State private var keyRisks: [String] = []
+    @State private var preMortemText: String = ""
     @State private var confidence: Int? = nil
     @State private var priority: Int? = nil
     @State private var validationErrors: [String] = []
+    @State private var showingWizard: Bool = false
     
     // MARK: - Initialization
     
-    init(mode: ResearchQuestionFormMode, onSave: @escaping (ResearchQuestion) -> Void) {
+    init(mode: ResearchQuestionFormMode, asset: Asset? = nil, onSave: @escaping (ResearchQuestion) -> Void) {
         self.mode = mode
+        self.asset = asset
         self.onSave = onSave
         
         // Pre-populate for edit mode
         if case .edit(let question) = mode {
             _questionText = State(initialValue: question.questionText)
+            _context = State(initialValue: question.context ?? "")
             _thesisStatement = State(initialValue: question.thesisStatement ?? "")
+            _scenarios = State(initialValue: question.scenarios)
             
             let dtos = (question.drivers ?? []).filter { $0.parentDriver == nil }.map { d in
                 DriverDTO(
@@ -163,7 +174,29 @@ struct ResearchQuestionFormView: View {
         HStack {
             Text(mode.title)
                 .font(.headline)
+            
             Spacer()
+            
+            // Show "Start with Wizard" button only for add mode when asset is available
+            if case .add = mode, let asset = asset {
+                Button {
+                    showingWizard = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "wand.and.stars")
+                        Text("Start with Wizard")
+                    }
+                    .font(.caption)
+                }
+                .buttonStyle(.bordered)
+                .help("Use the guided wizard for structured research creation")
+                .sheet(isPresented: $showingWizard) {
+                    ResearchWizardView(asset: asset) { newQuestion in
+                        onSave(newQuestion)
+                        dismiss()
+                    }
+                }
+            }
         }
         .padding()
     }
@@ -222,31 +255,8 @@ struct ResearchQuestionFormView: View {
         }
     }
     
-    private var keyDriversSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Key Drivers")
-                .font(.headline)
-            
-            Text("What factors support your thesis?")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            
-            EditableListSection(items: $keyDrivers, placeholder: "Add a key driver...")
-        }
-    }
-    
-    private var invalidationRulesSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Invalidation Rules")
-                .font(.headline)
-            
-            Text("What would prove your thesis wrong?")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            
-            EditableListSection(items: $invalidationRules, placeholder: "Add an invalidation rule...")
-        }
-    }
+    // Note: keyDriversSection and invalidationRulesSection have been replaced by
+    // inline VStacks in the body that use $drivers and $killCriteria with DriverOutlineView
     
     private var scenariosSection: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -582,9 +592,7 @@ struct EditableListSection: View {
         questionText: "Can AAPL sustain services revenue growth?",
         context: "Services now represent 20% of revenue",
         thesisStatement: "Apple's services segment will grow 15%+ annually",
-        keyDrivers: ["Growing installed base", "High switching costs"],
-        invalidationRules: ["Services growth below 10%"],
         priority: 4
     )
-    return ResearchQuestionFormView(mode: .edit(question)) { _ in }
+    ResearchQuestionFormView(mode: .edit(question)) { _ in }
 }

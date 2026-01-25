@@ -38,12 +38,9 @@ struct ResearchQuestionExport: Codable {
     let questionText: String
     let context: String?
     let thesisStatement: String?
-    let keyDrivers: [String]
-    let invalidationRules: [String]
-    let catalysts: [String]
-    let keyRisks: [String]
+    let drivers: [DriverExport]
+    let killCriteria: [KillCriteriaExport]
     let scenarios: [SimpleScenarioExport]
-    let preMortemText: String?
     let confidence: Int?
     let status: String
     let conclusion: String?
@@ -55,6 +52,25 @@ struct ResearchQuestionExport: Codable {
     let tags: [String]
     let logEntries: [LogEntryExport]
     let reviewReminder: ReviewReminderExport?
+}
+
+struct DriverExport: Codable {
+    let id: String
+    let title: String
+    let driverDescription: String?
+    let position: Int
+    let validationQuestion: String?
+    let dataSources: [String]?
+    let proofThreshold: String?
+    let subDrivers: [DriverExport]
+}
+
+struct KillCriteriaExport: Codable {
+    let id: String
+    let condition: String
+    let threshold: String?
+    let dataSource: String?
+    let notes: String?
 }
 
 struct SimpleScenarioExport: Codable {
@@ -173,17 +189,44 @@ final class ExportService {
                     )
                 }
                 
+                // Export drivers recursively
+                func exportDriver(_ driver: Driver) -> DriverExport {
+                    let subDriverExports = (driver.subDrivers ?? [])
+                        .sorted { $0.position < $1.position }
+                        .map { exportDriver($0) }
+                    
+                    return DriverExport(
+                        id: driver.driverId.uuidString,
+                        title: driver.title,
+                        driverDescription: driver.driverDescription,
+                        position: driver.position,
+                        validationQuestion: driver.validationQuestion,
+                        dataSources: driver.dataSources,
+                        proofThreshold: driver.proofThreshold,
+                        subDrivers: subDriverExports
+                    )
+                }
+                
+                let driverExports = question.topLevelDrivers.map { exportDriver($0) }
+                
+                let killCriteriaExports = (question.killCriteria ?? []).map { criteria -> KillCriteriaExport in
+                    KillCriteriaExport(
+                        id: criteria.criteriaId.uuidString,
+                        condition: criteria.condition,
+                        threshold: criteria.threshold,
+                        dataSource: criteria.dataSource,
+                        notes: criteria.notes
+                    )
+                }
+                
                 return ResearchQuestionExport(
                     id: question.questionId.uuidString,
                     questionText: question.questionText,
                     context: question.context,
                     thesisStatement: question.thesisStatement,
-                    keyDrivers: question.keyDrivers,
-                    invalidationRules: question.invalidationRules,
-                    catalysts: question.catalysts,
-                    keyRisks: question.keyRisks,
+                    drivers: driverExports,
+                    killCriteria: killCriteriaExports,
                     scenarios: scenarioExports,
-                    preMortemText: question.preMortemText,
                     confidence: question.confidenceCurrent,
                     status: question.statusRaw,
                     conclusion: question.conclusion,
@@ -306,15 +349,10 @@ final class ExportService {
                     questionText: questionExport.questionText,
                     context: questionExport.context,
                     thesisStatement: questionExport.thesisStatement,
-                    keyDrivers: questionExport.keyDrivers,
-                    invalidationRules: questionExport.invalidationRules,
-                    catalysts: questionExport.catalysts.isEmpty ? nil : questionExport.catalysts,
-                    keyRisks: questionExport.keyRisks.isEmpty ? nil : questionExport.keyRisks,
-                    scenarios: importedScenarios.isEmpty ? nil : importedScenarios,
                     confidence: questionExport.confidence,
                     priority: questionExport.priority
                 )
-                researchQuestion.preMortemText = questionExport.preMortemText
+                researchQuestion.scenarios = importedScenarios
                 researchQuestion.statusRaw = questionExport.status
                 researchQuestion.conclusion = questionExport.conclusion
                 researchQuestion.versionNumber = questionExport.versionNumber
@@ -326,6 +364,44 @@ final class ExportService {
                 
                 modelContext.insert(researchQuestion)
                 result.researchQuestionsImported += 1
+                
+                // Import drivers recursively
+                func importDriver(_ driverExport: DriverExport, parent: Driver?) -> Driver {
+                    let driver = Driver(
+                        title: driverExport.title,
+                        driverDescription: driverExport.driverDescription,
+                        position: driverExport.position,
+                        validationQuestion: driverExport.validationQuestion,
+                        dataSources: driverExport.dataSources,
+                        proofThreshold: driverExport.proofThreshold,
+                        parentDriver: parent
+                    )
+                    driver.researchQuestion = researchQuestion
+                    modelContext.insert(driver)
+                    
+                    // Import sub-drivers
+                    for subExport in driverExport.subDrivers {
+                        _ = importDriver(subExport, parent: driver)
+                    }
+                    
+                    return driver
+                }
+                
+                for driverExport in questionExport.drivers {
+                    _ = importDriver(driverExport, parent: nil)
+                }
+                
+                // Import kill criteria
+                for criteriaExport in questionExport.killCriteria {
+                    let criteria = KillCriteria(
+                        condition: criteriaExport.condition,
+                        threshold: criteriaExport.threshold,
+                        dataSource: criteriaExport.dataSource,
+                        notes: criteriaExport.notes
+                    )
+                    criteria.researchQuestion = researchQuestion
+                    modelContext.insert(criteria)
+                }
                 
                 // Create review reminder if present
                 if let reminderExport = questionExport.reviewReminder {
@@ -432,20 +508,47 @@ final class ExportService {
             md += "\(thesis)\n\n"
         }
         
-        // Key Drivers
-        if !researchQuestion.keyDrivers.isEmpty {
-            md += "## Key Drivers\n\n"
-            for driver in researchQuestion.keyDrivers {
-                md += "- \(driver)\n"
+        // Assumptions (Drivers)
+        let topLevelDrivers = researchQuestion.topLevelDrivers
+        if !topLevelDrivers.isEmpty {
+            md += "## Assumptions (Drivers)\n\n"
+            for driver in topLevelDrivers {
+                md += "### \(driver.title)\n\n"
+                if let desc = driver.driverDescription, !desc.isEmpty {
+                    md += "\(desc)\n\n"
+                }
+                if let question = driver.validationQuestion, !question.isEmpty {
+                    md += "- **Validation Question:** \(question)\n"
+                }
+                if let sources = driver.dataSources, !sources.isEmpty {
+                    md += "- **Data Sources:** \(sources.joined(separator: ", "))\n"
+                }
+                if let threshold = driver.proofThreshold, !threshold.isEmpty {
+                    md += "- **Proof Threshold:** \(threshold)\n"
+                }
+                
+                // Sub-drivers
+                if let subs = driver.subDrivers, !subs.isEmpty {
+                    md += "\n**Sub-assumptions:**\n"
+                    for sub in subs.sorted(by: { $0.position < $1.position }) {
+                        md += "  - \(sub.title)\n"
+                    }
+                }
+                md += "\n"
             }
-            md += "\n"
         }
         
-        // Invalidation Rules
-        if !researchQuestion.invalidationRules.isEmpty {
-            md += "## Invalidation Rules\n\n"
-            for rule in researchQuestion.invalidationRules {
-                md += "- \(rule)\n"
+        // Kill Criteria
+        let killCriteria = researchQuestion.killCriteria ?? []
+        if !killCriteria.isEmpty {
+            md += "## Kill Criteria\n\n"
+            md += "*Conditions that would invalidate this thesis:*\n\n"
+            for criteria in killCriteria {
+                md += "- **\(criteria.condition)**"
+                if let threshold = criteria.threshold {
+                    md += " (Threshold: \(threshold))"
+                }
+                md += "\n"
             }
             md += "\n"
         }
@@ -460,28 +563,17 @@ final class ExportService {
             md += "\n"
         }
         
-        // Catalysts (if any)
-        if !researchQuestion.catalysts.isEmpty {
-            md += "## Catalysts\n\n"
-            for catalyst in researchQuestion.catalysts {
-                md += "- \(catalyst)\n"
+        // Conviction Health Summary
+        if !topLevelDrivers.isEmpty {
+            md += "## Conviction Health\n\n"
+            let summary = ConvictionHealthSummary.from(drivers: topLevelDrivers)
+            md += "- **Supporting Evidence:** \(summary.totalSupporting)\n"
+            md += "- **Contradicting Evidence:** \(summary.totalContradicting)\n"
+            md += "- **Neutral Evidence:** \(summary.totalNeutral)\n"
+            if summary.blindSpotCount > 0 {
+                md += "- ⚠️ **Blind Spots:** \(summary.blindSpotCount) assumption(s) with no evidence\n"
             }
             md += "\n"
-        }
-        
-        // Key Risks (if any)
-        if !researchQuestion.keyRisks.isEmpty {
-            md += "## Key Risks\n\n"
-            for risk in researchQuestion.keyRisks {
-                md += "- \(risk)\n"
-            }
-            md += "\n"
-        }
-        
-        // Pre-Mortem (if any)
-        if let preMortem = researchQuestion.preMortemText, !preMortem.isEmpty {
-            md += "## Pre-Mortem\n\n"
-            md += "\(preMortem)\n\n"
         }
         
         // Timeline / Log Entries

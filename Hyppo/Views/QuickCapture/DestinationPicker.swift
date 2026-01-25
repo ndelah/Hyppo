@@ -573,6 +573,7 @@ struct CompactDestinationDisplay: View {
     DestinationPicker(
         selectedAsset: .constant(nil),
         selectedResearchQuestion: .constant(nil),
+        selectedDriver: .constant(nil),
         showInlineAssetForm: .constant(false),
         showInlineQuestionForm: .constant(false)
     )
