@@ -30,21 +30,6 @@
 
 ---
 
-### Test Data Suggestion
 
-If you don't have enough test data, create:
-- 2–3 Assets with different tickers
-- 1–2 Research Questions per asset
-- Bull/Base/Bear scenarios for at least one question
-- Some scenarios WITH Pre-Mortem text, some WITHOUT
-- Log entries with varying confidence levels
-- Tags applied to different entities
-- Evidence items attached to log entries
 
----
-
-**Let me know what feedback you have after testing, especially:**
-- Any crashes or errors
-- UX friction (things that feel awkward)
-- Missing features you expected
-- Performance issues with larger datasets
+- [  ] How should we manage research confidence? Right now we add confidence to logs and to the research question. This doesn’t make a whole lot of sene.

@@ -269,6 +269,16 @@ Track these metrics to validate friction reduction:
 
 ---
 
-**Status**: Design Complete - Ready for MVP 2 Implementation
-**Last Updated**: 2026-01-27
+**Status**: ✅ Implemented
+**Last Updated**: 2026-01-25
+
+## Implementation Notes
+
+The Quick Capture HUD has been implemented with the following files:
+- `Hyppo/Services/ClipboardDetector.swift` — URL/text detection from clipboard
+- `Hyppo/Services/QuickCaptureService.swift` — Business logic and state management  
+- `Hyppo/Views/QuickCapture/DestinationPicker.swift` — Hierarchical Asset/Question picker
+- `Hyppo/Views/QuickCapture/QuickCaptureHUD.swift` — Main HUD panel view
+
+**Keyboard Shortcut:** ⌘⇧H (registered in HyppoApp.swift)
 

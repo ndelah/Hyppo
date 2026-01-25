@@ -24,8 +24,10 @@ Hyppo
 │   │   ├── Scenario.swift
 │   │   └── Tag.swift
 │   ├── Services
+│   │   ├── ClipboardDetector.swift
 │   │   ├── ExportService.swift
-│   │   └── NotificationService.swift
+│   │   ├── NotificationService.swift
+│   │   └── QuickCaptureService.swift
 │   ├── Utilities
 │   │   ├── DebugLogger.swift
 │   │   └── SwiftDataStoreReset.swift
@@ -44,6 +46,9 @@ Hyppo
 │   │   ├── Navigation
 │   │   │   ├── MainNavigationView.swift
 │   │   │   └── SidebarView.swift
+│   │   ├── QuickCapture
+│   │   │   ├── DestinationPicker.swift
+│   │   │   └── QuickCaptureHUD.swift
 │   │   ├── ResearchQuestions
 │   │   │   ├── ResearchQuestionDetailView.swift
 │   │   │   └── ResearchQuestionFormView.swift

@@ -5,31 +5,31 @@
 Hyppo is a native macOS application for tracking **investment research questions and scenarios**, not portfolio performance. Users track companies (assets), create research questions, formulate scenarios (e.g., base/bull/bear) to answer those questions, and append timestamped log entries with evidence links, short snippets, and local attachments. The result is a searchable, chronological record of what the user believed, when they believed it, and what information led them to reinforce, revise, or invalidate a scenario.
 
 ## 2. Objectives
-- Make research question and scenario capture fast enough for daily use.
-- Preserve a high-integrity audit trail of beliefs, evidence, and revisions.
-- Support multiple scenarios per research question and enable lightweight comparison.
-- Keep the UI clean even when entries carry rich metadata.
-- Operate fully offline with robust local persistence and backups.
-- Provide a premium upgrade path without bloating core workflows.
+- [x] **Fast Capture:** Make research question and scenario capture fast enough for daily use.
+- [x] **Audit Trail:** Preserve a high-integrity audit trail of beliefs, evidence, and revisions (via timestamped Log Entries).
+- [x] **Scenario Support:** Support multiple scenarios per research question and enable lightweight comparison.
+- [x] **Clean UI:** Keep the UI clean even when entries carry rich metadata (using display density and collapsible sections).
+- [x] **Offline & Persistence:** Operate fully offline with robust local persistence (SwiftData) and backups (JSON export/import).
+- [ ] **Premium Path:** Provide a premium upgrade path without bloating core workflows.
 
 ## 3. Target users and Pareto workflow
 Target users are research-driven retail investors and semi-pro analysts who take notes, read filings/news, and revisit decisions.
 
-The product must support this end-to-end workflow:
-1) Choose/track a company (start research or ongoing coverage).
-2) Formulate a research question (what do I need to understand about this investment?).
-3) Create scenarios (bull/base/bear) exploring different possible outcomes.
-4) Collect key evidence (article, filing, note, KPI, quote) via quick capture.
-5) Write or update scenarios (what must be true; catalysts; risks; invalidation rules).
-6) Revisit (scheduled review or prompted by new evidence) and decide: reinforce, revise, or invalidate.
+The product currently supports this end-to-end workflow:
+1) [x] **Asset Tracking:** Choose/track a company (start research or ongoing coverage).
+2) [x] **Question Formulation:** Formulate a research question (what do I need to understand about this investment?).
+3) [x] **Scenario Creation:** Create scenarios (bull/base/bear) exploring different possible outcomes.
+4) [x] **Evidence Collection:** Collect key evidence (article, filing, note, KPI, quote) via quick capture and clipboard detection.
+5) [x] **Thesis Management:** Write or update scenarios (what must be true; catalysts; risks; invalidation rules).
+6) [x] **Structured Review:** Revisit (scheduled review or prompted by new evidence) and decide: reinforce, revise, or invalidate (via Review Wizard).
 
 ## 4. Deliverables
-- macOS application (universal build where feasible).
-- Local data model and persistence layer.
-- Core UI flows: Assets, Research Questions, Scenarios, Scenario Detail, Timeline, Global Search, Settings.
-- Export (JSON, Markdown) and local backup mechanism.
-- Test suite and release checklist.
-- User documentation: onboarding, privacy statement, help.
+- [x] **macOS App:** Native macOS application (SwiftUI/SwiftData).
+- [x] **Persistence:** Local data model and persistence layer using SwiftData.
+- [x] **Core UI Flows:** Assets, Research Questions, Scenarios, Scenario Detail, Timeline, Global Search, Settings.
+- [x] **Export/Import:** Export (JSON, Markdown) and local backup mechanism (JSON import).
+- [ ] **Test Suite:** Test suite and release checklist.
+- [ ] **Documentation:** User documentation: onboarding, privacy statement, help.
 
 ## 5. Out of scope (initially)
 - Brokerage integrations and live portfolio tracking.
@@ -110,8 +110,8 @@ The product must support this end-to-end workflow:
   - UI: url (required), displayTitle (optional), evidenceType, snippetText (optional, limited), userAnnotation (optional).
   - Backend: evidenceId, logEntryId, capturedAt, urlRaw, urlNormalized, domain, sourceTitle, snippetText, annotationText, tagIds.
 
-#### 🟡 Flow 2 — Collect key evidence (Quick Capture)
-*Status: Fully Specified (see docs/QuickCapture_Wireframe.md) & Not Implemented*
+#### 🟢 Flow 2 — Collect key evidence (Quick Capture)
+*Status: Fully Specified (see docs/QuickCapture_Wireframe.md) & Implemented*
 
 **User flow:** Copy URL/snippet → Quick Capture → pick destination → Save → index → jump to entry.
 
@@ -222,16 +222,17 @@ The development of Hyppo is structured into four distinct phases, moving from co
 - Implement tagging systems and basic search to manage growing research sets.
 - *Status: Complete — Global Search, Advanced Filters, and Markdown Export implemented.*
 
-### 🟡 MVP 2: Workflow Support
+### 🟢 MVP 2: Workflow Support
 **Goal:** Streamline the "Quick Capture" of evidence and formalize the "Review Loop" to ensure research stays current.
 - Focus on reducing friction for daily use (Global shortcuts, snippets).
 - Implement guided review wizards to help users update or invalidate their theses.
-- *Status: Partial — Review Mode complete, Pre-Mortem complete, Quick Capture designed (see docs/QuickCapture_Wireframe.md).*
+- *Status: In Progress — Review Mode, Pre-Mortem, and Quick Capture (⌘⇧H) implemented. Draft support, enhanced evidence (snippets/attachments), and scenario comparison pending.*
 
 ### ⚪️ MVP 3: Premium Features
 **Goal:** Provide advanced analytical depth and AI-assisted insights for power users.
 - Focus on local AI summaries and behavioral analytics.
 - Enhanced export formats for professional-grade research memos.
+- *Status: Pending.*
 
 ## 11. Definition of Done
 - Acceptance criteria met.

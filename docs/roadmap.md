@@ -49,8 +49,13 @@ This document tracks the implementation status of features across different deve
 - [x] **Review Reminders**:
     - [x] Local reminder scheduling per scenario.
     - [x] macOS notification integration with snooze/complete actions.
-- [ ] **Quick Capture**:
-    - [ ] Global shortcut or menu bar item for fast evidence entry.
+- [x] **Quick Capture**:
+    - [x] Global shortcut (⌘⇧H) for fast evidence entry.
+    - [x] Auto-detect clipboard content (URLs vs. text snippets).
+    - [x] Hierarchical destination picker (Asset → Research Question).
+    - [x] Inline create forms for new assets/questions.
+    - [x] Evidence type selection (Article, Filing, KPI, Quote, Note).
+    - [x] Compact mode for rapid successive captures.
     - [ ] Draft support for logs.
 - [x] **Review Mode**:
     - [x] Guided review wizard (Reinforce / Revise / Invalidate).
