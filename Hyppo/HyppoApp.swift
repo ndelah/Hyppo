@@ -29,6 +29,9 @@ struct HyppoApp: App {
     
     /// Shared SwiftData model container for persistence
     var sharedModelContainer: ModelContainer = {
+        // Register custom value transformers before creating the schema
+        ScenariosTransformer.register()
+        
         DebugLogger.log(
             location: "HyppoApp:sharedModelContainer",
             message: "Creating ModelContainer",
