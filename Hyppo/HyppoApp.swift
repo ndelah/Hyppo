@@ -1,5 +1,5 @@
 /**
- Footnote (Hyppo) application entry point.
+ Hyppo application entry point.
  
  Configures the SwiftData model container with all entity types
  and installs the root navigation shell. Provides Settings window access.
@@ -15,8 +15,8 @@ struct HyppoApp: App {
     init() {
         DebugLogger.info(
             location: "HyppoApp:init",
-            message: "Footnote app initializing",
-            data: ["models": "Asset, ResearchQuestion, Scenario, LogEntry, Evidence, Tag, ReviewReminder"]
+            message: "Hyppo app initializing",
+            data: ["models": "Asset, ResearchQuestion, LogEntry, Evidence, Tag, ReviewReminder"]
         )
     }
     
@@ -34,7 +34,6 @@ struct HyppoApp: App {
         let schema = Schema([
             Asset.self,
             ResearchQuestion.self,
-            Scenario.self,
             LogEntry.self,
             Evidence.self,
             Tag.self,
@@ -134,11 +133,6 @@ struct HyppoApp: App {
                 }
                 .keyboardShortcut("q", modifiers: [.command, .shift])
                 
-                Button("New Scenario") {
-                    NotificationCenter.default.post(name: .addScenario, object: nil)
-                }
-                .keyboardShortcut("t", modifiers: [.command, .shift])
-                
                 Button("New Log Entry") {
                     NotificationCenter.default.post(name: .addLogEntry, object: nil)
                 }
@@ -168,9 +162,6 @@ extension Notification.Name {
     
     /// Notification to trigger Add Research Question action
     static let addResearchQuestion = Notification.Name("addResearchQuestion")
-    
-    /// Notification to trigger Add Scenario action
-    static let addScenario = Notification.Name("addScenario")
     
     /// Notification to trigger Add Log Entry action
     static let addLogEntry = Notification.Name("addLogEntry")

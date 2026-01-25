@@ -3,7 +3,7 @@
  
  An asset is the top-level entity in the data hierarchy.
  Users track companies by creating assets, formulating research questions,
- and then creating scenarios to explore different outcomes.
+ and exploring different scenarios for each thesis.
  */
 
 import Foundation
@@ -87,19 +87,14 @@ final class Asset {
         researchQuestions?.count ?? 0
     }
     
-    /// Returns only open research questions
-    var openResearchQuestions: [ResearchQuestion] {
-        researchQuestions?.filter { $0.status == .open } ?? []
+    /// Returns only active research questions
+    var activeResearchQuestions: [ResearchQuestion] {
+        researchQuestions?.filter { $0.status == .active } ?? []
     }
     
-    /// Returns all scenarios across all research questions
-    var allScenarios: [Scenario] {
-        researchQuestions?.flatMap { $0.scenarios ?? [] } ?? []
-    }
-    
-    /// Returns only active scenarios across all research questions
-    var activeScenarios: [Scenario] {
-        allScenarios.filter { $0.status == .active }
+    /// Returns total count of scenarios across all research questions
+    var totalScenariosCount: Int {
+        researchQuestions?.reduce(0) { $0 + $1.scenariosCount } ?? 0
     }
     
     /// Display string combining ticker and name

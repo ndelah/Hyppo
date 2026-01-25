@@ -1,7 +1,7 @@
 /**
  GlobalSearchView provides app-wide search across all entities.
  
- Searches across Assets, Research Questions, Scenarios, Log Entries, and Evidence
+ Searches across Assets, Research Questions, Log Entries, and Evidence
  to help users quickly find relevant information.
  */
 
@@ -19,13 +19,11 @@ struct GlobalSearchView: View {
     
     @Binding var selectedAsset: Asset?
     @Binding var selectedResearchQuestion: ResearchQuestion?
-    @Binding var selectedScenario: Scenario?
     
     // MARK: - Queries
     
     @Query(sort: \Asset.tickerNormalized) private var allAssets: [Asset]
     @Query(sort: \ResearchQuestion.updatedAt, order: .reverse) private var allResearchQuestions: [ResearchQuestion]
-    @Query(sort: \Scenario.updatedAt, order: .reverse) private var allScenarios: [Scenario]
     @Query(sort: \LogEntry.occurredAt, order: .reverse) private var allLogEntries: [LogEntry]
     @Query(sort: \Evidence.capturedAt, order: .reverse) private var allEvidence: [Evidence]
     @Query(sort: \Tag.name) private var allTags: [Tag]
@@ -45,7 +43,6 @@ struct GlobalSearchView: View {
         case all = "All"
         case assets = "Assets"
         case researchQuestions = "Research Questions"
-        case scenarios = "Scenarios"
         case logEntries = "Log Entries"
         case evidence = "Evidence"
         
@@ -56,7 +53,6 @@ struct GlobalSearchView: View {
             case .all: return "magnifyingglass"
             case .assets: return "building.2"
             case .researchQuestions: return "questionmark.circle"
-            case .scenarios: return "chart.line.uptrend.xyaxis"
             case .logEntries: return "note.text"
             case .evidence: return "link"
             }
@@ -109,24 +105,12 @@ struct GlobalSearchView: View {
             self.entity = question
         }
         
-        init(scenario: Scenario) {
-            self.id = scenario.scenarioId
-            self.entityType = .scenarios
-            self.title = scenario.title
-            if let question = scenario.researchQuestion, let asset = question.asset {
-                self.subtitle = "\(asset.ticker) • \(scenario.scenarioType.displayName)"
-            } else {
-                self.subtitle = scenario.scenarioType.displayName
-            }
-            self.entity = scenario
-        }
-        
         init(logEntry: LogEntry) {
             self.id = logEntry.logEntryId
             self.entityType = .logEntries
             self.title = logEntry.title
-            if let scenario = logEntry.scenario, let question = scenario.researchQuestion, let asset = question.asset {
-                self.subtitle = "\(asset.ticker) • \(scenario.title)"
+            if let question = logEntry.researchQuestion, let asset = question.asset {
+                self.subtitle = "\(asset.ticker) • \(question.questionText.prefix(30))..."
             } else {
                 self.subtitle = logEntry.entryType.displayName
             }
@@ -137,8 +121,8 @@ struct GlobalSearchView: View {
             self.id = evidence.evidenceId
             self.entityType = .evidence
             self.title = evidence.effectiveTitle
-            if let logEntry = evidence.logEntry, let scenario = logEntry.scenario, let question = scenario.researchQuestion, let asset = question.asset {
-                self.subtitle = "\(asset.ticker) • \(scenario.title)"
+            if let logEntry = evidence.logEntry, let question = logEntry.researchQuestion, let asset = question.asset {
+                self.subtitle = "\(asset.ticker) • \(question.questionText.prefix(30))..."
             } else {
                 self.subtitle = evidence.evidenceType.displayName
             }
@@ -165,15 +149,6 @@ struct GlobalSearchView: View {
             for question in allResearchQuestions {
                 if matchesSearch(question: question) && matchesFilters(question: question) {
                     results.append(SearchResult(question: question))
-                }
-            }
-        }
-        
-        // Search scenarios
-        if selectedEntityType == nil || selectedEntityType == .all || selectedEntityType == .scenarios {
-            for scenario in allScenarios {
-                if matchesSearch(scenario: scenario) && matchesFilters(scenario: scenario) {
-                    results.append(SearchResult(scenario: scenario))
                 }
             }
         }
@@ -213,16 +188,10 @@ struct GlobalSearchView: View {
         if searchText.isEmpty { return true }
         let searchLower = searchText.lowercased()
         return question.questionText.lowercased().contains(searchLower) ||
-               (question.context?.lowercased().contains(searchLower) ?? false)
-    }
-    
-    private func matchesSearch(scenario: Scenario) -> Bool {
-        if searchText.isEmpty { return true }
-        let searchLower = searchText.lowercased()
-        return scenario.title.lowercased().contains(searchLower) ||
-               scenario.scenarioStatement.lowercased().contains(searchLower) ||
-               scenario.keyDrivers.joined(separator: " ").lowercased().contains(searchLower) ||
-               scenario.invalidationRules.joined(separator: " ").lowercased().contains(searchLower)
+               (question.context?.lowercased().contains(searchLower) ?? false) ||
+               (question.thesisStatement?.lowercased().contains(searchLower) ?? false) ||
+               question.keyDrivers.joined(separator: " ").lowercased().contains(searchLower) ||
+               question.invalidationRules.joined(separator: " ").lowercased().contains(searchLower)
     }
     
     private func matchesSearch(logEntry: LogEntry) -> Bool {
@@ -262,34 +231,23 @@ struct GlobalSearchView: View {
     }
     
     private func matchesFilters(question: ResearchQuestion) -> Bool {
-        // Date filter
-        if let range = dateRange {
-            if !range.contains(question.createdAt) && !range.contains(question.updatedAt) {
-                return false
-            }
-        }
-        
-        return true
-    }
-    
-    private func matchesFilters(scenario: Scenario) -> Bool {
         // Tag filter
         if let tag = selectedTag {
-            guard let scenarioTags = scenario.tags, scenarioTags.contains(where: { $0.tagId == tag.tagId }) else {
+            guard let questionTags = question.tags, questionTags.contains(where: { $0.tagId == tag.tagId }) else {
                 return false
             }
         }
         
         // Confidence filter
         if let confidence = selectedConfidence {
-            guard let scenarioConfidence = scenario.confidence, scenarioConfidence == confidence else {
+            guard let questionConfidence = question.confidence, questionConfidence == confidence else {
                 return false
             }
         }
         
         // Date filter
         if let range = dateRange {
-            if !range.contains(scenario.createdAt) && !range.contains(scenario.updatedAt) {
+            if !range.contains(question.createdAt) && !range.contains(question.updatedAt) {
                 return false
             }
         }
@@ -601,23 +559,15 @@ struct GlobalSearchView: View {
         if let asset = result.entity as? Asset {
             selectedAsset = asset
             selectedResearchQuestion = nil
-            selectedScenario = nil
         } else if let question = result.entity as? ResearchQuestion {
             selectedAsset = question.asset
             selectedResearchQuestion = question
-            selectedScenario = nil
-        } else if let scenario = result.entity as? Scenario {
-            selectedAsset = scenario.researchQuestion?.asset
-            selectedResearchQuestion = scenario.researchQuestion
-            selectedScenario = scenario
         } else if let logEntry = result.entity as? LogEntry {
-            selectedAsset = logEntry.scenario?.researchQuestion?.asset
-            selectedResearchQuestion = logEntry.scenario?.researchQuestion
-            selectedScenario = logEntry.scenario
+            selectedAsset = logEntry.researchQuestion?.asset
+            selectedResearchQuestion = logEntry.researchQuestion
         } else if let evidence = result.entity as? Evidence {
-            selectedAsset = evidence.logEntry?.scenario?.researchQuestion?.asset
-            selectedResearchQuestion = evidence.logEntry?.scenario?.researchQuestion
-            selectedScenario = evidence.logEntry?.scenario
+            selectedAsset = evidence.logEntry?.researchQuestion?.asset
+            selectedResearchQuestion = evidence.logEntry?.researchQuestion
         }
         
         dismiss()
@@ -658,9 +608,7 @@ private struct SearchResultRow: View {
 #Preview {
     GlobalSearchView(
         selectedAsset: .constant(nil),
-        selectedResearchQuestion: .constant(nil),
-        selectedScenario: .constant(nil)
+        selectedResearchQuestion: .constant(nil)
     )
-    .modelContainer(for: [Asset.self, ResearchQuestion.self, Scenario.self, LogEntry.self, Evidence.self, Tag.self], inMemory: true)
+    .modelContainer(for: [Asset.self, ResearchQuestion.self, LogEntry.self, Evidence.self, Tag.self], inMemory: true)
 }
-

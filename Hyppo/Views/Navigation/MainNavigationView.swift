@@ -2,7 +2,7 @@
  MainNavigationView is the root navigation container for the app.
  
  Provides a three-column layout: sidebar (assets), content (research questions),
- and detail (research question detail or scenario detail). On smaller windows, columns collapse appropriately.
+ and detail (research question detail). On smaller windows, columns collapse appropriately.
  */
 
 import SwiftUI
@@ -18,13 +18,12 @@ struct MainNavigationView: View {
     
     @State private var selectedAsset: Asset?
     @State private var selectedResearchQuestion: ResearchQuestion?
-    @State private var selectedScenario: Scenario?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     
     // Shortcut-triggered sheets
     @State private var showingAddAssetSheet = false
     @State private var showingAddLogSheet = false
-    @State private var showingNoScenarioAlert = false
+    @State private var showingNoResearchQuestionAlert = false
     @State private var showingGlobalSearch = false
     
     // MARK: - Body
@@ -43,32 +42,23 @@ struct MainNavigationView: View {
                 EmptyStateView.noSelection
             }
         } detail: {
-            // Detail - Research Question detail (with scenarios) or Scenario detail
-            if let scenario = selectedScenario {
-                ScenarioDetailView(scenario: scenario)
-            } else if let question = selectedResearchQuestion {
-                ResearchQuestionDetailView(researchQuestion: question, selectedScenario: $selectedScenario)
+            // Detail - Research Question detail (single report view)
+            if let question = selectedResearchQuestion {
+                ResearchQuestionDetailView(researchQuestion: question)
             } else if selectedAsset != nil {
                 EmptyStateView(
                     iconName: "questionmark.circle",
                     title: "Select a Research Question",
-                    description: "Choose a research question from the list to view its scenarios."
+                    description: "Choose a research question from the list to view its details and timeline."
                 )
             } else {
                 EmptyStateView.noSelection
             }
         }
         .onChange(of: selectedAsset) { oldValue, newValue in
-            // Clear research question and scenario selection when asset changes
+            // Clear research question selection when asset changes
             if oldValue != newValue {
                 selectedResearchQuestion = nil
-                selectedScenario = nil
-            }
-        }
-        .onChange(of: selectedResearchQuestion) { oldValue, newValue in
-            // Clear scenario selection when research question changes
-            if oldValue != newValue {
-                selectedScenario = nil
             }
         }
         // Handle menu shortcut notifications
@@ -76,10 +66,10 @@ struct MainNavigationView: View {
             showingAddAssetSheet = true
         }
         .onReceive(NotificationCenter.default.publisher(for: .addLogEntry)) { _ in
-            if selectedScenario != nil {
+            if selectedResearchQuestion != nil {
                 showingAddLogSheet = true
             } else {
-                showingNoScenarioAlert = true
+                showingNoResearchQuestionAlert = true
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .showGlobalSearch)) { _ in
@@ -93,23 +83,22 @@ struct MainNavigationView: View {
             }
         }
         .sheet(isPresented: $showingAddLogSheet) {
-            if let scenario = selectedScenario {
-                LogEntryFormView(mode: .add(scenario: scenario)) { newLogEntry in
+            if let researchQuestion = selectedResearchQuestion {
+                LogEntryFormView(mode: .add(researchQuestion: researchQuestion)) { newLogEntry in
                     modelContext.insert(newLogEntry)
-                    newLogEntry.scenario = scenario
+                    newLogEntry.researchQuestion = researchQuestion
                 }
             }
         }
-        .alert("No Scenario Selected", isPresented: $showingNoScenarioAlert) {
+        .alert("No Research Question Selected", isPresented: $showingNoResearchQuestionAlert) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Please select a scenario first to add a log entry. Use ⌘⇧L after selecting a scenario.")
+            Text("Please select a research question first to add a log entry. Use ⌘⇧L after selecting a research question.")
         }
         .sheet(isPresented: $showingGlobalSearch) {
             GlobalSearchView(
                 selectedAsset: $selectedAsset,
-                selectedResearchQuestion: $selectedResearchQuestion,
-                selectedScenario: $selectedScenario
+                selectedResearchQuestion: $selectedResearchQuestion
             )
         }
     }
@@ -119,13 +108,5 @@ struct MainNavigationView: View {
 
 #Preview {
     MainNavigationView()
-        .modelContainer(for: [Asset.self, ResearchQuestion.self, Scenario.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
+        .modelContainer(for: [Asset.self, ResearchQuestion.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
 }
-
-
-
-
-
-
-
-

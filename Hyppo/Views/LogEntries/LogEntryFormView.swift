@@ -10,7 +10,7 @@ import SwiftData
 
 /// Form mode for add vs edit
 enum LogEntryFormMode {
-    case add(scenario: Scenario)
+    case add(researchQuestion: ResearchQuestion)
     case edit(LogEntry)
     
     var title: String {
@@ -73,12 +73,12 @@ struct LogEntryFormView: View {
         !bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
-    private var scenarioTitle: String {
+    private var questionTitle: String {
         switch mode {
-        case .add(let scenario):
-            return scenario.title
+        case .add(let researchQuestion):
+            return researchQuestion.questionText
         case .edit(let logEntry):
-            return logEntry.scenario?.title ?? "Unknown Scenario"
+            return logEntry.researchQuestion?.questionText ?? "Unknown Research Question"
         }
     }
     
@@ -94,14 +94,15 @@ struct LogEntryFormView: View {
             // Form content
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Scenario reference
+                    // Research question reference
                     HStack {
-                        Text("Scenario:")
+                        Text("Research Question:")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(scenarioTitle)
+                        Text(questionTitle)
                             .font(.caption)
                             .fontWeight(.medium)
+                            .lineLimit(1)
                     }
                     
                     // Entry type and date row
@@ -314,15 +315,11 @@ struct LogEntryFormView: View {
 // MARK: - Preview
 
 #Preview {
-    let scenario = Scenario(
-        scenarioType: .base,
-        title: "Test Scenario",
-        scenarioStatement: "Testing",
-        keyDrivers: ["Driver 1"],
-        invalidationRules: ["Rule 1"]
+    let question = ResearchQuestion(
+        questionText: "Can AAPL sustain services revenue growth?",
+        context: "Services now represent 20% of revenue"
     )
     
-    return LogEntryFormView(mode: .add(scenario: scenario)) { _ in }
-        .modelContainer(for: [Scenario.self, LogEntry.self, Tag.self], inMemory: true)
+    return LogEntryFormView(mode: .add(researchQuestion: question)) { _ in }
+        .modelContainer(for: [ResearchQuestion.self, LogEntry.self, Tag.self], inMemory: true)
 }
-

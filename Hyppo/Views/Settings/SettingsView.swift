@@ -49,60 +49,6 @@ private enum SettingsTab: String {
     case about
 }
 
-// MARK: - Display Density
-
-/// Controls the amount of information shown in the UI
-enum DisplayDensity: String, CaseIterable, Identifiable {
-    case compact = "compact"
-    case comfortable = "comfortable"
-    case expanded = "expanded"
-    
-    var id: String { rawValue }
-    
-    var displayName: String {
-        switch self {
-        case .compact: return "Compact"
-        case .comfortable: return "Comfortable"
-        case .expanded: return "Expanded"
-        }
-    }
-    
-    var description: String {
-        switch self {
-        case .compact: return "Minimal info, collapsed sections"
-        case .comfortable: return "Balanced view (default)"
-        case .expanded: return "All details visible"
-        }
-    }
-    
-    /// Number of lines to show in log entry body preview
-    var bodyPreviewLines: Int {
-        switch self {
-        case .compact: return 1
-        case .comfortable: return 3
-        case .expanded: return 6
-        }
-    }
-    
-    /// Whether to expand scenario sections by default
-    var expandSectionsByDefault: Bool {
-        switch self {
-        case .compact: return false
-        case .comfortable: return true
-        case .expanded: return true
-        }
-    }
-    
-    /// Whether to show metadata row in log cards
-    var showMetadataRow: Bool {
-        switch self {
-        case .compact: return false
-        case .comfortable: return true
-        case .expanded: return true
-        }
-    }
-}
-
 // MARK: - General Settings Tab
 
 private struct GeneralSettingsTab: View {
@@ -121,9 +67,7 @@ private struct GeneralSettingsTab: View {
                     ForEach(DisplayDensity.allCases) { density in
                         VStack(alignment: .leading) {
                             Text(density.displayName)
-                            Text(density.description)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            // Note: description is not available on the shared DisplayDensity enum
                         }
                         .tag(density.rawValue)
                     }

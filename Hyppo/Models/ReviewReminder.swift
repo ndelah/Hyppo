@@ -1,7 +1,7 @@
 /**
- ReviewReminder model for scheduling scenario review reminders.
+ ReviewReminder model for scheduling research question review reminders.
  
- Tracks when a scenario should be reviewed next, the review cadence,
+ Tracks when a research question should be reviewed next, the review cadence,
  and notification state. Supports snoozing and disabling reminders.
  */
 
@@ -11,10 +11,10 @@ import SwiftData
 // MARK: - Review Cadence Enum
 
 /**
- Represents the frequency of scenario reviews.
+ Represents the frequency of research question reviews.
  
  Users can set how often they want to be reminded to review
- a particular scenario.
+ a particular research question.
  */
 enum ReviewCadence: String, Codable, CaseIterable, Identifiable {
     case daily = "Daily"
@@ -75,7 +75,7 @@ final class ReviewReminder {
     /// Timestamp when last notification was sent
     var lastNotifiedAt: Date?
     
-    /// Whether reminders are enabled for this scenario
+    /// Whether reminders are enabled for this research question
     var isEnabled: Bool
     
     /// Number of times this reminder has been snoozed
@@ -92,8 +92,8 @@ final class ReviewReminder {
     
     // MARK: - Relationships
     
-    /// The scenario this reminder belongs to
-    @Relationship(inverse: \Scenario.reviewReminder) var scenario: Scenario?
+    /// The research question this reminder belongs to
+    @Relationship(inverse: \ResearchQuestion.reviewReminder) var researchQuestion: ResearchQuestion?
     
     // MARK: - Initialization
     
@@ -236,8 +236,8 @@ final class ReviewReminder {
         )
         self.updatedAt = Date()
         
-        // Also update the scenario's lastReviewedAt
-        scenario?.markReviewed()
+        // Also update the research question's lastReviewedAt
+        researchQuestion?.markReviewed()
     }
     
     /**
@@ -338,4 +338,3 @@ extension ReviewReminder {
         return errors
     }
 }
-

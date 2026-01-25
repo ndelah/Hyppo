@@ -8,39 +8,6 @@
 import SwiftUI
 import SwiftData
 
-// MARK: - Tag Colors
-
-/// Available colors for tags
-enum TagColor: String, CaseIterable, Identifiable {
-    case gray = "gray"
-    case red = "red"
-    case orange = "orange"
-    case yellow = "yellow"
-    case green = "green"
-    case blue = "blue"
-    case purple = "purple"
-    case pink = "pink"
-    
-    var id: String { rawValue }
-    
-    var color: Color {
-        switch self {
-        case .gray: return .gray
-        case .red: return .red
-        case .orange: return .orange
-        case .yellow: return .yellow
-        case .green: return .green
-        case .blue: return .blue
-        case .purple: return .purple
-        case .pink: return .pink
-        }
-    }
-    
-    var displayName: String {
-        rawValue.capitalized
-    }
-}
-
 // MARK: - Tag Management Sheet
 
 /// Sheet for managing all tags in the app

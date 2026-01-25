@@ -117,19 +117,8 @@ extension EmptyStateView {
         EmptyStateView(
             iconName: "questionmark.circle",
             title: "No Research Questions Yet",
-            description: "Formulate a research question about this investment. Then create scenarios (bull/base/bear) to explore possible outcomes.",
+            description: "Formulate a research question about this investment. Define your thesis, key drivers, and scenarios (bull/base/bear).",
             actionTitle: "Add Research Question",
-            action: action
-        )
-    }
-    
-    /// Empty state for the scenarios list
-    static func noScenarios(action: @escaping () -> Void) -> EmptyStateView {
-        EmptyStateView(
-            iconName: "arrow.up.arrow.down.circle",
-            title: "No Scenarios Yet",
-            description: "Create a scenario to document your investment hypothesis. Add key drivers, risks, and invalidation rules.",
-            actionTitle: "Add Scenario",
             action: action
         )
     }
@@ -170,7 +159,7 @@ extension EmptyStateView {
         EmptyStateView(
             iconName: "sidebar.left",
             title: "Select an Item",
-            description: "Choose an asset from the sidebar to view its research questions and scenarios."
+            description: "Choose an asset from the sidebar to view its research questions and details."
         )
     }
 }
@@ -185,11 +174,10 @@ extension EmptyStateView {
     EmptyStateView.noResearchQuestions(action: {})
 }
 
-#Preview("No Scenarios") {
-    EmptyStateView.noScenarios(action: {})
+#Preview("No Log Entries") {
+    EmptyStateView.noLogEntries(action: {})
 }
 
 #Preview("No Selection") {
     EmptyStateView.noSelection
 }
-

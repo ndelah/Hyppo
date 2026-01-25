@@ -1,7 +1,7 @@
 /**
  NotificationService manages local macOS notifications for review reminders.
  
- Handles permission requests, scheduling notifications for scenario reviews,
+ Handles permission requests, scheduling notifications for research question reviews,
  and responding to notification actions like snooze.
  */
 
@@ -23,7 +23,7 @@ final class NotificationService: NSObject, ObservableObject {
     
     // MARK: - Constants
     
-    private let notificationCategoryId = "SCENARIO_REVIEW"
+    private let notificationCategoryId = "RESEARCH_REVIEW"
     private let snoozeActionId = "SNOOZE_ACTION"
     private let reviewActionId = "REVIEW_ACTION"
     
@@ -107,13 +107,13 @@ final class NotificationService: NSObject, ObservableObject {
     // MARK: - Scheduling Notifications
     
     /**
-     Schedules a notification for a scenario review reminder.
+     Schedules a notification for a research question review reminder.
      
      - Parameters:
        - reminder: The review reminder to schedule
-       - scenario: The scenario being reminded about
+       - researchQuestion: The research question being reminded about
      */
-    func scheduleNotification(for reminder: ReviewReminder, scenario: Scenario) {
+    func scheduleNotification(for reminder: ReviewReminder, researchQuestion: ResearchQuestion) {
         guard isAuthorized else {
             DebugLogger.warning(
                 location: "NotificationService:scheduleNotification",
@@ -132,12 +132,12 @@ final class NotificationService: NSObject, ObservableObject {
         }
         
         let content = UNMutableNotificationContent()
-        content.title = "Scenario Review Due"
-        content.body = "Time to review your \(scenario.scenarioType.displayName.lowercased()) scenario: \"\(scenario.title)\""
+        content.title = "Research Review Due"
+        content.body = "Time to review your research: \"\(researchQuestion.questionText)\""
         content.sound = .default
         content.categoryIdentifier = notificationCategoryId
         content.userInfo = [
-            "scenarioId": scenario.scenarioId.uuidString,
+            "researchQuestionId": researchQuestion.questionId.uuidString,
             "reminderId": reminder.reminderId.uuidString
         ]
         
@@ -164,8 +164,8 @@ final class NotificationService: NSObject, ObservableObject {
             } else {
                 DebugLogger.info(
                     location: "NotificationService:scheduleNotification",
-                    message: "Scheduled notification for scenario review",
-                    data: ["scenarioTitle": scenario.title, "dueDate": dueDate.description]
+                    message: "Scheduled notification for research question review",
+                    data: ["questionText": researchQuestion.questionText, "dueDate": dueDate.description]
                 )
             }
         }
@@ -200,11 +200,11 @@ final class NotificationService: NSObject, ObservableObject {
      
      - Parameters:
        - reminder: The updated reminder
-       - scenario: The scenario being reminded about
+       - researchQuestion: The research question being reminded about
      */
-    func rescheduleNotification(for reminder: ReviewReminder, scenario: Scenario) {
+    func rescheduleNotification(for reminder: ReviewReminder, researchQuestion: ResearchQuestion) {
         cancelNotification(for: reminder)
-        scheduleNotification(for: reminder, scenario: scenario)
+        scheduleNotification(for: reminder, researchQuestion: researchQuestion)
     }
 }
 
@@ -251,13 +251,13 @@ extension NotificationService: UNUserNotificationCenterDelegate {
             )
             
         case reviewActionId, UNNotificationDefaultActionIdentifier:
-            // Post notification for app to open the scenario
-            if let scenarioIdString = userInfo["scenarioId"] as? String,
-               let scenarioId = UUID(uuidString: scenarioIdString) {
+            // Post notification for app to open the research question
+            if let questionIdString = userInfo["researchQuestionId"] as? String,
+               let questionId = UUID(uuidString: questionIdString) {
                 NotificationCenter.default.post(
-                    name: .openScenarioForReview,
+                    name: .openResearchQuestionForReview,
                     object: nil,
-                    userInfo: ["scenarioId": scenarioId, "reminderId": reminderId]
+                    userInfo: ["researchQuestionId": questionId, "reminderId": reminderId]
                 )
             }
             
@@ -275,7 +275,6 @@ extension Notification.Name {
     /// Posted when user taps snooze on a review notification
     static let snoozeReviewReminder = Notification.Name("snoozeReviewReminder")
     
-    /// Posted when user taps to open scenario for review
-    static let openScenarioForReview = Notification.Name("openScenarioForReview")
+    /// Posted when user taps to open research question for review
+    static let openResearchQuestionForReview = Notification.Name("openResearchQuestionForReview")
 }
-

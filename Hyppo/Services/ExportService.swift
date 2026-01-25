@@ -2,7 +2,7 @@
  ExportService handles exporting and importing data in various formats.
  
  Supports JSON export/import for full data backup and restore,
- and Markdown export for individual scenarios.
+ and Markdown export for individual research questions.
  */
 
 import Foundation
@@ -17,7 +17,7 @@ struct ExportData: Codable {
     let exportedAt: Date
     let assets: [AssetExport]
     
-    static let currentVersion = "1.0"
+    static let currentVersion = "2.0"  // Updated for new model structure
 }
 
 struct AssetExport: Codable {
@@ -37,25 +37,17 @@ struct ResearchQuestionExport: Codable {
     let id: String
     let questionText: String
     let context: String?
-    let status: String
-    let conclusion: String?
-    let priority: Int?
-    let createdAt: Date
-    let updatedAt: Date
-    let scenarios: [ScenarioExport]
-}
-
-struct ScenarioExport: Codable {
-    let id: String
-    let scenarioType: String
-    let title: String
-    let scenarioStatement: String
+    let thesisStatement: String?
     let keyDrivers: [String]
     let invalidationRules: [String]
     let catalysts: [String]
     let keyRisks: [String]
+    let scenarios: [SimpleScenarioExport]
+    let preMortemText: String?
     let confidence: Int?
     let status: String
+    let conclusion: String?
+    let priority: Int?
     let versionNumber: Int
     let createdAt: Date
     let updatedAt: Date
@@ -63,6 +55,12 @@ struct ScenarioExport: Codable {
     let tags: [String]
     let logEntries: [LogEntryExport]
     let reviewReminder: ReviewReminderExport?
+}
+
+struct SimpleScenarioExport: Codable {
+    let id: String
+    let type: String
+    let title: String
 }
 
 struct LogEntryExport: Codable {
@@ -125,9 +123,8 @@ final class ExportService {
         
         let assetExports = assets.map { asset -> AssetExport in
             let researchQuestionExports = (asset.researchQuestions ?? []).map { question -> ResearchQuestionExport in
-                let scenarioExports = (question.scenarios ?? []).map { scenario -> ScenarioExport in
-                    let logEntryExports = (scenario.logEntries ?? []).map { logEntry -> LogEntryExport in
-                        let evidenceExports = (logEntry.evidenceItems ?? []).map { evidence -> EvidenceExport in
+                let logEntryExports = (question.logEntries ?? []).map { logEntry -> LogEntryExport in
+                    let evidenceExports = (logEntry.evidenceItems ?? []).map { evidence -> EvidenceExport in
                         EvidenceExport(
                             id: evidence.evidenceId.uuidString,
                             evidenceType: evidence.evidenceTypeRaw,
@@ -159,7 +156,7 @@ final class ExportService {
                 }
                 
                 var reminderExport: ReviewReminderExport? = nil
-                if let reminder = scenario.reviewReminder {
+                if let reminder = question.reviewReminder {
                     reminderExport = ReviewReminderExport(
                         cadence: reminder.cadenceRaw,
                         customIntervalDays: reminder.customIntervalDays,
@@ -168,24 +165,11 @@ final class ExportService {
                     )
                 }
                 
-                    return ScenarioExport(
-                        id: scenario.scenarioId.uuidString,
-                        scenarioType: scenario.scenarioTypeRaw,
-                        title: scenario.title,
-                        scenarioStatement: scenario.scenarioStatement,
-                        keyDrivers: scenario.keyDrivers,
-                        invalidationRules: scenario.invalidationRules,
-                        catalysts: scenario.catalysts,
-                        keyRisks: scenario.keyRisks,
-                        confidence: scenario.confidenceCurrent,
-                        status: scenario.statusRaw,
-                        versionNumber: scenario.versionNumber,
-                        createdAt: scenario.createdAt,
-                        updatedAt: scenario.updatedAt,
-                        lastReviewedAt: scenario.lastReviewedAt,
-                        tags: (scenario.tags ?? []).map { $0.name },
-                        logEntries: logEntryExports,
-                        reviewReminder: reminderExport
+                let scenarioExports = question.scenarios.map { scenario -> SimpleScenarioExport in
+                    SimpleScenarioExport(
+                        id: scenario.id.uuidString,
+                        type: scenario.type,
+                        title: scenario.title
                     )
                 }
                 
@@ -193,12 +177,24 @@ final class ExportService {
                     id: question.questionId.uuidString,
                     questionText: question.questionText,
                     context: question.context,
+                    thesisStatement: question.thesisStatement,
+                    keyDrivers: question.keyDrivers,
+                    invalidationRules: question.invalidationRules,
+                    catalysts: question.catalysts,
+                    keyRisks: question.keyRisks,
+                    scenarios: scenarioExports,
+                    preMortemText: question.preMortemText,
+                    confidence: question.confidenceCurrent,
                     status: question.statusRaw,
                     conclusion: question.conclusion,
                     priority: question.priority,
+                    versionNumber: question.versionNumber,
                     createdAt: question.createdAt,
                     updatedAt: question.updatedAt,
-                    scenarios: scenarioExports
+                    lastReviewedAt: question.lastReviewedAt,
+                    tags: (question.tags ?? []).map { $0.name },
+                    logEntries: logEntryExports,
+                    reviewReminder: reminderExport
                 )
             }
             
@@ -294,45 +290,45 @@ final class ExportService {
             
             // Create research questions
             for questionExport in assetExport.researchQuestions {
+                // Convert simple scenarios from export
+                let importedScenarios = questionExport.scenarios.map { scenarioExport in
+                    var scenario = SimpleScenario(
+                        type: ScenarioType(rawValue: scenarioExport.type) ?? .base,
+                        title: scenarioExport.title
+                    )
+                    if let uuid = UUID(uuidString: scenarioExport.id) {
+                        scenario.id = uuid
+                    }
+                    return scenario
+                }
+                
                 let researchQuestion = ResearchQuestion(
                     questionText: questionExport.questionText,
                     context: questionExport.context,
+                    thesisStatement: questionExport.thesisStatement,
+                    keyDrivers: questionExport.keyDrivers,
+                    invalidationRules: questionExport.invalidationRules,
+                    catalysts: questionExport.catalysts.isEmpty ? nil : questionExport.catalysts,
+                    keyRisks: questionExport.keyRisks.isEmpty ? nil : questionExport.keyRisks,
+                    scenarios: importedScenarios.isEmpty ? nil : importedScenarios,
+                    confidence: questionExport.confidence,
                     priority: questionExport.priority
                 )
+                researchQuestion.preMortemText = questionExport.preMortemText
                 researchQuestion.statusRaw = questionExport.status
                 researchQuestion.conclusion = questionExport.conclusion
+                researchQuestion.versionNumber = questionExport.versionNumber
                 researchQuestion.createdAt = questionExport.createdAt
                 researchQuestion.updatedAt = questionExport.updatedAt
+                researchQuestion.lastReviewedAt = questionExport.lastReviewedAt
+                researchQuestion.tags = questionExport.tags.map { getOrCreateTag(name: $0) }
                 researchQuestion.asset = asset
                 
                 modelContext.insert(researchQuestion)
                 result.researchQuestionsImported += 1
                 
-                // Create scenarios for this research question
-                for scenarioExport in questionExport.scenarios {
-                    let scenario = Scenario(
-                        scenarioType: ScenarioType(rawValue: scenarioExport.scenarioType) ?? .custom,
-                        title: scenarioExport.title,
-                        scenarioStatement: scenarioExport.scenarioStatement,
-                        keyDrivers: scenarioExport.keyDrivers,
-                        invalidationRules: scenarioExport.invalidationRules,
-                        catalysts: scenarioExport.catalysts,
-                        keyRisks: scenarioExport.keyRisks,
-                        confidence: scenarioExport.confidence
-                    )
-                    scenario.statusRaw = scenarioExport.status
-                    scenario.versionNumber = scenarioExport.versionNumber
-                    scenario.createdAt = scenarioExport.createdAt
-                    scenario.updatedAt = scenarioExport.updatedAt
-                    scenario.lastReviewedAt = scenarioExport.lastReviewedAt
-                    scenario.tags = scenarioExport.tags.map { getOrCreateTag(name: $0) }
-                    scenario.researchQuestion = researchQuestion
-                    
-                    modelContext.insert(scenario)
-                    result.scenariosImported += 1
-                
                 // Create review reminder if present
-                if let reminderExport = scenarioExport.reviewReminder {
+                if let reminderExport = questionExport.reviewReminder {
                     let reminder = ReviewReminder(
                         cadence: ReviewCadence(rawValue: reminderExport.cadence) ?? .weekly,
                         customIntervalDays: reminderExport.customIntervalDays,
@@ -340,11 +336,11 @@ final class ExportService {
                     )
                     reminder.nextReviewDueAt = reminderExport.nextReviewDueAt
                     modelContext.insert(reminder)
-                    scenario.reviewReminder = reminder
+                    researchQuestion.reviewReminder = reminder
                 }
                 
                 // Create log entries
-                for logExport in scenarioExport.logEntries {
+                for logExport in questionExport.logEntries {
                     let logEntry = LogEntry(
                         title: logExport.title,
                         body: logExport.body,
@@ -356,7 +352,7 @@ final class ExportService {
                     logEntry.isPinned = logExport.isPinned
                     logEntry.createdAt = logExport.createdAt
                     logEntry.tags = logExport.tags.map { getOrCreateTag(name: $0) }
-                    logEntry.scenario = scenario
+                    logEntry.researchQuestion = researchQuestion
                     
                     modelContext.insert(logEntry)
                     result.logEntriesImported += 1
@@ -384,7 +380,6 @@ final class ExportService {
                     }
                 }
             }
-            }
         }
         
         return result
@@ -393,12 +388,12 @@ final class ExportService {
     // MARK: - Markdown Export
     
     /**
-     Exports a scenario to Markdown format.
+     Exports a research question to Markdown format.
      
-     - Parameter scenario: The scenario to export
+     - Parameter researchQuestion: The research question to export
      - Returns: Markdown string
      */
-    func exportScenarioToMarkdown(_ scenario: Scenario) -> String {
+    func exportResearchQuestionToMarkdown(_ researchQuestion: ResearchQuestion) -> String {
         var md = ""
         
         // Header
@@ -406,64 +401,91 @@ final class ExportService {
         dateFormatter.dateStyle = .long
         dateFormatter.timeStyle = .short
         
-        md += "# \(scenario.title)\n\n"
-        if let question = scenario.researchQuestion {
-            md += "**Research Question:** \(question.questionText)\n"
-            if let asset = question.asset {
-                md += "**Asset:** \(asset.ticker) - \(asset.name)\n"
-            }
+        md += "# \(researchQuestion.questionText)\n\n"
+        if let asset = researchQuestion.asset {
+            md += "**Asset:** \(asset.ticker) - \(asset.name)\n"
         }
-        md += "**Type:** \(scenario.scenarioType.displayName)\n"
-        md += "**Status:** \(scenario.status.displayName)\n"
-        if let confidence = scenario.confidence {
+        md += "**Status:** \(researchQuestion.status.displayName)\n"
+        if let confidence = researchQuestion.confidence {
             md += "**Confidence:** \(confidence.rawValue)/5 (\(confidence.displayName))\n"
         }
-        md += "**Version:** \(scenario.versionNumber)\n"
-        md += "**Created:** \(dateFormatter.string(from: scenario.createdAt))\n"
-        md += "**Last Updated:** \(dateFormatter.string(from: scenario.updatedAt))\n"
-        if let reviewed = scenario.lastReviewedAt {
+        if let priority = researchQuestion.priority {
+            md += "**Priority:** \(priority)/5\n"
+        }
+        md += "**Version:** \(researchQuestion.versionNumber)\n"
+        md += "**Created:** \(dateFormatter.string(from: researchQuestion.createdAt))\n"
+        md += "**Last Updated:** \(dateFormatter.string(from: researchQuestion.updatedAt))\n"
+        if let reviewed = researchQuestion.lastReviewedAt {
             md += "**Last Reviewed:** \(dateFormatter.string(from: reviewed))\n"
         }
         md += "\n---\n\n"
         
-        // Scenario Statement
-        md += "## Scenario Statement\n\n"
-        md += "\(scenario.scenarioStatement)\n\n"
+        // Context
+        if let context = researchQuestion.context, !context.isEmpty {
+            md += "## Context\n\n"
+            md += "\(context)\n\n"
+        }
+        
+        // Thesis Statement
+        if let thesis = researchQuestion.thesisStatement, !thesis.isEmpty {
+            md += "## Thesis Statement\n\n"
+            md += "\(thesis)\n\n"
+        }
         
         // Key Drivers
-        md += "## Key Drivers\n\n"
-        for driver in scenario.keyDrivers {
-            md += "- \(driver)\n"
+        if !researchQuestion.keyDrivers.isEmpty {
+            md += "## Key Drivers\n\n"
+            for driver in researchQuestion.keyDrivers {
+                md += "- \(driver)\n"
+            }
+            md += "\n"
         }
-        md += "\n"
         
         // Invalidation Rules
-        md += "## Invalidation Rules\n\n"
-        for rule in scenario.invalidationRules {
-            md += "- \(rule)\n"
+        if !researchQuestion.invalidationRules.isEmpty {
+            md += "## Invalidation Rules\n\n"
+            for rule in researchQuestion.invalidationRules {
+                md += "- \(rule)\n"
+            }
+            md += "\n"
         }
-        md += "\n"
+        
+        // Scenarios
+        if !researchQuestion.scenarios.isEmpty {
+            md += "## Scenarios\n\n"
+            for scenario in researchQuestion.scenarios.sorted(by: { $0.scenarioType.sortOrder < $1.scenarioType.sortOrder }) {
+                let icon = scenarioTypeIcon(scenario.scenarioType)
+                md += "- **\(icon) \(scenario.scenarioType.displayName):** \(scenario.title)\n"
+            }
+            md += "\n"
+        }
         
         // Catalysts (if any)
-        if !scenario.catalysts.isEmpty {
+        if !researchQuestion.catalysts.isEmpty {
             md += "## Catalysts\n\n"
-            for catalyst in scenario.catalysts {
+            for catalyst in researchQuestion.catalysts {
                 md += "- \(catalyst)\n"
             }
             md += "\n"
         }
         
         // Key Risks (if any)
-        if !scenario.keyRisks.isEmpty {
+        if !researchQuestion.keyRisks.isEmpty {
             md += "## Key Risks\n\n"
-            for risk in scenario.keyRisks {
+            for risk in researchQuestion.keyRisks {
                 md += "- \(risk)\n"
             }
             md += "\n"
         }
         
+        // Pre-Mortem (if any)
+        if let preMortem = researchQuestion.preMortemText, !preMortem.isEmpty {
+            md += "## Pre-Mortem\n\n"
+            md += "\(preMortem)\n\n"
+        }
+        
         // Timeline / Log Entries
-        let logEntries = scenario.sortedLogEntries
+        let logEntries = researchQuestion.sortedLogEntries
         if !logEntries.isEmpty {
             md += "---\n\n"
             md += "## Research Timeline\n\n"
@@ -507,7 +529,7 @@ final class ExportService {
         
         // Footer
         md += "---\n\n"
-        md += "*Exported from Footnote on \(dateFormatter.string(from: Date()))*\n"
+        md += "*Exported from Hyppo on \(dateFormatter.string(from: Date()))*\n"
         
         return md
     }
@@ -519,6 +541,15 @@ final class ExportService {
         case .risk: return "⚠️"
         case .catalyst: return "⚡"
         case .review: return "🔍"
+        }
+    }
+    
+    private func scenarioTypeIcon(_ type: ScenarioType) -> String {
+        switch type {
+        case .bull: return "📈"
+        case .base: return "➡️"
+        case .bear: return "📉"
+        case .custom: return "📝"
         }
     }
 }
@@ -536,7 +567,6 @@ struct ImportResult {
     var assetsImported: Int = 0
     var assetsSkipped: Int = 0
     var researchQuestionsImported: Int = 0
-    var scenariosImported: Int = 0
     var logEntriesImported: Int = 0
     var evidenceImported: Int = 0
     var tagsCreated: Int = 0
@@ -546,11 +576,9 @@ struct ImportResult {
         if assetsImported > 0 { parts.append("\(assetsImported) assets") }
         if assetsSkipped > 0 { parts.append("\(assetsSkipped) skipped") }
         if researchQuestionsImported > 0 { parts.append("\(researchQuestionsImported) research questions") }
-        if scenariosImported > 0 { parts.append("\(scenariosImported) scenarios") }
         if logEntriesImported > 0 { parts.append("\(logEntriesImported) log entries") }
         if evidenceImported > 0 { parts.append("\(evidenceImported) evidence items") }
         if tagsCreated > 0 { parts.append("\(tagsCreated) tags created") }
         return parts.isEmpty ? "No data imported" : parts.joined(separator: ", ")
     }
 }
-

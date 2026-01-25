@@ -1,8 +1,8 @@
 /**
- LogEntry model representing a timestamped journal entry for a scenario.
+ LogEntry model representing a timestamped journal entry for a research question.
  
  Log entries form the chronological record of observations, updates,
- and evidence that track the evolution of an investment scenario over time.
+ and evidence that track the evolution of an investment thesis over time.
  */
 
 import Foundation
@@ -44,8 +44,8 @@ final class LogEntry {
     
     // MARK: - Relationships
     
-    /// Parent scenario this log entry belongs to
-    var scenario: Scenario?
+    /// Parent research question this log entry belongs to
+    var researchQuestion: ResearchQuestion?
     
     /// Evidence items attached to this log entry
     @Relationship(deleteRule: .cascade) var evidenceItems: [Evidence]?
@@ -201,7 +201,7 @@ extension LogEntry {
 
 extension LogEntry {
     /**
-     Creates a system-generated update log entry for scenario revisions.
+     Creates a system-generated update log entry for research question revisions.
      
      - Parameters:
        - diffSummary: Summary of what changed
@@ -221,7 +221,7 @@ extension LogEntry {
         }
         
         return LogEntry(
-            title: "Scenario Updated",
+            title: "Research Updated",
             body: body,
             entryType: .update,
             confidence: confidenceAfter,
@@ -253,7 +253,7 @@ extension LogEntry {
     }
     
     /**
-     Creates a system-generated log entry for scenario status changes.
+     Creates a system-generated log entry for research question status changes.
      
      - Parameters:
        - fromStatus: The previous status
@@ -262,24 +262,24 @@ extension LogEntry {
      - Returns: A new system-generated log entry
      */
     static func createStatusChangeLog(
-        fromStatus: ScenarioStatus,
-        toStatus: ScenarioStatus,
+        fromStatus: ResearchQuestionStatus,
+        toStatus: ResearchQuestionStatus,
         reason: String? = nil
     ) -> LogEntry {
         let title = "Status: \(fromStatus.displayName) → \(toStatus.displayName)"
         
-        var body = "Scenario status changed from \(fromStatus.displayName) to \(toStatus.displayName)."
+        var body = "Research question status changed from \(fromStatus.displayName) to \(toStatus.displayName)."
         
         // Add contextual message based on new status
         switch toStatus {
         case .active:
-            body += "\n\nThe scenario is now actively being tracked."
+            body += "\n\nThe research is now actively being tracked."
         case .onHold:
-            body += "\n\nThe scenario has been put on hold for further evaluation."
+            body += "\n\nThe research has been put on hold for further evaluation."
         case .invalidated:
-            body += "\n\nThe scenario has been marked as invalidated. One or more invalidation rules may have been triggered."
+            body += "\n\nThe thesis has been marked as invalidated. One or more invalidation rules may have been triggered."
         case .archived:
-            body += "\n\nThe scenario has been archived and is no longer actively tracked."
+            body += "\n\nThe research has been archived and is no longer actively tracked."
         }
         
         if let reason = reason, !reason.isEmpty {

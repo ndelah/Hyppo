@@ -1,5 +1,5 @@
 /**
- Tag model for categorizing assets, scenarios, log entries, and evidence.
+ Tag model for categorizing assets, research questions, log entries, and evidence.
  
  Tags provide a flexible way to organize and filter content
  across the application using user-defined labels.
@@ -32,8 +32,8 @@ final class Tag {
     /// Assets associated with this tag
     @Relationship(inverse: \Asset.tags) var assets: [Asset]?
     
-    /// Scenarios associated with this tag
-    @Relationship(inverse: \Scenario.tags) var scenarios: [Scenario]?
+    /// Research questions associated with this tag
+    @Relationship(inverse: \ResearchQuestion.tags) var researchQuestions: [ResearchQuestion]?
     
     /// Log entries associated with this tag
     @Relationship(inverse: \LogEntry.tags) var logEntries: [LogEntry]?
@@ -91,3 +91,39 @@ extension Tag {
     }
 }
 
+// MARK: - Tag Color
+
+/**
+ Predefined tag colors for visual distinction.
+ */
+enum TagColor: String, CaseIterable, Identifiable {
+    case red
+    case orange
+    case yellow
+    case green
+    case blue
+    case purple
+    case pink
+    case gray
+    
+    var id: String { rawValue }
+    
+    var displayName: String {
+        rawValue.capitalized
+    }
+    
+    var color: Color {
+        switch self {
+        case .red: return .red
+        case .orange: return .orange
+        case .yellow: return .yellow
+        case .green: return .green
+        case .blue: return .blue
+        case .purple: return .purple
+        case .pink: return .pink
+        case .gray: return .gray
+        }
+    }
+}
+
+import SwiftUI

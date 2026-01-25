@@ -1,13 +1,76 @@
 /**
- ResearchQuestion model representing an area of inquiry about an asset.
+ ResearchQuestion model representing an investment thesis/hypothesis for an asset.
  
- A research question is the primary organizing concept between Asset and Scenario.
- Users formulate questions about their investments, then create scenario-based
- answers (bull/base/bear) to explore different possible outcomes.
+ A research question captures the user's core investment reasoning, including
+ the thesis statement, key drivers, invalidation rules, and scenarios (bull/base/bear).
+ All log entries and evidence are now attached directly to the research question.
  */
 
 import Foundation
 import SwiftData
+
+// MARK: - Simple Scenario Structure
+
+/**
+ Lightweight scenario representation stored as JSON array.
+ Each scenario is just a type (bull/base/bear) and a title describing the outcome.
+ */
+struct SimpleScenario: Codable, Identifiable, Equatable {
+    var id: UUID
+    var type: String  // ScenarioType rawValue
+    var title: String
+    
+    init(type: ScenarioType = .base, title: String = "") {
+        self.id = UUID()
+        self.type = type.rawValue
+        self.title = title
+    }
+    
+    /// Scenario type as enum
+    var scenarioType: ScenarioType {
+        get { ScenarioType(rawValue: type) ?? .base }
+        set { type = newValue.rawValue }
+    }
+}
+
+// MARK: - Research Question Status
+
+/**
+ Represents the lifecycle status of a research question.
+ */
+enum ResearchQuestionStatus: String, Codable, CaseIterable, Identifiable {
+    case active = "Active"
+    case onHold = "On Hold"
+    case invalidated = "Invalidated"
+    case archived = "Archived"
+    
+    var id: String { rawValue }
+    
+    /// Display label for the status
+    var displayName: String { rawValue }
+    
+    /// Icon name for visual representation
+    var iconName: String {
+        switch self {
+        case .active: return "checkmark.circle.fill"
+        case .onHold: return "pause.circle.fill"
+        case .invalidated: return "xmark.circle.fill"
+        case .archived: return "archivebox.fill"
+        }
+    }
+    
+    /// Color identifier for UI theming
+    var colorName: String {
+        switch self {
+        case .active: return "green"
+        case .onHold: return "orange"
+        case .invalidated: return "red"
+        case .archived: return "gray"
+        }
+    }
+}
+
+// MARK: - Research Question Model
 
 @Model
 final class ResearchQuestion {
@@ -22,6 +85,30 @@ final class ResearchQuestion {
     /// Context or background explaining why this question matters
     var context: String?
     
+    /// The core thesis statement - what must be true for this investment to work
+    var thesisStatement: String?
+    
+    /// Key drivers that support the thesis (stored as JSON array)
+    var keyDriversData: Data?
+    
+    /// Rules that would invalidate the thesis (stored as JSON array)
+    var invalidationRulesData: Data?
+    
+    /// Optional catalysts that could trigger price movement (stored as JSON array)
+    var catalystsData: Data?
+    
+    /// Optional key risks to the thesis (stored as JSON array)
+    var keyRisksData: Data?
+    
+    /// Simple scenarios representing different outcomes (stored as JSON array)
+    var scenariosData: Data?
+    
+    /// Optional pre-mortem text: "Imagine you've lost 50% on this investment. What went wrong?"
+    var preMortemText: String?
+    
+    /// Current confidence level (1-5, optional)
+    var confidenceCurrent: Int?
+    
     /// Current status of the research question
     var statusRaw: String
     
@@ -31,19 +118,37 @@ final class ResearchQuestion {
     /// Priority level (1-5, optional)
     var priority: Int?
     
+    /// Version number for tracking revisions
+    var versionNumber: Int
+    
     /// Timestamp when the question was created
     var createdAt: Date
     
     /// Timestamp when the question was last updated
     var updatedAt: Date
     
+    /// Timestamp when the content was last meaningfully updated
+    var lastUpdatedAt: Date
+    
+    /// Optional timestamp of the last review
+    var lastReviewedAt: Date?
+    
+    /// Timestamp when the status was last changed
+    var statusChangedAt: Date
+    
     // MARK: - Relationships
     
     /// Parent asset this research question belongs to
     var asset: Asset?
     
-    /// Scenarios associated with this research question
-    @Relationship(deleteRule: .cascade) var scenarios: [Scenario]?
+    /// Log entries for this research question (ordered chronologically)
+    @Relationship(deleteRule: .cascade) var logEntries: [LogEntry]?
+    
+    /// Tags associated with this research question
+    var tags: [Tag]?
+    
+    /// Review reminder for this research question
+    @Relationship(deleteRule: .cascade) var reviewReminder: ReviewReminder?
     
     // MARK: - Initialization
     
@@ -53,73 +158,209 @@ final class ResearchQuestion {
      - Parameters:
        - questionText: The research question
        - context: Optional background context
+       - thesisStatement: Optional core thesis statement
+       - keyDrivers: List of key drivers supporting the thesis
+       - invalidationRules: List of conditions that would invalidate the thesis
+       - catalysts: Optional list of potential catalysts
+       - keyRisks: Optional list of key risks
+       - scenarios: Optional list of simple scenarios (bull/base/bear outcomes)
+       - confidence: Optional confidence level (1-5)
        - priority: Optional priority level (1-5)
      */
     init(
         questionText: String,
         context: String? = nil,
+        thesisStatement: String? = nil,
+        keyDrivers: [String] = [],
+        invalidationRules: [String] = [],
+        catalysts: [String]? = nil,
+        keyRisks: [String]? = nil,
+        scenarios: [SimpleScenario]? = nil,
+        confidence: Int? = nil,
         priority: Int? = nil
     ) {
         self.questionId = UUID()
         self.questionText = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
         self.context = context?.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.statusRaw = ResearchQuestionStatus.open.rawValue
+        self.thesisStatement = thesisStatement?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.keyDriversData = keyDrivers.isEmpty ? nil : try? JSONEncoder().encode(keyDrivers)
+        self.invalidationRulesData = invalidationRules.isEmpty ? nil : try? JSONEncoder().encode(invalidationRules)
+        self.catalystsData = catalysts.flatMap { $0.isEmpty ? nil : try? JSONEncoder().encode($0) }
+        self.keyRisksData = keyRisks.flatMap { $0.isEmpty ? nil : try? JSONEncoder().encode($0) }
+        self.scenariosData = scenarios.flatMap { $0.isEmpty ? nil : try? JSONEncoder().encode($0) }
+        self.confidenceCurrent = confidence
+        self.statusRaw = ResearchQuestionStatus.active.rawValue
         self.priority = priority
+        self.versionNumber = 1
         self.createdAt = Date()
         self.updatedAt = Date()
+        self.lastUpdatedAt = Date()
+        self.statusChangedAt = Date()
     }
     
     // MARK: - Computed Properties
     
     /// Status as enum
     var status: ResearchQuestionStatus {
-        get { ResearchQuestionStatus(rawValue: statusRaw) ?? .open }
+        get { ResearchQuestionStatus(rawValue: statusRaw) ?? .active }
         set {
             statusRaw = newValue.rawValue
+            statusChangedAt = Date()
             updatedAt = Date()
         }
     }
     
-    /// Returns the count of scenarios for this research question
+    /// Key drivers as string array
+    var keyDrivers: [String] {
+        get {
+            guard let data = keyDriversData else { return [] }
+            return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+        }
+        set {
+            keyDriversData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue)
+        }
+    }
+    
+    /// Invalidation rules as string array
+    var invalidationRules: [String] {
+        get {
+            guard let data = invalidationRulesData else { return [] }
+            return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+        }
+        set {
+            invalidationRulesData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue)
+        }
+    }
+    
+    /// Catalysts as string array
+    var catalysts: [String] {
+        get {
+            guard let data = catalystsData else { return [] }
+            return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+        }
+        set {
+            catalystsData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue)
+        }
+    }
+    
+    /// Key risks as string array
+    var keyRisks: [String] {
+        get {
+            guard let data = keyRisksData else { return [] }
+            return (try? JSONDecoder().decode([String].self, from: data)) ?? []
+        }
+        set {
+            keyRisksData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue)
+        }
+    }
+    
+    /// Scenarios as SimpleScenario array
+    var scenarios: [SimpleScenario] {
+        get {
+            guard let data = scenariosData else { return [] }
+            return (try? JSONDecoder().decode([SimpleScenario].self, from: data)) ?? []
+        }
+        set {
+            scenariosData = newValue.isEmpty ? nil : try? JSONEncoder().encode(newValue)
+        }
+    }
+    
+    /// Confidence level as enum
+    var confidence: ConfidenceLevel? {
+        get {
+            guard let value = confidenceCurrent else { return nil }
+            return ConfidenceLevel(rawValue: value)
+        }
+        set {
+            confidenceCurrent = newValue?.rawValue
+        }
+    }
+    
+    /// Returns the count of log entries for this research question
+    var logEntriesCount: Int {
+        logEntries?.count ?? 0
+    }
+    
+    /// Returns log entries sorted by occurred date (most recent first)
+    var sortedLogEntries: [LogEntry] {
+        logEntries?.sorted { $0.occurredAt > $1.occurredAt } ?? []
+    }
+    
+    /// Returns the count of scenarios
     var scenariosCount: Int {
-        scenarios?.count ?? 0
+        scenarios.count
     }
     
-    /// Returns only active scenarios
-    var activeScenarios: [Scenario] {
-        scenarios?.filter { $0.status == .active } ?? []
-    }
-    
-    /// Returns scenarios sorted by type (bull, base, bear, custom)
-    var sortedScenarios: [Scenario] {
-        scenarios?.sorted { $0.scenarioType.sortOrder < $1.scenarioType.sortOrder } ?? []
-    }
-    
-    /// Display subtitle combining status and scenario count
+    /// Display subtitle combining status and info
     var displaySubtitle: String {
-        let scenarioText = scenariosCount == 1 ? "scenario" : "scenarios"
-        return "\(status.displayName) • \(scenariosCount) \(scenarioText)"
+        var parts: [String] = [status.displayName]
+        if !scenarios.isEmpty {
+            let scenarioText = scenariosCount == 1 ? "scenario" : "scenarios"
+            parts.append("\(scenariosCount) \(scenarioText)")
+        }
+        if let confidence = confidence {
+            parts.append(confidence.shortLabel)
+        }
+        return parts.joined(separator: " • ")
     }
     
     // MARK: - Methods
     
     /**
-     Updates the research question content.
+     Updates the research question content and increments the version number.
      
      - Parameters:
        - questionText: New question text
        - context: New context
-       - priority: New priority level
+       - thesisStatement: New thesis statement
+       - keyDrivers: Updated key drivers
+       - invalidationRules: Updated invalidation rules
+       - catalysts: Updated catalysts
+       - keyRisks: Updated key risks
+       - scenarios: Updated scenarios
+       - confidence: Updated confidence level
+       - priority: Updated priority level
      */
     func update(
         questionText: String,
         context: String?,
+        thesisStatement: String?,
+        keyDrivers: [String],
+        invalidationRules: [String],
+        catalysts: [String]?,
+        keyRisks: [String]?,
+        scenarios: [SimpleScenario]?,
+        confidence: Int?,
         priority: Int?
     ) {
         self.questionText = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
         self.context = context?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.thesisStatement = thesisStatement?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.keyDrivers = keyDrivers
+        self.invalidationRules = invalidationRules
+        self.catalysts = catalysts ?? []
+        self.keyRisks = keyRisks ?? []
+        self.scenarios = scenarios ?? []
+        self.confidenceCurrent = confidence
         self.priority = priority
+        self.versionNumber += 1
         self.updatedAt = Date()
+        self.lastUpdatedAt = Date()
+    }
+    
+    /**
+     Updates the research question status and returns the previous status for logging.
+     
+     - Parameter newStatus: The new status to set
+     - Returns: The previous status before the change, or nil if unchanged
+     */
+    @discardableResult
+    func updateStatus(_ newStatus: ResearchQuestionStatus) -> ResearchQuestionStatus? {
+        let oldStatus = self.status
+        guard oldStatus != newStatus else { return nil }
+        
+        self.status = newStatus
+        return oldStatus
     }
     
     /**
@@ -128,42 +369,62 @@ final class ResearchQuestion {
      - Parameter conclusion: The answer or conclusion text
      */
     func markAnswered(conclusion: String) {
-        self.status = .answered
         self.conclusion = conclusion.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.status = .archived
         self.updatedAt = Date()
     }
-}
-
-// MARK: - ResearchQuestionStatus Enum
-
-/**
- Represents the lifecycle status of a research question.
- */
-enum ResearchQuestionStatus: String, Codable, CaseIterable, Identifiable {
-    case open = "Open"
-    case answered = "Answered"
-    case parked = "Parked"
     
-    var id: String { rawValue }
-    
-    /// Display label for the status
-    var displayName: String { rawValue }
-    
-    /// Icon name for visual representation
-    var iconName: String {
-        switch self {
-        case .open: return "questionmark.circle"
-        case .answered: return "checkmark.circle.fill"
-        case .parked: return "pause.circle"
-        }
+    /**
+     Records that a review was completed.
+     */
+    func markReviewed() {
+        self.lastReviewedAt = Date()
+        self.updatedAt = Date()
     }
     
-    /// Color identifier for UI theming
-    var colorName: String {
-        switch self {
-        case .open: return "blue"
-        case .answered: return "green"
-        case .parked: return "gray"
+    // MARK: - Scenario Helpers
+    
+    /**
+     Adds a new scenario to the list.
+     
+     - Parameters:
+       - type: The scenario type (bull/base/bear)
+       - title: The scenario title/description
+     */
+    func addScenario(type: ScenarioType, title: String) {
+        var current = scenarios
+        current.append(SimpleScenario(type: type, title: title))
+        scenarios = current
+        updatedAt = Date()
+    }
+    
+    /**
+     Removes a scenario by ID.
+     
+     - Parameter id: The scenario ID to remove
+     */
+    func removeScenario(id: UUID) {
+        var current = scenarios
+        current.removeAll { $0.id == id }
+        scenarios = current
+        updatedAt = Date()
+    }
+    
+    /**
+     Updates an existing scenario.
+     
+     - Parameters:
+       - id: The scenario ID to update
+       - type: The new scenario type
+       - title: The new scenario title
+     */
+    func updateScenario(id: UUID, type: ScenarioType, title: String) {
+        var current = scenarios
+        if let index = current.firstIndex(where: { $0.id == id }) {
+            current[index].scenarioType = type
+            current[index].title = title
+            scenarios = current
+            updatedAt = Date()
         }
     }
 }
@@ -188,7 +449,10 @@ extension ResearchQuestion {
             errors.append("Priority must be between 1 and 5")
         }
         
+        if let confidence = confidenceCurrent, (confidence < 1 || confidence > 5) {
+            errors.append("Confidence must be between 1 and 5")
+        }
+        
         return errors
     }
 }
-

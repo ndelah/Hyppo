@@ -282,6 +282,6 @@ struct MarkdownDocument: FileDocument {
 
 #Preview {
     ExportImportView()
-        .modelContainer(for: [Asset.self, Scenario.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
+        .modelContainer(for: [Asset.self, ResearchQuestion.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
 }
 

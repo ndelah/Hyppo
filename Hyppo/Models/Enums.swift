@@ -1,19 +1,19 @@
 /**
- Shared enumerations for the Footnote data model.
+ Shared enumerations for the Hyppo data model.
  
- Contains type definitions for thesis types, statuses, confidence levels,
- log entry types, and evidence types used throughout the application.
+ Contains type definitions for scenario types, confidence levels,
+ log entry types, evidence types, and review outcomes used throughout the application.
  */
 
 import Foundation
 
-// MARK: - Scenario Enums
+// MARK: - Scenario Type
 
 /**
- Represents the type/scenario of a scenario.
+ Represents the type of a scenario outcome.
  
  Users can create multiple scenarios per research question to represent different
- investment scenarios (bull case, bear case, base case, or custom).
+ possible outcomes (bull case, bear case, base case, or custom).
  */
 enum ScenarioType: String, Codable, CaseIterable, Identifiable {
     case base = "Base"
@@ -47,56 +47,13 @@ enum ScenarioType: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-/**
- Represents the lifecycle status of a scenario.
- 
- A scenario progresses through these states as the user validates
- or invalidates their investment hypothesis over time.
- */
-enum ScenarioStatus: String, Codable, CaseIterable, Identifiable {
-    case active = "Active"
-    case onHold = "On Hold"
-    case invalidated = "Invalidated"
-    case archived = "Archived"
-    
-    var id: String { rawValue }
-    
-    /// Display label for the status
-    var displayName: String { rawValue }
-    
-    /// Color identifier for UI theming
-    var colorName: String {
-        switch self {
-        case .active: return "green"
-        case .onHold: return "orange"
-        case .invalidated: return "red"
-        case .archived: return "gray"
-        }
-    }
-    
-    /// Icon name for visual representation
-    var iconName: String {
-        switch self {
-        case .active: return "checkmark.circle.fill"
-        case .onHold: return "pause.circle.fill"
-        case .invalidated: return "xmark.circle.fill"
-        case .archived: return "archivebox.fill"
-        }
-    }
-}
-
-// MARK: - Legacy Type Aliases (for compatibility during migration)
-
-typealias ThesisType = ScenarioType
-typealias ThesisStatus = ScenarioStatus
-
 // MARK: - Log Entry Enums
 
 /**
  Represents the type of a log entry.
  
  Log entries are categorized to help users quickly identify
- the nature of each journal entry in the thesis timeline.
+ the nature of each journal entry in the research question timeline.
  */
 enum LogEntryType: String, Codable, CaseIterable, Identifiable {
     case observation = "Observation"
@@ -168,9 +125,9 @@ enum EvidenceType: String, Codable, CaseIterable, Identifiable {
 // MARK: - Review Enums
 
 /**
- Represents the outcome of a thesis review session.
+ Represents the outcome of a research question review session.
  
- When reviewing a thesis, users choose one of these outcomes
+ When reviewing a research question, users choose one of these outcomes
  to indicate how their conviction has changed.
  */
 enum ReviewOutcome: String, Codable, CaseIterable, Identifiable {
@@ -205,7 +162,7 @@ enum ReviewOutcome: String, Codable, CaseIterable, Identifiable {
 // MARK: - Confidence
 
 /**
- Represents the user's confidence level in a thesis or log entry.
+ Represents the user's confidence level in a research question or log entry.
  
  Confidence is rated on a 1-5 scale, where 1 is lowest
  and 5 is highest conviction.
@@ -236,3 +193,47 @@ enum ConfidenceLevel: Int, Codable, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - Display Settings
+
+/**
+ Represents the display density preference for content.
+ 
+ Controls how much information is shown at once in lists
+ and detail views.
+ */
+enum DisplayDensity: String, Codable, CaseIterable, Identifiable {
+    case compact = "Compact"
+    case comfortable = "Comfortable"
+    case expanded = "Expanded"
+    
+    var id: String { rawValue }
+    
+    /// Display label for the density
+    var displayName: String { rawValue }
+    
+    /// Number of lines to show for body previews
+    var bodyPreviewLines: Int {
+        switch self {
+        case .compact: return 1
+        case .comfortable: return 2
+        case .expanded: return 4
+        }
+    }
+    
+    /// Whether to show the metadata row in cards
+    var showMetadataRow: Bool {
+        switch self {
+        case .compact: return false
+        case .comfortable, .expanded: return true
+        }
+    }
+    
+    /// Whether sections should be expanded by default
+    var expandSectionsByDefault: Bool {
+        switch self {
+        case .compact: return false
+        case .comfortable: return true
+        case .expanded: return true
+        }
+    }
+}

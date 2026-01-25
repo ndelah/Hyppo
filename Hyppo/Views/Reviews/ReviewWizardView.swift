@@ -1,5 +1,5 @@
 /**
- ReviewWizardView provides a guided review workflow for scenarios.
+ ReviewWizardView provides a guided review workflow for research questions.
  
  Walks the user through reviewing key drivers, checking invalidation rules,
  and deciding on an outcome (reinforce/revise/invalidate). Generates a
@@ -15,11 +15,11 @@ import SwiftData
 func reviewOutcomeDescription(_ outcome: ReviewOutcome) -> String {
     switch outcome {
     case .reinforce:
-        return "Scenario remains valid. Strengthen conviction based on evidence."
+        return "Thesis remains valid. Strengthen conviction based on evidence."
     case .revise:
-        return "Scenario needs updates. Some assumptions have changed."
+        return "Thesis needs updates. Some assumptions have changed."
     case .invalidate:
-        return "Scenario is no longer valid. An invalidation rule was triggered."
+        return "Thesis is no longer valid. An invalidation rule was triggered."
     }
 }
 
@@ -39,7 +39,7 @@ func reviewOutcomeColor(_ outcome: ReviewOutcome) -> Color {
     }
 }
 
-func reviewOutcomeScenarioStatus(_ outcome: ReviewOutcome) -> ScenarioStatus? {
+func reviewOutcomeResearchQuestionStatus(_ outcome: ReviewOutcome) -> ResearchQuestionStatus? {
     switch outcome {
     case .reinforce: return nil
     case .revise: return nil
@@ -77,7 +77,7 @@ struct ReviewWizardView: View {
     
     // MARK: - Properties
     
-    let scenario: Scenario
+    let researchQuestion: ResearchQuestion
     let onComplete: () -> Void
     
     // MARK: - State
@@ -152,7 +152,7 @@ struct ReviewWizardView: View {
                 completeReview()
             }
         } message: {
-            Text("This will create a review log entry and update the scenario. Continue?")
+            Text("This will create a review log entry and update the research question. Continue?")
         }
     }
     
@@ -233,29 +233,32 @@ struct ReviewWizardView: View {
     
     private var overviewStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Scenario info
+            // Research question info
             GroupBox {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Image(systemName: scenario.scenarioType.iconName)
-                            .foregroundStyle(scenarioTypeColor)
-                        Text(scenario.title)
+                        Image(systemName: researchQuestion.status.iconName)
+                            .foregroundStyle(statusColor)
+                        Text(researchQuestion.questionText)
                             .font(.headline)
+                            .lineLimit(2)
                         Spacer()
-                        Text(scenario.status.displayName)
+                        Text(researchQuestion.status.displayName)
                             .font(.caption)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(scenarioStatusColor.opacity(0.15))
-                            .foregroundStyle(scenarioStatusColor)
+                            .background(statusColor.opacity(0.15))
+                            .foregroundStyle(statusColor)
                             .clipShape(Capsule())
                     }
                     
-                    Text(scenario.scenarioStatement)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    if let thesis = researchQuestion.thesisStatement, !thesis.isEmpty {
+                        Text(thesis)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                     
-                    if let lastReview = scenario.lastReviewedAt {
+                    if let lastReview = researchQuestion.lastReviewedAt {
                         Text("Last reviewed: \(lastReview.formatted(date: .abbreviated, time: .shortened))")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
@@ -284,9 +287,9 @@ struct ReviewWizardView: View {
             
             // Quick stats
             HStack(spacing: 24) {
-                statBox(title: "Key Drivers", value: "\(scenario.keyDrivers.count)", icon: "arrow.up.forward")
-                statBox(title: "Invalidation Rules", value: "\(scenario.invalidationRules.count)", icon: "xmark.circle")
-                statBox(title: "Log Entries", value: "\(scenario.logEntriesCount)", icon: "note.text")
+                statBox(title: "Key Drivers", value: "\(researchQuestion.keyDrivers.count)", icon: "arrow.up.forward")
+                statBox(title: "Invalidation Rules", value: "\(researchQuestion.invalidationRules.count)", icon: "xmark.circle")
+                statBox(title: "Log Entries", value: "\(researchQuestion.logEntriesCount)", icon: "note.text")
             }
         }
     }
@@ -330,17 +333,24 @@ struct ReviewWizardView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             
-            ForEach($driverAssessments) { $assessment in
-                DriverAssessmentCard(assessment: $assessment)
-            }
-            
-            // Summary
-            let validCount = driverAssessments.filter { $0.isStillValid }.count
-            HStack {
-                Spacer()
-                Text("\(validCount) of \(driverAssessments.count) drivers still valid")
-                    .font(.caption)
-                    .foregroundStyle(validCount == driverAssessments.count ? .green : .orange)
+            if driverAssessments.isEmpty {
+                Text("No key drivers defined for this research question.")
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+                    .padding()
+            } else {
+                ForEach($driverAssessments) { $assessment in
+                    DriverAssessmentCard(assessment: $assessment)
+                }
+                
+                // Summary
+                let validCount = driverAssessments.filter { $0.isStillValid }.count
+                HStack {
+                    Spacer()
+                    Text("\(validCount) of \(driverAssessments.count) drivers still valid")
+                        .font(.caption)
+                        .foregroundStyle(validCount == driverAssessments.count ? .green : .orange)
+                }
             }
         }
     }
@@ -353,22 +363,29 @@ struct ReviewWizardView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             
-            ForEach($ruleChecks) { $check in
-                RuleCheckCard(ruleCheck: $check)
-            }
-            
-            // Summary
-            let triggeredCount = ruleChecks.filter { $0.isTriggered }.count
-            HStack {
-                Spacer()
-                if triggeredCount > 0 {
-                    Label("\(triggeredCount) rule(s) triggered!", systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                } else {
-                    Label("No rules triggered", systemImage: "checkmark.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.green)
+            if ruleChecks.isEmpty {
+                Text("No invalidation rules defined for this research question.")
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+                    .padding()
+            } else {
+                ForEach($ruleChecks) { $check in
+                    RuleCheckCard(ruleCheck: $check)
+                }
+                
+                // Summary
+                let triggeredCount = ruleChecks.filter { $0.isTriggered }.count
+                HStack {
+                    Spacer()
+                    if triggeredCount > 0 {
+                        Label("\(triggeredCount) rule(s) triggered!", systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    } else {
+                        Label("No rules triggered", systemImage: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    }
                 }
             }
         }
@@ -499,9 +516,11 @@ struct ReviewWizardView: View {
                 let invalidDrivers = driverAssessments.filter { !$0.isStillValid }
                 summaryRow(
                     label: "Drivers",
-                    value: invalidDrivers.isEmpty
-                        ? "All \(driverAssessments.count) drivers valid"
-                        : "\(invalidDrivers.count) of \(driverAssessments.count) no longer valid",
+                    value: driverAssessments.isEmpty
+                        ? "No drivers defined"
+                        : (invalidDrivers.isEmpty
+                            ? "All \(driverAssessments.count) drivers valid"
+                            : "\(invalidDrivers.count) of \(driverAssessments.count) no longer valid"),
                     isWarning: !invalidDrivers.isEmpty
                 )
                 
@@ -509,24 +528,26 @@ struct ReviewWizardView: View {
                 let triggeredRules = ruleChecks.filter { $0.isTriggered }
                 summaryRow(
                     label: "Invalidation Rules",
-                    value: triggeredRules.isEmpty
-                        ? "No rules triggered"
-                        : "\(triggeredRules.count) rule(s) triggered",
+                    value: ruleChecks.isEmpty
+                        ? "No rules defined"
+                        : (triggeredRules.isEmpty
+                            ? "No rules triggered"
+                            : "\(triggeredRules.count) rule(s) triggered"),
                     isWarning: !triggeredRules.isEmpty
                 )
                 
                 // Confidence
                 summaryRow(
                     label: "Confidence",
-                    value: "\(scenario.confidenceCurrent ?? 3) → \(newConfidence)",
-                    isWarning: newConfidence < (scenario.confidenceCurrent ?? 3)
+                    value: "\(researchQuestion.confidenceCurrent ?? 3) → \(newConfidence)",
+                    isWarning: newConfidence < (researchQuestion.confidenceCurrent ?? 3)
                 )
                 
                 // Status change (if invalidating)
                 if selectedOutcome == .invalidate {
                     summaryRow(
                         label: "Status Change",
-                        value: "\(scenario.status.displayName) → Invalidated",
+                        value: "\(researchQuestion.status.displayName) → Invalidated",
                         isWarning: true
                     )
                 }
@@ -602,9 +623,9 @@ struct ReviewWizardView: View {
     // MARK: - Helpers
     
     private func initializeAssessments() {
-        driverAssessments = scenario.keyDrivers.map { DriverAssessment(driver: $0) }
-        ruleChecks = scenario.invalidationRules.map { RuleCheck(rule: $0) }
-        newConfidence = scenario.confidenceCurrent ?? 3
+        driverAssessments = researchQuestion.keyDrivers.map { DriverAssessment(driver: $0) }
+        ruleChecks = researchQuestion.invalidationRules.map { RuleCheck(rule: $0) }
+        newConfidence = researchQuestion.confidenceCurrent ?? 3
     }
     
     private var suggestedOutcome: ReviewOutcome? {
@@ -620,19 +641,9 @@ struct ReviewWizardView: View {
         }
     }
     
-    /// Color for the scenario type
-    private var scenarioTypeColor: Color {
-        switch scenario.scenarioType {
-        case .bull: return .green
-        case .bear: return .red
-        case .base: return .blue
-        case .custom: return .purple
-        }
-    }
-    
-    /// Color for the scenario status
-    private var scenarioStatusColor: Color {
-        switch scenario.status {
+    /// Color for the research question status
+    private var statusColor: Color {
+        switch researchQuestion.status {
         case .active: return .green
         case .onHold: return .orange
         case .invalidated: return .red
@@ -644,29 +655,33 @@ struct ReviewWizardView: View {
         var body = "## Review Outcome: \(selectedOutcome.displayName)\n\n"
         
         // Drivers assessment
-        body += "### Key Drivers Assessment\n"
-        for assessment in driverAssessments {
-            let status = assessment.isStillValid ? "✅" : "❌"
-            body += "- \(status) \(assessment.driver)\n"
-            if !assessment.notes.isEmpty {
-                body += "  - Note: \(assessment.notes)\n"
+        if !driverAssessments.isEmpty {
+            body += "### Key Drivers Assessment\n"
+            for assessment in driverAssessments {
+                let status = assessment.isStillValid ? "✅" : "❌"
+                body += "- \(status) \(assessment.driver)\n"
+                if !assessment.notes.isEmpty {
+                    body += "  - Note: \(assessment.notes)\n"
+                }
             }
+            body += "\n"
         }
-        body += "\n"
         
         // Rules check
-        body += "### Invalidation Rules Check\n"
-        for check in ruleChecks {
-            let status = check.isTriggered ? "⚠️ TRIGGERED" : "✓ Not triggered"
-            body += "- \(status): \(check.rule)\n"
-            if !check.notes.isEmpty {
-                body += "  - Note: \(check.notes)\n"
+        if !ruleChecks.isEmpty {
+            body += "### Invalidation Rules Check\n"
+            for check in ruleChecks {
+                let status = check.isTriggered ? "⚠️ TRIGGERED" : "✓ Not triggered"
+                body += "- \(status): \(check.rule)\n"
+                if !check.notes.isEmpty {
+                    body += "  - Note: \(check.notes)\n"
+                }
             }
+            body += "\n"
         }
-        body += "\n"
         
         // Confidence
-        let oldConfidence = scenario.confidenceCurrent ?? 3
+        let oldConfidence = researchQuestion.confidenceCurrent ?? 3
         if newConfidence != oldConfidence {
             body += "### Confidence Update\n"
             body += "Changed from \(oldConfidence)/5 to \(newConfidence)/5\n\n"
@@ -692,20 +707,20 @@ struct ReviewWizardView: View {
             occurredAt: Date(),
             isSystemGenerated: false
         )
-        logEntry.scenario = scenario
+        logEntry.researchQuestion = researchQuestion
         modelContext.insert(logEntry)
         
-        // Update scenario
-        scenario.confidenceCurrent = newConfidence
-        scenario.lastReviewedAt = Date()
+        // Update research question
+        researchQuestion.confidenceCurrent = newConfidence
+        researchQuestion.lastReviewedAt = Date()
         
         // Update status if invalidating
         if selectedOutcome == .invalidate {
-            _ = scenario.updateStatus(.invalidated)
+            _ = researchQuestion.updateStatus(.invalidated)
         }
         
         // Update review reminder if exists
-        if let reminder = scenario.reviewReminder {
+        if let reminder = researchQuestion.reviewReminder {
             reminder.completeReview()
         }
         
@@ -851,15 +866,13 @@ private struct OutcomeSelectionCard: View {
 // MARK: - Preview
 
 #Preview {
-    let scenario = Scenario(
-        scenarioType: .bull,
-        title: "Revenue Growth Acceleration",
-        scenarioStatement: "Company will see 20% revenue growth driven by new product launches.",
+    let question = ResearchQuestion(
+        questionText: "Can AAPL sustain services revenue growth?",
+        thesisStatement: "Company will see 20% revenue growth driven by new product launches.",
         keyDrivers: ["New product adoption", "Market expansion", "Pricing power"],
         invalidationRules: ["Revenue growth falls below 10%", "Market share loss > 5%"]
     )
     
-    return ReviewWizardView(scenario: scenario) { }
-        .modelContainer(for: [Scenario.self, LogEntry.self, Tag.self], inMemory: true)
+    return ReviewWizardView(researchQuestion: question) { }
+        .modelContainer(for: [ResearchQuestion.self, LogEntry.self, Tag.self], inMemory: true)
 }
-

@@ -1,327 +1,169 @@
 /**
- ResearchQuestionDetailView displays the detail view for a selected research question.
+ ResearchQuestionDetailView displays the full detail of a selected research question.
  
- Shows research question information and lists all scenarios for the question,
- allowing the user to select a scenario for detailed viewing.
+ Shows thesis content (statement, drivers, risks, scenarios, etc.) at the top
+ and the chronological timeline of log entries below. Each research question
+ is now a single "report" page containing all relevant information.
  */
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
-/// Detail view for a selected research question showing its scenarios
+/// Detail view for a selected research question showing all content and timeline
 struct ResearchQuestionDetailView: View {
     // MARK: - Environment
     
     @Environment(\.modelContext) private var modelContext
     
+    // MARK: - App Storage (User Preferences)
+    
+    @AppStorage("displayDensity") private var displayDensityRaw: String = DisplayDensity.comfortable.rawValue
+    @AppStorage("showSystemLogs") private var showSystemLogs: Bool = true
+    
+    private var displayDensity: DisplayDensity {
+        DisplayDensity(rawValue: displayDensityRaw) ?? .comfortable
+    }
+    
     // MARK: - Properties
     
     @Bindable var researchQuestion: ResearchQuestion
-    @Binding var selectedScenario: Scenario?
     
     // MARK: - State
     
-    @State private var showingAddScenario = false
     @State private var showingEditQuestion = false
-    @State private var searchText = ""
-    @State private var statusFilter: ScenarioStatus? = nil
+    @State private var showingAddLogEntry = false
+    @State private var selectedLogEntry: LogEntry?
+    @State private var logEntryForEvidence: LogEntry?
     
-    // MARK: - Computed Properties
+    // Section expansion states
+    @State private var isThesisStatementExpanded = true
+    @State private var isKeyDriversExpanded = true
+    @State private var isInvalidationRulesExpanded = true
+    @State private var isScenariosExpanded = true
+    @State private var isCatalystsExpanded = true
+    @State private var isKeyRisksExpanded = true
+    @State private var isPreMortemExpanded = true
     
-    /// Filtered and sorted scenarios
-    private var filteredScenarios: [Scenario] {
-        var result = researchQuestion.scenarios ?? []
-        
-        // Filter by status
-        if let status = statusFilter {
-            result = result.filter { $0.status == status }
-        }
-        
-        // Filter by search
-        if !searchText.isEmpty {
-            let searchLower = searchText.lowercased()
-            result = result.filter { scenario in
-                scenario.title.lowercased().contains(searchLower) ||
-                scenario.scenarioStatement.lowercased().contains(searchLower)
-            }
-        }
-        
-        // Sort by type (bull, base, bear, custom) then by updated date
-        return result.sorted { first, second in
-            if first.scenarioType.sortOrder != second.scenarioType.sortOrder {
-                return first.scenarioType.sortOrder < second.scenarioType.sortOrder
-            }
-            return first.updatedAt > second.updatedAt
-        }
-    }
+    // Export state
+    @State private var showingMarkdownExport = false
+    @State private var markdownContent: String = ""
+    
+    // Review wizard state
+    @State private var showingReviewWizard = false
     
     // MARK: - Body
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Research question header
-            questionHeader
-            
-            Divider()
-            
-            // Inline search bar
-            if !(researchQuestion.scenarios ?? []).isEmpty {
-                searchBar
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Research question header
+                questionHeader
+                
                 Divider()
+                
+                // Review reminder section
+                ReviewReminderView(researchQuestion: researchQuestion)
+                
+                Divider()
+                
+                // Thesis content sections
+                thesisContent
+                
+                Divider()
+                
+                // Timeline section
+                timelineSection
             }
-            
-            // Scenarios list
-            if (researchQuestion.scenarios ?? []).isEmpty {
-                EmptyStateView(
-                    iconName: "arrow.up.arrow.down.circle",
-                    title: "No Scenarios",
-                    description: "Add scenarios (bull/base/bear) to explore different outcomes for this research question.",
-                    actionTitle: "Add Scenario"
-                ) {
-                    showingAddScenario = true
-                }
-            } else {
-                scenariosList
-            }
+            .padding()
         }
         .navigationTitle(researchQuestion.questionText)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                // Status filter menu
-                Menu {
-                    Button("All Statuses") {
-                        statusFilter = nil
-                    }
-                    Divider()
-                    ForEach(ScenarioStatus.allCases) { status in
-                        Button {
-                            statusFilter = status
-                        } label: {
-                            if statusFilter == status {
-                                Label(status.displayName, systemImage: "checkmark")
-                            } else {
-                                Text(status.displayName)
-                            }
-                        }
-                    }
+                // Review wizard
+                Button {
+                    showingReviewWizard = true
                 } label: {
-                    Label("Filter", systemImage: statusFilter == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                    Label("Review", systemImage: "wand.and.stars")
+                }
+                .help("Start structured review")
+                
+                // Export to Markdown
+                Button {
+                    markdownContent = ExportService.shared.exportResearchQuestionToMarkdown(researchQuestion)
+                    showingMarkdownExport = true
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                }
+                .help("Export to Markdown")
+                .fileExporter(
+                    isPresented: $showingMarkdownExport,
+                    document: MarkdownDocument(content: markdownContent),
+                    contentType: .text,
+                    defaultFilename: "\(researchQuestion.asset?.ticker ?? "research")_\(sanitizedQuestionTitle).md"
+                ) { _ in }
+                
+                Button {
+                    showingEditQuestion = true
+                } label: {
+                    Label("Edit", systemImage: "pencil")
                 }
                 
-                Button(action: { showingAddScenario = true }) {
-                    Label("Add Scenario", systemImage: "plus")
+                Button {
+                    showingAddLogEntry = true
+                } label: {
+                    Label("Add Log", systemImage: "plus")
                 }
-            }
-        }
-        .sheet(isPresented: $showingAddScenario) {
-            ScenarioFormView(mode: .add(researchQuestion: researchQuestion)) { newScenario in
-                modelContext.insert(newScenario)
-                newScenario.researchQuestion = researchQuestion
-                selectedScenario = newScenario
             }
         }
         .sheet(isPresented: $showingEditQuestion) {
             ResearchQuestionFormView(mode: .edit(researchQuestion)) { _ in }
         }
+        .sheet(isPresented: $showingAddLogEntry) {
+            LogEntryFormView(mode: .add(researchQuestion: researchQuestion)) { newLogEntry in
+                modelContext.insert(newLogEntry)
+                newLogEntry.researchQuestion = researchQuestion
+            }
+        }
+        .sheet(item: $selectedLogEntry) { logEntry in
+            LogEntryDetailSheet(logEntry: logEntry)
+        }
+        .sheet(item: $logEntryForEvidence) { logEntry in
+            EvidenceFormView(mode: .add(logEntry: logEntry)) { newEvidence in
+                modelContext.insert(newEvidence)
+                newEvidence.logEntry = logEntry
+            }
+        }
+        .sheet(isPresented: $showingReviewWizard) {
+            ReviewWizardView(researchQuestion: researchQuestion) { }
+        }
+    }
+    
+    /// Sanitized question title for filename
+    private var sanitizedQuestionTitle: String {
+        researchQuestion.questionText
+            .lowercased()
+            .replacingOccurrences(of: " ", with: "_")
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: "?", with: "")
+            .filter { $0.isLetter || $0.isNumber || $0 == "_" || $0 == "-" }
+            .prefix(30)
+            .description
     }
     
     // MARK: - Subviews
     
-    /// Inline search bar to avoid duplicate toolbar search items
-    private var searchBar: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            TextField("Search scenarios", text: $searchText)
-                .textFieldStyle(.plain)
-            if !searchText.isEmpty {
-                Button {
-                    searchText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(8)
-        .background(Color(nsColor: .controlBackgroundColor))
-    }
-    
     private var questionHeader: some View {
-        HStack(spacing: 16) {
-            // Status icon
-            Image(systemName: researchQuestion.status.iconName)
-                .font(.title)
-                .foregroundStyle(statusColor)
-            
-            // Question info
-            VStack(alignment: .leading, spacing: 6) {
-                Text(researchQuestion.questionText)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .lineLimit(3)
-                
-                HStack(spacing: 8) {
-                    // Status
-                    Text(researchQuestion.status.displayName)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    // Priority
-                    if let priority = researchQuestion.priority {
-                        Text("• Priority: \(priority)/5")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    
-                    // Scenario count
-                    Text("• \(researchQuestion.scenariosCount) \(researchQuestion.scenariosCount == 1 ? "scenario" : "scenarios")")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                // Context if available
-                if let context = researchQuestion.context, !context.isEmpty {
-                    Text(context)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(2)
-                        .padding(.top, 2)
-                }
-            }
-            
-            Spacer()
-            
-            // Edit button
-            Button {
-                showingEditQuestion = true
-            } label: {
-                Image(systemName: "pencil")
-            }
-            .buttonStyle(.borderless)
-        }
-        .padding()
-        .background(Color(nsColor: .controlBackgroundColor))
-    }
-    
-    private var scenariosList: some View {
-        List(selection: $selectedScenario) {
-            if filteredScenarios.isEmpty && !searchText.isEmpty {
-                Text("No matching scenarios")
-                    .foregroundStyle(.secondary)
-                    .padding()
-            } else {
-                ForEach(filteredScenarios) { scenario in
-                    ScenarioRowView(scenario: scenario)
-                        .tag(scenario)
-                        .contextMenu {
-                            scenarioContextMenu(for: scenario)
-                        }
-                }
-                .onDelete(perform: deleteScenarios)
-            }
-        }
-        .listStyle(.inset)
-    }
-    
-    // MARK: - Context Menu
-    
-    @ViewBuilder
-    private func scenarioContextMenu(for scenario: Scenario) -> some View {
-        Button {
-            // Edit - handled elsewhere
-        } label: {
-            Label("Edit", systemImage: "pencil")
-        }
-        
-        Divider()
-        
-        Menu("Change Status") {
-            ForEach(ScenarioStatus.allCases) { status in
-                Button {
-                    changeScenarioStatus(scenario, to: status)
-                } label: {
-                    if scenario.status == status {
-                        Label(status.displayName, systemImage: "checkmark")
-                    } else {
-                        Text(status.displayName)
-                    }
-                }
-            }
-        }
-        
-        Divider()
-        
-        Button(role: .destructive) {
-            deleteScenario(scenario)
-        } label: {
-            Label("Delete", systemImage: "trash")
-        }
-    }
-    
-    // MARK: - Actions
-    
-    private func deleteScenarios(at offsets: IndexSet) {
-        for index in offsets {
-            let scenario = filteredScenarios[index]
-            if selectedScenario == scenario {
-                selectedScenario = nil
-            }
-            modelContext.delete(scenario)
-        }
-    }
-    
-    private func deleteScenario(_ scenario: Scenario) {
-        if selectedScenario == scenario {
-            selectedScenario = nil
-        }
-        modelContext.delete(scenario)
-    }
-    
-    private func changeScenarioStatus(_ scenario: Scenario, to newStatus: ScenarioStatus) {
-        // Update status and get the old status for logging
-        if let oldStatus = scenario.updateStatus(newStatus) {
-            // Create auto-generated log entry for the status change
-            let logEntry = LogEntry.createStatusChangeLog(
-                fromStatus: oldStatus,
-                toStatus: newStatus
-            )
-            modelContext.insert(logEntry)
-            logEntry.scenario = scenario
-        }
-    }
-    
-    private var statusColor: Color {
-        switch researchQuestion.status {
-        case .open: return .blue
-        case .answered: return .green
-        case .parked: return .gray
-        }
-    }
-}
-
-// MARK: - Scenario Row View
-
-/// Row view for displaying a scenario in the list
-struct ScenarioRowView: View {
-    let scenario: Scenario
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Title and type/status
+        VStack(alignment: .leading, spacing: 12) {
+            // Title and status
             HStack {
-                // Type icon
-                Image(systemName: scenario.scenarioType.iconName)
-                    .foregroundStyle(typeColor)
-                    .font(.body)
+                Image(systemName: researchQuestion.status.iconName)
+                    .font(.title2)
+                    .foregroundStyle(statusColor)
                 
-                Text(scenario.title)
-                    .font(.headline)
-                    .lineLimit(1)
-                
-                // Review due badge
-                ReviewDueBadge(reminder: scenario.reviewReminder)
+                Text(researchQuestion.questionText)
+                    .font(.title2)
+                    .fontWeight(.bold)
                 
                 Spacer()
                 
@@ -329,41 +171,365 @@ struct ScenarioRowView: View {
                 statusBadge
             }
             
-            // Scenario statement preview
-            Text(scenario.scenarioStatement)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+            // Asset reference
+            if let asset = researchQuestion.asset {
+                Text("Asset: \(asset.ticker) - \(asset.name)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            
+            // Context if available
+            if let context = researchQuestion.context, !context.isEmpty {
+                Text(context)
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+                    .padding(.top, 2)
+            }
             
             // Metadata row
-            HStack(spacing: 12) {
-                // Confidence
-                if let confidence = scenario.confidence {
-                    HStack(spacing: 4) {
-                        Image(systemName: "gauge")
-                            .font(.caption)
-                        Text(confidence.shortLabel)
-                            .font(.caption)
-                    }
-                    .foregroundStyle(.secondary)
+            HStack(spacing: 16) {
+                if let confidence = researchQuestion.confidence {
+                    Label(confidence.shortLabel, systemImage: "gauge")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 
-                // Log entries count
-                HStack(spacing: 4) {
-                    Image(systemName: "note.text")
+                if let priority = researchQuestion.priority {
+                    Label("Priority \(priority)/5", systemImage: "flag")
                         .font(.caption)
-                    Text("\(scenario.logEntriesCount)")
-                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .foregroundStyle(.secondary)
+                
+                Label("v\(researchQuestion.versionNumber)", systemImage: "number")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                Label("\(researchQuestion.logEntriesCount) logs", systemImage: "note.text")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                if !researchQuestion.scenarios.isEmpty {
+                    Label("\(researchQuestion.scenariosCount) scenarios", systemImage: "arrow.up.arrow.down")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 
                 Spacer()
                 
-                // Last updated
-                Text(scenario.updatedAt.formatted(date: .abbreviated, time: .omitted))
+                Text("Updated \(researchQuestion.updatedAt.formatted(date: .abbreviated, time: .shortened))")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
+        }
+    }
+    
+    private var thesisContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Thesis statement
+            if let thesis = researchQuestion.thesisStatement, !thesis.isEmpty {
+                CollapsibleSection(
+                    title: "Thesis Statement",
+                    iconName: "text.quote",
+                    isExpanded: $isThesisStatementExpanded
+                ) {
+                    Text(thesis)
+                        .font(.body)
+                }
+            }
+            
+            // Key drivers
+            if !researchQuestion.keyDrivers.isEmpty {
+                CollapsibleSection(
+                    title: "Key Drivers",
+                    iconName: "arrow.up.forward",
+                    isExpanded: $isKeyDriversExpanded,
+                    itemCount: researchQuestion.keyDrivers.count
+                ) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(researchQuestion.keyDrivers, id: \.self) { driver in
+                            BulletPoint(text: driver)
+                        }
+                    }
+                }
+            }
+            
+            // Invalidation rules
+            if !researchQuestion.invalidationRules.isEmpty {
+                CollapsibleSection(
+                    title: "Invalidation Rules",
+                    iconName: "xmark.circle",
+                    isExpanded: $isInvalidationRulesExpanded,
+                    itemCount: researchQuestion.invalidationRules.count
+                ) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(researchQuestion.invalidationRules, id: \.self) { rule in
+                            BulletPoint(text: rule, color: .red)
+                        }
+                    }
+                }
+            }
+            
+            // Scenarios
+            if !researchQuestion.scenarios.isEmpty {
+                CollapsibleSection(
+                    title: "Scenarios",
+                    iconName: "arrow.up.arrow.down.circle",
+                    isExpanded: $isScenariosExpanded,
+                    itemCount: researchQuestion.scenarios.count
+                ) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(researchQuestion.scenarios.sorted { $0.scenarioType.sortOrder < $1.scenarioType.sortOrder }) { scenario in
+                            ScenarioRow(scenario: scenario)
+                        }
+                    }
+                }
+            }
+            
+            // Catalysts (if any)
+            if !researchQuestion.catalysts.isEmpty {
+                CollapsibleSection(
+                    title: "Catalysts",
+                    iconName: "bolt",
+                    isExpanded: $isCatalystsExpanded,
+                    itemCount: researchQuestion.catalysts.count
+                ) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(researchQuestion.catalysts, id: \.self) { catalyst in
+                            BulletPoint(text: catalyst, color: .orange)
+                        }
+                    }
+                }
+            }
+            
+            // Key risks (if any)
+            if !researchQuestion.keyRisks.isEmpty {
+                CollapsibleSection(
+                    title: "Key Risks",
+                    iconName: "exclamationmark.triangle",
+                    isExpanded: $isKeyRisksExpanded,
+                    itemCount: researchQuestion.keyRisks.count
+                ) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(researchQuestion.keyRisks, id: \.self) { risk in
+                            BulletPoint(text: risk, color: .yellow)
+                        }
+                    }
+                }
+            }
+            
+            // Pre-Mortem (if any)
+            if let preMortem = researchQuestion.preMortemText, !preMortem.isEmpty {
+                CollapsibleSection(
+                    title: "Pre-Mortem",
+                    iconName: "exclamationmark.triangle.fill",
+                    isExpanded: $isPreMortemExpanded,
+                    itemCount: nil
+                ) {
+                    Text(preMortem)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 4)
+                }
+            }
+            
+            // Expand/Collapse all button
+            HStack {
+                Spacer()
+                Button {
+                    toggleAllSections()
+                } label: {
+                    Label(
+                        allSectionsExpanded ? "Collapse All" : "Expand All",
+                        systemImage: allSectionsExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical"
+                    )
+                    .font(.caption)
+                }
+                .buttonStyle(.borderless)
+            }
+        }
+        .onAppear {
+            // Set initial expansion state based on density preference
+            let shouldExpand = displayDensity.expandSectionsByDefault
+            isThesisStatementExpanded = shouldExpand
+            isKeyDriversExpanded = shouldExpand
+            isInvalidationRulesExpanded = shouldExpand
+            isScenariosExpanded = shouldExpand
+            isCatalystsExpanded = shouldExpand
+            isKeyRisksExpanded = shouldExpand
+            isPreMortemExpanded = shouldExpand
+        }
+    }
+    
+    private var allSectionsExpanded: Bool {
+        isThesisStatementExpanded && isKeyDriversExpanded && isInvalidationRulesExpanded && isScenariosExpanded && isCatalystsExpanded && isKeyRisksExpanded && isPreMortemExpanded
+    }
+    
+    private func toggleAllSections() {
+        let newState = !allSectionsExpanded
+        isThesisStatementExpanded = newState
+        isKeyDriversExpanded = newState
+        isInvalidationRulesExpanded = newState
+        isScenariosExpanded = newState
+        isCatalystsExpanded = newState
+        isKeyRisksExpanded = newState
+        isPreMortemExpanded = newState
+    }
+    
+    /// Filtered log entries based on user preferences
+    private var filteredLogEntries: [LogEntry] {
+        var entries = researchQuestion.sortedLogEntries
+        if !showSystemLogs {
+            entries = entries.filter { !$0.isSystemGenerated }
+        }
+        return entries
+    }
+    
+    private var timelineSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Timeline")
+                    .font(.headline)
+                
+                // Show count with filter indicator
+                Text("(\(filteredLogEntries.count))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                if !showSystemLogs && researchQuestion.sortedLogEntries.count != filteredLogEntries.count {
+                    Text("• filtered")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                
+                Spacer()
+                
+                // Density indicator
+                Menu {
+                    ForEach(DisplayDensity.allCases) { density in
+                        Button {
+                            displayDensityRaw = density.rawValue
+                        } label: {
+                            if displayDensity == density {
+                                Label(density.displayName, systemImage: "checkmark")
+                            } else {
+                                Text(density.displayName)
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "text.alignleft")
+                        .font(.caption)
+                }
+                .menuStyle(.borderlessButton)
+                .frame(width: 24)
+                .help("Change display density")
+                
+                Button {
+                    showingAddLogEntry = true
+                } label: {
+                    Label("Add Log", systemImage: "plus")
+                        .font(.caption)
+                }
+                .buttonStyle(.borderless)
+            }
+            
+            if filteredLogEntries.isEmpty {
+                EmptyStateView(
+                    iconName: "note.text",
+                    title: researchQuestion.sortedLogEntries.isEmpty ? "No Log Entries" : "No Visible Entries",
+                    description: researchQuestion.sortedLogEntries.isEmpty
+                        ? "Start documenting your research by adding log entries."
+                        : "System-generated logs are hidden. Enable them in Settings.",
+                    actionTitle: "Add Log Entry"
+                ) {
+                    showingAddLogEntry = true
+                }
+                .frame(height: 200)
+            } else {
+                LazyVStack(spacing: displayDensity == .compact ? 8 : 12) {
+                    ForEach(filteredLogEntries) { logEntry in
+                        LogEntryCard(logEntry: logEntry, density: displayDensity) {
+                            logEntryForEvidence = logEntry
+                        }
+                        .onTapGesture {
+                            selectedLogEntry = logEntry
+                        }
+                        .contextMenu {
+                            logEntryContextMenu(for: logEntry)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helper Views
+    
+    private var statusBadge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: researchQuestion.status.iconName)
+                .font(.caption)
+            Text(researchQuestion.status.displayName)
+                .font(.caption)
+                .fontWeight(.medium)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(statusColor.opacity(0.15))
+        .foregroundStyle(statusColor)
+        .clipShape(Capsule())
+    }
+    
+    private var statusColor: Color {
+        switch researchQuestion.status {
+        case .active: return .green
+        case .onHold: return .orange
+        case .invalidated: return .red
+        case .archived: return .gray
+        }
+    }
+    
+    // MARK: - Context Menu
+    
+    @ViewBuilder
+    private func logEntryContextMenu(for logEntry: LogEntry) -> some View {
+        Button {
+            logEntry.togglePinned()
+        } label: {
+            Label(logEntry.isPinned ? "Unpin" : "Pin", systemImage: logEntry.isPinned ? "pin.slash" : "pin")
+        }
+        
+        Divider()
+        
+        Button(role: .destructive) {
+            modelContext.delete(logEntry)
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
+    }
+}
+
+// MARK: - Scenario Row
+
+/// Display row for a simple scenario
+private struct ScenarioRow: View {
+    let scenario: SimpleScenario
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: scenario.scenarioType.iconName)
+                .font(.body)
+                .foregroundStyle(typeColor)
+                .frame(width: 24)
+            
+            Text(scenario.scenarioType.displayName)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.secondary)
+                .frame(width: 50, alignment: .leading)
+            
+            Text(scenario.title)
+                .font(.body)
         }
         .padding(.vertical, 4)
     }
@@ -376,28 +542,381 @@ struct ScenarioRowView: View {
         case .custom: return .purple
         }
     }
+}
+
+// MARK: - Collapsible Section
+
+/// Reusable collapsible section component for thesis content
+private struct CollapsibleSection<Content: View>: View {
+    let title: String
+    let iconName: String
+    @Binding var isExpanded: Bool
+    var itemCount: Int?
+    @ViewBuilder let content: () -> Content
     
-    private var statusBadge: some View {
-        HStack(spacing: 4) {
-            Image(systemName: scenario.status.iconName)
-                .font(.caption2)
-            Text(scenario.status.displayName)
-                .font(.caption)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header (always visible, clickable)
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16)
+                    
+                    Label(title, systemImage: iconName)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                    
+                    if let count = itemCount {
+                        Text("(\(count))")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.vertical, 6)
+            
+            // Content (collapsible)
+            if isExpanded {
+                content()
+                    .padding(.leading, 24)
+                    .padding(.top, 4)
+            }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 2)
-        .background(statusColor.opacity(0.15))
-        .foregroundStyle(statusColor)
-        .clipShape(Capsule())
+        .padding(12)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+// MARK: - Bullet Point
+
+/// Bullet point for list items
+private struct BulletPoint: View {
+    let text: String
+    var color: Color = .primary
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Circle()
+                .fill(color.opacity(0.6))
+                .frame(width: 6, height: 6)
+                .padding(.top, 6)
+            
+            Text(text)
+                .font(.body)
+        }
+    }
+}
+
+// MARK: - Log Entry Card
+
+/// Card view for displaying a log entry in the timeline
+struct LogEntryCard: View {
+    let logEntry: LogEntry
+    var density: DisplayDensity = .comfortable
+    let onAddEvidence: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: density == .compact ? 4 : 8) {
+            // Header row
+            HStack {
+                // Type icon
+                Image(systemName: logEntry.entryType.iconName)
+                    .foregroundStyle(typeColor)
+                    .font(density == .compact ? .caption : .body)
+                
+                Text(logEntry.title)
+                    .font(density == .compact ? .subheadline : .headline)
+                    .lineLimit(1)
+                
+                if logEntry.isPinned {
+                    Image(systemName: "pin.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                
+                // Compact: show type badge inline
+                if density == .compact {
+                    Text(logEntry.entryType.displayName)
+                        .font(.caption2)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(typeColor.opacity(0.15))
+                        .foregroundStyle(typeColor)
+                        .clipShape(Capsule())
+                }
+                
+                Spacer()
+                
+                // Date
+                Text(logEntry.occurredAt.formatted(date: .abbreviated, time: density == .compact ? .omitted : .shortened))
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            
+            // Body preview (respect density line limits)
+            if density != .compact || !logEntry.bodyPreview.isEmpty {
+                Text(bodyPreviewText)
+                    .font(density == .compact ? .caption : .subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(density.bodyPreviewLines)
+            }
+            
+            // Metadata row (hide in compact mode)
+            if density.showMetadataRow {
+                HStack(spacing: 12) {
+                    // Entry type badge (not in compact, shown in header)
+                    if density != .compact {
+                        Text(logEntry.entryType.displayName)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(typeColor.opacity(0.15))
+                            .foregroundStyle(typeColor)
+                            .clipShape(Capsule())
+                    }
+                    
+                    // Confidence
+                    if let confidence = logEntry.confidenceLevel {
+                        Label(confidence.shortLabel, systemImage: "gauge")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    // Evidence count
+                    if logEntry.evidenceCount > 0 {
+                        Label("\(logEntry.evidenceCount)", systemImage: "link")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    // Tags
+                    if let tags = logEntry.tags, !tags.isEmpty {
+                        HStack(spacing: 2) {
+                            ForEach(tags.prefix(3)) { tag in
+                                Circle()
+                                    .fill(colorFor(tag))
+                                    .frame(width: 6, height: 6)
+                            }
+                            if tags.count > 3 {
+                                Text("+\(tags.count - 3)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    if logEntry.isSystemGenerated {
+                        Label("Auto", systemImage: "gearshape")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    
+                    // Add Evidence button
+                    Button {
+                        onAddEvidence()
+                    } label: {
+                        Label("Add Evidence", systemImage: "link.badge.plus")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.borderless)
+                }
+            }
+        }
+        .padding(density == .compact ? 10 : 16)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: density == .compact ? 8 : 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: density == .compact ? 8 : 10)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+        )
     }
     
-    private var statusColor: Color {
-        switch scenario.status {
-        case .active: return .green
-        case .onHold: return .orange
-        case .invalidated: return .red
-        case .archived: return .gray
+    /// Body preview text with density-appropriate truncation
+    private var bodyPreviewText: String {
+        let text = logEntry.body
+        let maxLength = density == .compact ? 80 : (density == .comfortable ? 150 : 300)
+        if text.count <= maxLength {
+            return text
         }
+        return String(text.prefix(maxLength)) + "..."
+    }
+    
+    private var typeColor: Color {
+        switch logEntry.entryType {
+        case .observation: return .blue
+        case .update: return .purple
+        case .risk: return .red
+        case .catalyst: return .orange
+        case .review: return .green
+        }
+    }
+    
+    private func colorFor(_ tag: Tag) -> Color {
+        guard let colorName = tag.colorName,
+              let tagColor = TagColor(rawValue: colorName) else {
+            return .blue
+        }
+        return tagColor.color
+    }
+}
+
+// MARK: - Log Entry Detail Sheet
+
+/// Sheet view for displaying full log entry details
+struct LogEntryDetailSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    
+    @Bindable var logEntry: LogEntry
+    
+    @State private var showingAddEvidence = false
+    @State private var showingEditLogEntry = false
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Header
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: logEntry.entryType.iconName)
+                                .foregroundStyle(typeColor)
+                            Text(logEntry.entryType.displayName)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        Text(logEntry.title)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Text(logEntry.occurredAt.formatted(date: .complete, time: .shortened))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Divider()
+                    
+                    // Body
+                    Text(logEntry.body)
+                        .font(.body)
+                    
+                    // Evidence section
+                    if !logEntry.sortedEvidence.isEmpty {
+                        Divider()
+                        
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Evidence")
+                                .font(.headline)
+                            
+                            ForEach(logEntry.sortedEvidence) { evidence in
+                                EvidenceRow(evidence: evidence)
+                            }
+                        }
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("Log Entry")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button {
+                        showingEditLogEntry = true
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    
+                    Button {
+                        showingAddEvidence = true
+                    } label: {
+                        Label("Add Evidence", systemImage: "link.badge.plus")
+                    }
+                }
+            }
+        }
+        .frame(minWidth: 500, minHeight: 400)
+        .sheet(isPresented: $showingAddEvidence) {
+            EvidenceFormView(mode: .add(logEntry: logEntry)) { newEvidence in
+                modelContext.insert(newEvidence)
+                newEvidence.logEntry = logEntry
+            }
+        }
+        .sheet(isPresented: $showingEditLogEntry) {
+            if logEntry.researchQuestion != nil {
+                LogEntryFormView(mode: .edit(logEntry)) { _ in }
+            }
+        }
+    }
+    
+    private var typeColor: Color {
+        switch logEntry.entryType {
+        case .observation: return .blue
+        case .update: return .purple
+        case .risk: return .red
+        case .catalyst: return .orange
+        case .review: return .green
+        }
+    }
+}
+
+// MARK: - Evidence Row
+
+/// Row view for displaying evidence in a list
+struct EvidenceRow: View {
+    let evidence: Evidence
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Image(systemName: evidence.evidenceType.iconName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                Text(evidence.effectiveTitle)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                
+                Spacer()
+            }
+            
+            if let url = evidence.urlRaw {
+                Text(url)
+                    .font(.caption)
+                    .foregroundStyle(.blue)
+                    .lineLimit(1)
+            }
+            
+            if let snippet = evidence.snippetText {
+                Text(snippet)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+        }
+        .padding(10)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 }
 
@@ -407,13 +926,20 @@ struct ScenarioRowView: View {
     let question = ResearchQuestion(
         questionText: "Can AAPL sustain services revenue growth?",
         context: "Services now represent 20% of revenue",
+        thesisStatement: "Apple's services segment will continue to grow at 15%+ annually as the installed base expands.",
+        keyDrivers: ["Growing installed base", "High switching costs", "App Store dominance"],
+        invalidationRules: ["Services growth falls below 10%", "Major regulatory action against App Store"],
+        catalysts: ["New subscription service launch", "iPhone sales exceed expectations"],
+        keyRisks: ["Regulatory pressure", "Competition from Android"],
+        confidence: 4,
         priority: 4
     )
+    question.scenarios = [
+        SimpleScenario(type: .bull, title: "Services growth accelerates to 20%+"),
+        SimpleScenario(type: .base, title: "Services growth maintains 15%"),
+        SimpleScenario(type: .bear, title: "Services growth slows to single digits")
+    ]
     
-    return ResearchQuestionDetailView(
-        researchQuestion: question,
-        selectedScenario: .constant(nil)
-    )
-    .modelContainer(for: [Asset.self, ResearchQuestion.self, Scenario.self, ReviewReminder.self], inMemory: true)
+    return ResearchQuestionDetailView(researchQuestion: question)
+        .modelContainer(for: [Asset.self, ResearchQuestion.self, LogEntry.self, Evidence.self, ReviewReminder.self], inMemory: true)
 }
-

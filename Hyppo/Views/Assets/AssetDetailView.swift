@@ -348,9 +348,10 @@ struct ResearchQuestionRowView: View {
     
     private var statusColor: Color {
         switch question.status {
-        case .open: return .blue
-        case .answered: return .green
-        case .parked: return .gray
+        case .active: return .green
+        case .onHold: return .orange
+        case .invalidated: return .red
+        case .archived: return .gray
         }
     }
 }
@@ -363,7 +364,7 @@ struct ResearchQuestionRowView: View {
         asset: asset,
         selectedResearchQuestion: .constant(nil)
     )
-    .modelContainer(for: [Asset.self, ResearchQuestion.self, Scenario.self, ReviewReminder.self], inMemory: true)
+    .modelContainer(for: [Asset.self, ResearchQuestion.self, ReviewReminder.self], inMemory: true)
 }
 
 

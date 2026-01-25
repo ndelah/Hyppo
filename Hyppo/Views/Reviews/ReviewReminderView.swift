@@ -1,5 +1,5 @@
 /**
- ReviewReminderView displays and manages the review reminder for a scenario.
+ ReviewReminderView displays and manages the review reminder for a research question.
  
  Shows the current reminder status, allows configuring cadence,
  and provides actions for snoozing and completing reviews.
@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftData
 
-/// View for displaying and managing a scenario review reminder
+/// View for displaying and managing a research question review reminder
 struct ReviewReminderView: View {
     // MARK: - Environment
     
@@ -16,7 +16,7 @@ struct ReviewReminderView: View {
     
     // MARK: - Properties
     
-    @Bindable var scenario: Scenario
+    @Bindable var researchQuestion: ResearchQuestion
     
     // MARK: - State
     
@@ -43,10 +43,10 @@ struct ReviewReminderView: View {
                     .controlSize(.small)
             }
             
-            if let reminder = scenario.reviewReminder, reminder.isEnabled {
+            if let reminder = researchQuestion.reviewReminder, reminder.isEnabled {
                 // Status and actions
                 reminderContent(reminder)
-            } else if scenario.reviewReminder == nil {
+            } else if researchQuestion.reviewReminder == nil {
                 // No reminder set up yet
                 noReminderView
             } else {
@@ -58,7 +58,7 @@ struct ReviewReminderView: View {
         .background(Color(nsColor: .controlBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .sheet(isPresented: $showingCadenceSheet) {
-            CadenceConfigSheet(scenario: scenario)
+            CadenceConfigSheet(researchQuestion: researchQuestion)
         }
     }
     
@@ -66,7 +66,7 @@ struct ReviewReminderView: View {
     
     private var reminderEnabledBinding: Binding<Bool> {
         Binding(
-            get: { scenario.reviewReminder?.isEnabled ?? false },
+            get: { researchQuestion.reviewReminder?.isEnabled ?? false },
             set: { newValue in
                 if newValue {
                     enableReminder()
@@ -167,10 +167,10 @@ struct ReviewReminderView: View {
             .controlSize(.small)
         }
         .sheet(isPresented: $showingReviewWizard) {
-            ReviewWizardView(scenario: scenario) {
+            ReviewWizardView(researchQuestion: researchQuestion) {
                 // Wizard handles everything, just reschedule notification
-                if let r = scenario.reviewReminder {
-                    notificationService.rescheduleNotification(for: r, scenario: scenario)
+                if let r = researchQuestion.reviewReminder {
+                    notificationService.rescheduleNotification(for: r, researchQuestion: researchQuestion)
                 }
             }
         }
@@ -226,27 +226,27 @@ struct ReviewReminderView: View {
     // MARK: - Actions
     
     private func enableReminder() {
-        if scenario.reviewReminder == nil {
+        if researchQuestion.reviewReminder == nil {
             let reminder = ReviewReminder(cadence: .weekly, isEnabled: true)
             modelContext.insert(reminder)
-            scenario.reviewReminder = reminder
+            researchQuestion.reviewReminder = reminder
             
             // Request notification permission if needed
             notificationService.requestAuthorization { granted in
                 if granted {
-                    notificationService.scheduleNotification(for: reminder, scenario: scenario)
+                    notificationService.scheduleNotification(for: reminder, researchQuestion: researchQuestion)
                 }
             }
         } else {
-            scenario.reviewReminder?.setEnabled(true)
-            if let reminder = scenario.reviewReminder {
-                notificationService.scheduleNotification(for: reminder, scenario: scenario)
+            researchQuestion.reviewReminder?.setEnabled(true)
+            if let reminder = researchQuestion.reviewReminder {
+                notificationService.scheduleNotification(for: reminder, researchQuestion: researchQuestion)
             }
         }
     }
     
     private func disableReminder() {
-        if let reminder = scenario.reviewReminder {
+        if let reminder = researchQuestion.reviewReminder {
             reminder.setEnabled(false)
             notificationService.cancelNotification(for: reminder)
         }
@@ -254,24 +254,24 @@ struct ReviewReminderView: View {
     
     private func quickCompleteReview(_ reminder: ReviewReminder) {
         reminder.completeReview()
-        notificationService.rescheduleNotification(for: reminder, scenario: scenario)
+        notificationService.rescheduleNotification(for: reminder, researchQuestion: researchQuestion)
         
         // Create a simple review log entry (for quick complete without wizard)
         let logEntry = LogEntry.createReviewLog(
             outcome: ReviewOutcome.reinforce,
-            summary: "Quick review completed - scenario still valid",
-            confidence: scenario.confidenceCurrent
+            summary: "Quick review completed - thesis still valid",
+            confidence: researchQuestion.confidenceCurrent
         )
         modelContext.insert(logEntry)
-        logEntry.scenario = scenario
+        logEntry.researchQuestion = researchQuestion
         
-        // Update scenario
-        scenario.lastReviewedAt = Date()
+        // Update research question
+        researchQuestion.lastReviewedAt = Date()
     }
     
     private func snooze(_ reminder: ReviewReminder, days: Int) {
         reminder.snooze(days: days)
-        notificationService.rescheduleNotification(for: reminder, scenario: scenario)
+        notificationService.rescheduleNotification(for: reminder, researchQuestion: researchQuestion)
     }
 }
 
@@ -282,7 +282,7 @@ struct CadenceConfigSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    @Bindable var scenario: Scenario
+    @Bindable var researchQuestion: ResearchQuestion
     
     @State private var selectedCadence: ReviewCadence = .weekly
     @State private var customDays: Int = 14
@@ -363,7 +363,7 @@ struct CadenceConfigSheet: View {
         }
         .frame(width: 400, height: 400)
         .onAppear {
-            if let reminder = scenario.reviewReminder {
+            if let reminder = researchQuestion.reviewReminder {
                 selectedCadence = reminder.cadence
                 customDays = reminder.customIntervalDays ?? 14
             }
@@ -371,12 +371,12 @@ struct CadenceConfigSheet: View {
     }
     
     private func saveCadence() {
-        if let reminder = scenario.reviewReminder {
+        if let reminder = researchQuestion.reviewReminder {
             reminder.updateCadence(
                 selectedCadence,
                 customDays: selectedCadence == .custom ? customDays : nil
             )
-            notificationService.rescheduleNotification(for: reminder, scenario: scenario)
+            notificationService.rescheduleNotification(for: reminder, researchQuestion: researchQuestion)
         } else {
             let reminder = ReviewReminder(
                 cadence: selectedCadence,
@@ -384,15 +384,15 @@ struct CadenceConfigSheet: View {
                 isEnabled: true
             )
             modelContext.insert(reminder)
-            scenario.reviewReminder = reminder
-            notificationService.scheduleNotification(for: reminder, scenario: scenario)
+            researchQuestion.reviewReminder = reminder
+            notificationService.scheduleNotification(for: reminder, researchQuestion: researchQuestion)
         }
     }
 }
 
 // MARK: - Due Badge View
 
-/// Small badge indicating a scenario review is due
+/// Small badge indicating a research question review is due
 struct ReviewDueBadge: View {
     let reminder: ReviewReminder?
     
@@ -424,16 +424,14 @@ struct ReviewDueBadge: View {
 // MARK: - Preview
 
 #Preview {
-    let scenario = Scenario(
-        scenarioType: .bull,
-        title: "Test Scenario",
-        scenarioStatement: "Testing",
-        keyDrivers: ["Driver"],
-        invalidationRules: ["Rule"]
+    let question = ResearchQuestion(
+        questionText: "Can AAPL sustain services revenue growth?",
+        thesisStatement: "Apple's services segment will grow 15%+ annually",
+        keyDrivers: ["Growing installed base"],
+        invalidationRules: ["Services growth below 10%"]
     )
     
-    return ReviewReminderView(scenario: scenario)
+    return ReviewReminderView(researchQuestion: question)
         .padding()
-        .modelContainer(for: [Scenario.self, ReviewReminder.self, LogEntry.self], inMemory: true)
+        .modelContainer(for: [ResearchQuestion.self, ReviewReminder.self, LogEntry.self], inMemory: true)
 }
-
