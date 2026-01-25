@@ -23,6 +23,9 @@ Hyppo
 │   │   ├── ReviewReminder.swift
 │   │   ├── Scenario.swift
 │   │   └── Tag.swift
+│   ├── Services
+│   │   ├── ExportService.swift
+│   │   └── NotificationService.swift
 │   ├── Utilities
 │   │   ├── DebugLogger.swift
 │   │   └── SwiftDataStoreReset.swift
@@ -50,6 +53,8 @@ Hyppo
 │   │   ├── Scenarios
 │   │   │   ├── ScenarioDetailView.swift
 │   │   │   └── ScenarioFormView.swift
+│   │   ├── Search
+│   │   │   └── GlobalSearchView.swift
 │   │   ├── Settings
 │   │   │   └── SettingsView.swift
 │   │   └── Tags
@@ -70,10 +75,15 @@ Hyppo
 │   │       └── xcschemes
 │   │           └── xcschememanagement.plist
 │   └── project.pbxproj
-├── business_case.md
-├── feedback.md
-├── project_scope.md
-└── structure.md
+├── docs
+│   ├── QuickCapture_Wireframe.md
+│   ├── enterprise_opportunities.md
+│   ├── investor_research_workflow_validation.md
+│   ├── project_scope.md
+│   ├── roadmap.md
+│   ├── structure.md
+│   └── user_testing.md
+└── business_case.md
 ```
 
 
