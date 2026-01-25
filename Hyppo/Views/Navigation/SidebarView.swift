@@ -50,7 +50,8 @@ struct SidebarView: View {
         if !searchText.isEmpty {
             let searchLower = searchText.lowercased()
             result = result.filter { asset in
-                asset.tickerNormalized.contains(searchLower) ||
+                asset.tickerNormalized.lowercased().contains(searchLower) ||
+                asset.ticker.lowercased().contains(searchLower) ||
                 asset.name.lowercased().contains(searchLower)
             }
         }

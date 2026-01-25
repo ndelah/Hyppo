@@ -232,7 +232,7 @@ enum ConfidenceLevel: Int, Codable, CaseIterable, Identifiable {
     
     /// Short label for compact display
     var shortLabel: String {
-        "\(rawValue)/5"
+        String(repeating: "★", count: rawValue) + String(repeating: "☆", count: 5 - rawValue)
     }
 }
 

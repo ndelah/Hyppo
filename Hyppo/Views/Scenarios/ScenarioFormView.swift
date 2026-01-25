@@ -303,15 +303,14 @@ struct ScenarioFormView: View {
                         }
                     } label: {
                         VStack(spacing: 4) {
-                            Text("\(level.rawValue)")
+                            Image(systemName: (confidence ?? 0) >= level.rawValue ? "star.fill" : "star")
                                 .font(.title3)
-                                .fontWeight(.semibold)
                             Text(level.displayName)
                                 .font(.caption2)
                         }
                         .frame(width: 70, height: 50)
                         .background(confidence == level.rawValue ? Color.blue : Color(nsColor: .controlBackgroundColor))
-                        .foregroundStyle(confidence == level.rawValue ? .white : .primary)
+                        .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? .orange : .primary))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                     .buttonStyle(.plain)

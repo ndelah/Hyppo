@@ -106,7 +106,11 @@ struct MainNavigationView: View {
             Text("Please select a scenario first to add a log entry. Use ⌘⇧L after selecting a scenario.")
         }
         .sheet(isPresented: $showingGlobalSearch) {
-            GlobalSearchView()
+            GlobalSearchView(
+                selectedAsset: $selectedAsset,
+                selectedResearchQuestion: $selectedResearchQuestion,
+                selectedScenario: $selectedScenario
+            )
         }
     }
 }

@@ -417,12 +417,16 @@ struct ReviewWizardView: View {
                         Button {
                             newConfidence = level
                         } label: {
-                            Text("\(level)")
-                                .font(.headline)
-                                .frame(width: 44, height: 44)
-                                .background(newConfidence == level ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
-                                .foregroundStyle(newConfidence == level ? .white : .primary)
-                                .clipShape(Circle())
+                            VStack(spacing: 2) {
+                                Image(systemName: newConfidence >= level ? "star.fill" : "star")
+                                    .font(.title2)
+                                Text("\(level)")
+                                    .font(.caption2)
+                            }
+                            .frame(width: 44, height: 44)
+                            .background(newConfidence == level ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                            .foregroundStyle(newConfidence == level ? .white : (newConfidence >= level ? .orange : .primary))
+                            .clipShape(Circle())
                         }
                         .buttonStyle(.plain)
                     }

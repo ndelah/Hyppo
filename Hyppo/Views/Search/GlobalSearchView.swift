@@ -15,6 +15,12 @@ struct GlobalSearchView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
+    // MARK: - Navigation State
+    
+    @Binding var selectedAsset: Asset?
+    @Binding var selectedResearchQuestion: ResearchQuestion?
+    @Binding var selectedScenario: Scenario?
+    
     // MARK: - Queries
     
     @Query(sort: \Asset.tickerNormalized) private var allAssets: [Asset]
@@ -447,9 +453,9 @@ struct GlobalSearchView: View {
                                     selectedConfidence = selectedConfidence == level ? nil : level
                                 } label: {
                                     if selectedConfidence == level {
-                                        Label("\(level.rawValue)/5 - \(level.displayName)", systemImage: "checkmark")
+                                        Label("\(level.shortLabel) - \(level.displayName)", systemImage: "checkmark")
                                     } else {
-                                        Text("\(level.rawValue)/5 - \(level.displayName)")
+                                        Text("\(level.shortLabel) - \(level.displayName)")
                                     }
                                 }
                             }
@@ -545,10 +551,12 @@ struct GlobalSearchView: View {
                         ForEach(groupedResults.keys.sorted(by: { $0.rawValue < $1.rawValue }), id: \.self) { entityType in
                             Section {
                                 ForEach(groupedResults[entityType] ?? []) { result in
-                                    SearchResultRow(result: result)
-                                        .onTapGesture {
-                                            handleResultTap(result)
-                                        }
+                                    Button {
+                                        handleResultTap(result)
+                                    } label: {
+                                        SearchResultRow(result: result)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
                             } header: {
                                 HStack {
@@ -590,8 +598,28 @@ struct GlobalSearchView: View {
     // MARK: - Actions
     
     private func handleResultTap(_ result: SearchResult) {
-        // Navigation would be handled by the parent view
-        // This is a placeholder for future navigation implementation
+        if let asset = result.entity as? Asset {
+            selectedAsset = asset
+            selectedResearchQuestion = nil
+            selectedScenario = nil
+        } else if let question = result.entity as? ResearchQuestion {
+            selectedAsset = question.asset
+            selectedResearchQuestion = question
+            selectedScenario = nil
+        } else if let scenario = result.entity as? Scenario {
+            selectedAsset = scenario.researchQuestion?.asset
+            selectedResearchQuestion = scenario.researchQuestion
+            selectedScenario = scenario
+        } else if let logEntry = result.entity as? LogEntry {
+            selectedAsset = logEntry.scenario?.researchQuestion?.asset
+            selectedResearchQuestion = logEntry.scenario?.researchQuestion
+            selectedScenario = logEntry.scenario
+        } else if let evidence = result.entity as? Evidence {
+            selectedAsset = evidence.logEntry?.scenario?.researchQuestion?.asset
+            selectedResearchQuestion = evidence.logEntry?.scenario?.researchQuestion
+            selectedScenario = evidence.logEntry?.scenario
+        }
+        
         dismiss()
     }
 }
@@ -628,7 +656,11 @@ private struct SearchResultRow: View {
 // MARK: - Preview
 
 #Preview {
-    GlobalSearchView()
-        .modelContainer(for: [Asset.self, ResearchQuestion.self, Scenario.self, LogEntry.self, Evidence.self, Tag.self], inMemory: true)
+    GlobalSearchView(
+        selectedAsset: .constant(nil),
+        selectedResearchQuestion: .constant(nil),
+        selectedScenario: .constant(nil)
+    )
+    .modelContainer(for: [Asset.self, ResearchQuestion.self, Scenario.self, LogEntry.self, Evidence.self, Tag.self], inMemory: true)
 }
 

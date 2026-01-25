@@ -95,6 +95,12 @@ struct ScenarioDetailView: View {
                     Label("Export", systemImage: "square.and.arrow.up")
                 }
                 .help("Export to Markdown")
+                .fileExporter(
+                    isPresented: $showingMarkdownExport,
+                    document: MarkdownDocument(content: markdownContent),
+                    contentType: .text,
+                    defaultFilename: "\(scenario.researchQuestion?.asset?.ticker ?? "scenario")_\(sanitizedScenarioTitle).md"
+                ) { _ in }
                 
                 Button {
                     showingEditScenario = true
@@ -129,12 +135,6 @@ struct ScenarioDetailView: View {
                 newEvidence.logEntry = logEntry
             }
         }
-        .fileExporter(
-            isPresented: $showingMarkdownExport,
-            document: MarkdownDocument(content: markdownContent),
-            contentType: .text,
-            defaultFilename: "\(scenario.researchQuestion?.asset?.ticker ?? "scenario")_\(sanitizedScenarioTitle).md"
-        ) { _ in }
         .sheet(isPresented: $showingReviewWizard) {
             ReviewWizardView(scenario: scenario) { }
         }

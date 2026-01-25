@@ -2,14 +2,14 @@
 ### 1. Global Search (⌘F)
 *Access:*
 [X] Press ⌘F from anywhere in the app → Global Search sheet opens
-    - TODO: Pressing done doesn't open the searched results.
-    - TODO: the search results are not clickable, or browsable with keyboard arrows.
+[X] Pressing a result navigates to it and dismisses the search sheet.
+    - TODO: the search results are not browsable with keyboard arrows.
 [ ] Menu: Edit → Global Search works
 [X] "Done" button dismisses the sheet
 
 **Search Functionality:**
-[ ] Type a ticker (e.g., "AAPL") → Assets with that ticker appear. 
-    - TODO: On home page in the search bar search doesn't recognize the tickers, only the given name of the asset .e.g. "Apple inc.". should support both. Works well in the cmd+f
+[X] Type a ticker (e.g., "AAPL") → Assets with that ticker appear. 
+[X] On home page in the search bar search recognizes the tickers and the given name.
 [X] Type partial research question text → Questions appear
 [X] Type scenario title text → Scenarios appear
 [X] Type log entry content → Log entries appear
@@ -27,8 +27,8 @@
 [X] Works correctly for Assets, Scenarios, Log Entries, and Evidence
 
 **Confidence Filter:**
-[X] Confidence dropdown shows 1-5 levels
-    TODO: confidence levels should be starts insteaed of "1/5" everywhere in the app
+[X] Confidence dropdown shows star levels (e.g., ★★★☆☆)
+[X] Confidence levels are stars instead of "1/5" everywhere in the app
 [X] Selecting a confidence level filters Scenarios and Log Entries
 [X] Assets and Research Questions (which don't have confidence) are excluded when confidence filter is active
 
