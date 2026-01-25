@@ -40,17 +40,23 @@ struct TagManagementSheet: View {
             HStack(spacing: 12) {
                 TextField("New tag name", text: $newTagName)
                     .textFieldStyle(.roundedBorder)
+                    .onSubmit {
+                        addTag()
+                    }
                 
                 Picker("", selection: $newTagColor) {
                     ForEach(TagColor.allCases) { color in
-                        Circle()
-                            .fill(color.color)
-                            .frame(width: 12, height: 12)
-                            .tag(color)
+                        HStack {
+                            Circle()
+                                .fill(color.color)
+                                .frame(width: 12, height: 12)
+                            Text(color.displayName)
+                        }
+                        .tag(color)
                     }
                 }
                 .pickerStyle(.menu)
-                .frame(width: 60)
+                .frame(width: 120)
                 
                 Button("Add") {
                     addTag()
@@ -260,11 +266,11 @@ struct TagPickerView: View {
                         Button {
                             addTag(tag)
                         } label: {
-                            HStack {
-                                Circle()
-                                    .fill(colorFor(tag))
-                                    .frame(width: 8, height: 8)
+                            Label {
                                 Text(tag.name)
+                            } icon: {
+                                Image(systemName: "circle.fill")
+                                    .foregroundStyle(colorFor(tag))
                             }
                         }
                     }
