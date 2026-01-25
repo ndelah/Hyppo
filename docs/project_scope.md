@@ -61,16 +61,18 @@ The product must support this end-to-end workflow:
 - **UI (SwiftUI):** Assets, Asset Detail, Research Question Detail, Scenario Detail, Add/Edit sheets, Timeline, Global Search, Settings/Export.
 - **Domain layer:** models and business rules (integrity constraints, lifecycle transitions, validation).
 - **Persistence:** SwiftData (or Core Data if advanced requirements emerge), local storage, optional encryption at rest.
-- **Search/indexing:** local full-text search (SQLite FTS or Spotlight where appropriate) plus facets/filters.
+- **Search/indexing:** local full-text search (SQLite FTS or Spotlight where appropriate) plus facets/filters (Entity Type, Tag, Confidence, Date Range).
 - **Capture/attachments:** URL capture, snippet storage, optional local files (PDF/images) stored in the app sandbox.
+
 - **Export/backup:** JSON export/import; Markdown exports; versioned backup folder.
 - **Notifications (MVP 2):** local reminders for review cadence.
 
 ### 8.2 Core data model (conceptual)
 - **Asset:** a tracked company/security.
 - **Research Question:** an area of inquiry about an asset.
-- **Scenario:** a hypothesis (bull/base/bear/custom) answering a research question.
+- **Scenario:** a hypothesis (bull/base/bear/custom) answering a research question. Includes structured fields like Pre-Mortem analysis.
 - **Log Entry:** a point-in-time journal entry attached to a scenario.
+
 - **Evidence:** a link/snippet/KPI/quote attached to a log entry.
 - **Review Reminder:** local schedule metadata for scenario review.
 

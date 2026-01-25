@@ -33,7 +33,14 @@ This document tracks the implementation status of features across different deve
 - [x] **Search & Discovery**:
     - [x] Global search across all entities.
     - [x] Advanced filters (date, tags, confidence).
+    - [x] Search results grouped by entity type with headers.
+    - [x] Navigation to results from search sheet.
+    - [x] Entity type filtering (Assets, Research Questions, etc.).
+    - [x] Tag-based filtering for all entities.
+    - [x] Confidence filtering with star-based UI.
+    - [x] Date range filtering.
 - [x] **Markdown Export**:
+
     - [x] Export individual scenarios or assets to Markdown.
 
 ## MVP 2: Workflow Support
@@ -51,6 +58,8 @@ This document tracks the implementation status of features across different deve
 - [x] **Pre-Mortem Field**:
     - [x] Optional pre-mortem text field in Scenario form.
     - [x] Display in scenario detail and review pack.
+    - [x] Collapsible section in detail view with "Expand/Collapse All" support.
+    - [x] Persistence and editing support for pre-mortem content.
 - [ ] **Enhanced Evidence**:
     - [ ] Snippet capture with attribution.
     - [ ] Local file attachments (PDF/images).
