@@ -25,7 +25,7 @@ struct AppVersion {
     static let build = 1
     
     /// Version name for display (e.g., "v1.0")
-    static let displayName = "v1.0"
+    static let displayName = "v1.0.0"
     
     /// Full version string including build number
     static var fullVersion: String {
