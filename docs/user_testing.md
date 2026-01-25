@@ -1,10 +1,9 @@
 ## Testing Checklist
 ### 3. Markdown Export (Verify Still Working)
-TODO: export button is broken.
-**From Scenario Detail:**
+**From Research Question Detail:**
 - [ ] Click Export button (square with arrow) in toolbar
 - [ ] File save dialog appears with .md extension
-- [ ] Saved file contains scenario details, drivers, invalidation rules
+- [ ] Saved file contains research question details, drivers, invalidation rules, scenarios
 - [ ] If Pre-Mortem text exists, it should be included in export
 
 ### 4. Review Wizard (Verify Still Working)

@@ -47,7 +47,7 @@ struct ResearchQuestionDetailView: View {
     
     // Export state
     @State private var showingMarkdownExport = false
-    @State private var markdownContent: String = ""
+    @State private var markdownDocument: MarkdownDocument?
     
     // Review wizard state
     @State private var showingReviewWizard = false
@@ -90,7 +90,8 @@ struct ResearchQuestionDetailView: View {
                 
                 // Export to Markdown
                 Button {
-                    markdownContent = ExportService.shared.exportResearchQuestionToMarkdown(researchQuestion)
+                    let content = ExportService.shared.exportResearchQuestionToMarkdown(researchQuestion)
+                    markdownDocument = MarkdownDocument(content: content)
                     showingMarkdownExport = true
                 } label: {
                     Label("Export", systemImage: "square.and.arrow.up")
@@ -98,10 +99,12 @@ struct ResearchQuestionDetailView: View {
                 .help("Export to Markdown")
                 .fileExporter(
                     isPresented: $showingMarkdownExport,
-                    document: MarkdownDocument(content: markdownContent),
+                    document: markdownDocument ?? MarkdownDocument(content: ""),
                     contentType: .text,
                     defaultFilename: "\(researchQuestion.asset?.ticker ?? "research")_\(sanitizedQuestionTitle).md"
-                ) { _ in }
+                ) { _ in
+                    markdownDocument = nil
+                }
                 
                 Button {
                     showingEditQuestion = true
