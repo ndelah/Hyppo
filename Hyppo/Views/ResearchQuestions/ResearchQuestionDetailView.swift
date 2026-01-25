@@ -56,7 +56,7 @@ struct ResearchQuestionDetailView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 16) {
                 // Research question header
                 questionHeader
                 
@@ -224,7 +224,7 @@ struct ResearchQuestionDetailView: View {
     }
     
     private var thesisContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 6) {
             // Thesis statement
             if let thesis = researchQuestion.thesisStatement, !thesis.isEmpty {
                 CollapsibleSection(
@@ -233,7 +233,7 @@ struct ResearchQuestionDetailView: View {
                     isExpanded: $isThesisStatementExpanded
                 ) {
                     Text(thesis)
-                        .font(.body)
+                        .font(.subheadline)
                 }
             }
             
@@ -245,7 +245,7 @@ struct ResearchQuestionDetailView: View {
                     isExpanded: $isKeyDriversExpanded,
                     itemCount: researchQuestion.keyDrivers.count
                 ) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 3) {
                         ForEach(researchQuestion.keyDrivers, id: \.self) { driver in
                             BulletPoint(text: driver)
                         }
@@ -261,7 +261,7 @@ struct ResearchQuestionDetailView: View {
                     isExpanded: $isInvalidationRulesExpanded,
                     itemCount: researchQuestion.invalidationRules.count
                 ) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 3) {
                         ForEach(researchQuestion.invalidationRules, id: \.self) { rule in
                             BulletPoint(text: rule, color: .red)
                         }
@@ -277,7 +277,7 @@ struct ResearchQuestionDetailView: View {
                     isExpanded: $isScenariosExpanded,
                     itemCount: researchQuestion.scenarios.count
                 ) {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
                         ForEach(researchQuestion.scenarios.sorted { $0.scenarioType.sortOrder < $1.scenarioType.sortOrder }) { scenario in
                             ScenarioRow(scenario: scenario)
                         }
@@ -293,7 +293,7 @@ struct ResearchQuestionDetailView: View {
                     isExpanded: $isCatalystsExpanded,
                     itemCount: researchQuestion.catalysts.count
                 ) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 3) {
                         ForEach(researchQuestion.catalysts, id: \.self) { catalyst in
                             BulletPoint(text: catalyst, color: .orange)
                         }
@@ -309,7 +309,7 @@ struct ResearchQuestionDetailView: View {
                     isExpanded: $isKeyRisksExpanded,
                     itemCount: researchQuestion.keyRisks.count
                 ) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 3) {
                         ForEach(researchQuestion.keyRisks, id: \.self) { risk in
                             BulletPoint(text: risk, color: .yellow)
                         }
@@ -326,9 +326,9 @@ struct ResearchQuestionDetailView: View {
                     itemCount: nil
                 ) {
                     Text(preMortem)
-                        .font(.body)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .padding(.vertical, 4)
+                        .padding(.vertical, 2)
                 }
             }
             
@@ -516,22 +516,22 @@ private struct ScenarioRow: View {
     let scenario: SimpleScenario
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Image(systemName: scenario.scenarioType.iconName)
-                .font(.body)
+                .font(.subheadline)
                 .foregroundStyle(typeColor)
-                .frame(width: 24)
+                .frame(width: 20)
             
             Text(scenario.scenarioType.displayName)
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundStyle(.secondary)
-                .frame(width: 50, alignment: .leading)
+                .frame(width: 40, alignment: .leading)
             
             Text(scenario.title)
-                .font(.body)
+                .font(.subheadline)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
     }
     
     private var typeColor: Color {
@@ -584,18 +584,18 @@ private struct CollapsibleSection<Content: View>: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.vertical, 6)
+            .padding(.vertical, 4)
             
             // Content (collapsible)
             if isExpanded {
                 content()
                     .padding(.leading, 24)
-                    .padding(.top, 4)
+                    .padding(.top, 2)
             }
         }
-        .padding(12)
+        .padding(8)
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 }
 
@@ -607,14 +607,14 @@ private struct BulletPoint: View {
     var color: Color = .primary
     
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .top, spacing: 6) {
             Circle()
                 .fill(color.opacity(0.6))
-                .frame(width: 6, height: 6)
-                .padding(.top, 6)
+                .frame(width: 5, height: 5)
+                .padding(.top, 5)
             
             Text(text)
-                .font(.body)
+                .font(.subheadline)
         }
     }
 }

@@ -120,7 +120,8 @@ struct LogEntryFormView: View {
                                 }
                             }
                             .pickerStyle(.menu)
-                            .frame(width: 140)
+                            .labelsHidden()
+                            .frame(minWidth: 130)
                         }
                         
                         // Date picker

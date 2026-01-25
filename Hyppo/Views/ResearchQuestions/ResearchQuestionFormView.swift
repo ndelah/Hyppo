@@ -93,7 +93,7 @@ struct ResearchQuestionFormView: View {
             
             // Form content
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 16) {
                     // Core question section
                     coreQuestionSection
                     
@@ -156,8 +156,8 @@ struct ResearchQuestionFormView: View {
                 .lineLimit(2...4)
                 .foregroundStyle(.secondary)
             
-            HStack {
-                Text("Priority:")
+            HStack(spacing: 8) {
+                Text("Priority")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
@@ -168,7 +168,8 @@ struct ResearchQuestionFormView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 200)
+                .labelsHidden()
+                .frame(width: 260)
             }
         }
     }
@@ -223,20 +224,8 @@ struct ResearchQuestionFormView: View {
     
     private var scenariosSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Scenarios")
-                    .font(.headline)
-                
-                Spacer()
-                
-                Button {
-                    scenarios.append(SimpleScenario(type: .base, title: ""))
-                } label: {
-                    Label("Add", systemImage: "plus.circle")
-                        .font(.caption)
-                }
-                .buttonStyle(.borderless)
-            }
+            Text("Scenarios")
+                .font(.headline)
             
             Text("Define bull/base/bear case outcomes for your thesis.")
                 .font(.caption)
@@ -246,7 +235,7 @@ struct ResearchQuestionFormView: View {
                 Text("No scenarios yet. Add scenarios to outline different possible outcomes.")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 4)
             } else {
                 VStack(spacing: 8) {
                     ForEach(scenarios.indices, id: \.self) { index in
@@ -259,6 +248,15 @@ struct ResearchQuestionFormView: View {
                     }
                 }
             }
+            
+            Button {
+                scenarios.append(SimpleScenario(type: .base, title: ""))
+            } label: {
+                Label("Add Scenario", systemImage: "plus.circle")
+                    .font(.caption)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.blue)
         }
     }
     

@@ -27,7 +27,7 @@ struct ReviewReminderView: View {
     // MARK: - Body
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             // Header
             HStack {
                 Label("Review Reminder", systemImage: "bell")
@@ -54,9 +54,9 @@ struct ReviewReminderView: View {
                 disabledReminderView
             }
         }
-        .padding()
+        .padding(10)
         .background(Color(nsColor: .controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
         .sheet(isPresented: $showingCadenceSheet) {
             CadenceConfigSheet(researchQuestion: researchQuestion)
         }
@@ -81,7 +81,7 @@ struct ReviewReminderView: View {
     
     @ViewBuilder
     private func reminderContent(_ reminder: ReviewReminder) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             // Status indicator
             statusView(reminder)
             
@@ -109,13 +109,13 @@ struct ReviewReminderView: View {
     
     @ViewBuilder
     private func statusView(_ reminder: ReviewReminder) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             // Status icon
             Image(systemName: statusIconName(for: reminder))
-                .font(.title3)
+                .font(.body)
                 .foregroundStyle(statusColor(for: reminder))
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(reminder.statusDescription)
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -129,9 +129,9 @@ struct ReviewReminderView: View {
             
             Spacer()
         }
-        .padding(10)
+        .padding(8)
         .background(statusColor(for: reminder).opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
     
     @ViewBuilder
