@@ -273,13 +273,10 @@ final class QuickCaptureService: ObservableObject {
             }
             
         case .note:
-            guard !state.snippetText.trimmingCharacters(in: .whitespaces).isEmpty &&
+            guard !state.snippetText.trimmingCharacters(in: .whitespaces).isEmpty ||
                   !state.annotationText.trimmingCharacters(in: .whitespaces).isEmpty else {
-                if state.snippetText.trimmingCharacters(in: .whitespaces).isEmpty &&
-                   state.annotationText.trimmingCharacters(in: .whitespaces).isEmpty {
-                    state.validationError = "Please add a snippet or annotation"
-                    return false
-                }
+                state.validationError = "Please add a snippet or annotation"
+                return false
             }
             return true
             
