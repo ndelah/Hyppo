@@ -1,8 +1,8 @@
-# Footnote
+# Hyppo
 ## Statement of Work (macOS)
 
 ## 1. Project summary
-Footnote is a native macOS application for tracking **investment research questions and scenarios**, not portfolio performance. Users track companies (assets), create research questions, formulate scenarios (e.g., base/bull/bear) to answer those questions, and append timestamped log entries with evidence links, short snippets, and local attachments. The result is a searchable, chronological record of what the user believed, when they believed it, and what information led them to reinforce, revise, or invalidate a scenario.
+Hyppo is a native macOS application for tracking **investment research questions and scenarios**, not portfolio performance. Users track companies (assets), create research questions, formulate scenarios (e.g., base/bull/bear) to answer those questions, and append timestamped log entries with evidence links, short snippets, and local attachments. The result is a searchable, chronological record of what the user believed, when they believed it, and what information led them to reinforce, revise, or invalidate a scenario.
 
 ## 2. Objectives
 - Make research question and scenario capture fast enough for daily use.
@@ -76,7 +76,9 @@ The product must support this end-to-end workflow:
 
 ### 8.3 End-to-end flows and required fields
 
-#### Flow 1 — Choose/track a company and formulate research question (start coverage)
+#### 🟢 Flow 1 — Choose/track a company and formulate research question (start coverage)
+*Status: Fully Specified & Implemented*
+
 **User flow:** Open app → Add Asset → Create research question → Create scenario → Add first log → (optional) attach evidence → View timeline.
 
 **Steps**
@@ -97,8 +99,8 @@ The product must support this end-to-end workflow:
   - UI: questionText (required), context (optional), priority (optional 1–5), status (default Open).
   - Backend: questionId, assetId, questionText, context, statusRaw, conclusion, priority, createdAt, updatedAt.
 - **Scenario**
-  - UI: scenarioType (bull/base/bear/custom), title, scenarioStatement (required), keyDrivers (required list), invalidationRules (required list), catalysts (optional), keyRisks (optional), confidence (optional 1–5), status (default Active).
-  - Backend: scenarioId, researchQuestionId, createdAt, updatedAt, lastUpdatedAt, lastReviewedAt (optional), status, statusChangedAt, confidenceCurrent, versionNumber.
+  - UI: scenarioType (bull/base/bear/custom), title, scenarioStatement (required), keyDrivers (required list), invalidationRules (required list), catalysts (optional), keyRisks (optional), preMortemText (optional), confidence (optional 1–5), status (default Active).
+  - Backend: scenarioId, researchQuestionId, createdAt, updatedAt, lastUpdatedAt, lastReviewedAt (optional), status, statusChangedAt, confidenceCurrent, preMortemText, versionNumber.
 - **Log Entry**
   - UI: occurredAt (default now), title (required), body (required), entryType (Observation/Update/Risk/Catalyst/Review), tags (optional), confidence (optional 1–5), indicators (evidence count, attachment count).
   - Backend: logEntryId, scenarioId, createdAt, updatedAt, occurredAt, entryType, tagIds, confidence, isSystemGenerated, isPinned (optional).
@@ -106,7 +108,9 @@ The product must support this end-to-end workflow:
   - UI: url (required), displayTitle (optional), evidenceType, snippetText (optional, limited), userAnnotation (optional).
   - Backend: evidenceId, logEntryId, capturedAt, urlRaw, urlNormalized, domain, sourceTitle, snippetText, annotationText, tagIds.
 
-#### Flow 2 — Collect key evidence (Quick Capture)
+#### 🟡 Flow 2 — Collect key evidence (Quick Capture)
+*Status: Fully Specified (see docs/QuickCapture_Wireframe.md) & Not Implemented*
+
 **User flow:** Copy URL/snippet → Quick Capture → pick destination → Save → index → jump to entry.
 
 **Steps**
@@ -127,13 +131,15 @@ The product must support this end-to-end workflow:
   - UI: log title preset (editable), entryType default Observation, occurredAt default now.
   - Backend: logEntryId, scenarioId, occurredAt, entryType, isSystemGenerated=false.
 - **KPI evidence (only when evidenceType=KPI)**
-  - UI: metricName, value, unit, period (e.g., Q3 2025), optional comparison note.
+  - UI: metricName (required), value (required), unit (optional), period (e.g., Q3 2025), optional comparison note.
   - Backend: metricName, metricValue, metricUnit, metricPeriod, metricNote (optional).
 - **File attachments (MVP 2)**
   - UI: file picker, filename, note.
   - Backend: attachmentId, parentType (log/evidence), parentId, fileBookmark/pathReference, mimeType, fileSize.
 
-#### Flow 3 — Write or update scenario (structured hypothesis)
+#### 🟡 Flow 3 — Write or update scenario (structured hypothesis)
+*Status: Fully Specified & Partially Implemented (Auto-logs active)*
+
 **User flow:** Create scenario → later edit → app records revision as an audit log.
 
 **Steps**
@@ -146,9 +152,9 @@ The product must support this end-to-end workflow:
 **Fields required (UI + backend)**
 - **Scenario (structured content)**
   - UI (minimum): scenarioType, title, scenarioStatement, keyDrivers, invalidationRules.
-  - UI (optional): catalysts, keyRisks, confidence (1–5), status.
+  - UI (optional): catalysts, keyRisks, preMortemText, confidence (1–5), status.
   - UI (display-only): lastUpdatedAt, lastReviewedAt, versionNumber.
-  - Backend: scenarioId, researchQuestionId, createdAt, updatedAt, lastUpdatedAt, lastReviewedAt, status, statusChangedAt, confidenceCurrent, versionNumber.
+  - Backend: scenarioId, researchQuestionId, createdAt, updatedAt, lastUpdatedAt, lastReviewedAt, status, statusChangedAt, confidenceCurrent, preMortemText, versionNumber.
 - **Revision inputs (when editing)**
   - UI: revisionNote (short "what/why changed"), effectiveDate (default now).
   - Backend: editedAt, editedFrom (manual vs review), changedFieldKeys, previousVersionNumber.
@@ -156,7 +162,9 @@ The product must support this end-to-end workflow:
   - UI (display): entryType=Update, diffSummary, confidenceBefore/After (if changed), related evidence links.
   - Backend: logEntryId, scenarioId, occurredAt, entryType=Update, isSystemGenerated=true, diffSummaryText, confidenceBefore, confidenceAfter, relatedEvidenceIds.
 
-#### Flow 4 — Revisit (review and decide)
+#### 🟢 Flow 4 — Revisit (review and decide)
+*Status: Fully Specified & Implemented*
+
 **User flow:** Trigger review → see a compact snapshot → choose outcome → answer minimal prompts → commit a review log.
 
 **Steps**
@@ -175,24 +183,7 @@ The product must support this end-to-end workflow:
   - UI: scenarioSummary, currentStatus, currentConfidence, lastReviewedAt, recentLogsSinceLastReview, evidenceSinceLastReview.
   - Backend: derived from occurredAt/capturedAt + scenario.lastReviewedAt.
 - **Decision outcome**
-  - UI: outcome enum.
-  - Backend: reviewOutcome, statusBefore/statusAfter, confidenceBefore/confidenceAfter.
-- **Prompt answers (structured capture)**
-  - Reinforce UI: whatStrengthened, supportingEvidenceNotes, confidenceAfter.
-  - Revise UI: whatChanged, driverChanged (pick/freeform), riskOrCatalystMoved, inline scenario edits, confidenceAfter.
-  - Invalidate UI: invalidationTriggered (pick/freeform), whatWasMissed, takeaways.
-  - Backend: reviewAnswerPayload (structured JSON), invalidationRuleId or invalidationText, changedDriverKey (optional), lessonsLearnedText.
-- **Review Log Entry (created on commit)**
-  - UI (display): entryType=Review, outcome badge, short summary, evidence links.
-  - Backend: logEntryId, scenarioId, occurredAt, entryType=Review, reviewOutcome, reviewAnswerPayload, relatedEvidenceIds.
-- **Scenario updates resulting from review**
-  - UI: updated status/confidence; updated scenario fields if revised.
-  - Backend: scenario.lastReviewedAt, scenario.lastUpdatedAt, scenario.status/statusChangedAt (if changed), scenario.confidenceCurrent, scenario.versionNumber++ (if revised).
-- **Review pack (snapshot)**
-  - UI: scenarioSummary, currentStatus, currentConfidence, lastReviewedAt, recentLogsSinceLastReview, evidenceSinceLastReview.
-  - Backend: derived from occurredAt/capturedAt + scenario.lastReviewedAt.
-- **Decision outcome**
-  - UI: outcome enum.
+  - UI: outcome enum (Reinforce, Revise, Invalidate).
   - Backend: reviewOutcome, statusBefore/statusAfter, confidenceBefore/confidenceAfter.
 - **Prompt answers (structured capture)**
   - Reinforce UI: whatStrengthened, supportingEvidenceNotes, confidenceAfter.
@@ -215,101 +206,75 @@ The product must support this end-to-end workflow:
 - Import/export: JSON and Markdown; backups compatible with Time Machine.
 - Optional later: CloudKit sync (opt-in), AI via Core ML (local) or remote API (explicit opt-in).
 
-## 10. Product phases (MVP roadmap)
-- **MVP 0 (Foundations):** navigation shell + persistence + CRUD.
-- **MVP 1 (Core v1):** assets/theses/logs + timeline + tags/search + export/backup.
-- **MVP 2 (Workflow support):** Quick Capture, snippets/attachments, reminders + review mode, scenario comparison.
-- **MVP 3 (Premium):** analytics dashboard, AI summaries/critique prompts, polished memo exports.
+## 10. Product Phases (Roadmap)
+The development of Hyppo is structured into four distinct phases, moving from core infrastructure to advanced analytical tools. For a detailed list of features and their current implementation status, see [roadmap.md](roadmap.md).
 
-### MVP 0 implementation status (as built in this repo)
-- **Navigation shell (sidebar → asset → research question → scenario → timeline)**: **Done**
-- **Local persistence (SwiftData)**: **Done**
-- **CRUD for core entities**
-  - Asset: **Done**
-  - Research Question: **Done**
-  - Scenario: **Done**
-  - Log Entry: **Done**
-  - Evidence: **Done**
-- **Settings window**: **Done** (export/import/backup actions are UI placeholders only)
-- **Review reminders entity**: **Done** (ReviewReminder model with cadence, scheduling, snooze)
-- **Review reminders UI**: **Done** (cadence selector, due badge, snooze/complete actions)
-- **macOS notifications**: **Done** (UNUserNotificationCenter integration with snooze action)
+### 🟢 MVP 0: Foundations
+**Goal:** Establish the core navigation shell, local persistence layer, and basic CRUD operations for all primary entities.
+- Focus on macOS-native feel and robust data integrity.
+- Establish the "Asset → Research Question → Scenario → Log" hierarchy.
 
-## 11. Feature backlog and Scrum ticketing
-Epics (user stories + tickets) are organized by MVP phase.
+### 🟢 MVP 1: Core Workflow
+**Goal:** Enable the primary research journaling workflow, allowing users to track their investment logic over time.
+- Focus on timeline visualization and data portability.
+- Implement tagging systems and basic search to manage growing research sets.
+- *Status: Complete — Global Search, Advanced Filters, and Markdown Export implemented.*
 
-### Epic A — App shell and navigation (MVP 0)
-User flow: open app → assets → asset → research questions → scenarios → timeline.
-- A1 (**Done**): SwiftUI shell (sidebar + detail) with Settings.
-- A2 (**Done**): Routing/state management; robust empty states.
+### 🟡 MVP 2: Workflow Support
+**Goal:** Streamline the "Quick Capture" of evidence and formalize the "Review Loop" to ensure research stays current.
+- Focus on reducing friction for daily use (Global shortcuts, snippets).
+- Implement guided review wizards to help users update or invalidate their theses.
+- *Status: Partial — Review Mode complete, Pre-Mortem complete, Quick Capture designed (see docs/QuickCapture_Wireframe.md).*
 
-### Epic B — Local persistence and data model (MVP 0)
-- B1 (**Done**): Define entities (Asset, Research Question, Scenario, Log Entry, Evidence, Review Reminder).
-- B2 (**Done**): Implement persistence; cascading deletes; performance targets.
-- B3 (**Done**): Integrity rules and validation.
+### ⚪️ MVP 3: Premium Features
+**Goal:** Provide advanced analytical depth and AI-assisted insights for power users.
+- Focus on local AI summaries and behavioral analytics.
+- Enhanced export formats for professional-grade research memos.
 
-### Epic C — Assets management (MVP 1)
-- C1 (**Done**): Asset list view + search.
-- C2 (**Done**): Add/edit/delete asset.
-- C3 (**Done**): Asset tags + tag filtering. *(Tag management, assignment in forms, sidebar filtering)*
-
-### Epic D — Research questions and scenarios per asset (MVP 1)
-- D1 (**Done**): Research question list under asset.
-- D2 (**Done**): Create/edit research question (question text, context, priority).
-- D3 (**Done**): Scenario list under research question.
-- D4 (**Done**): Create/edit scenario (structured fields).
-- D5 (**Done**): Scenario lifecycle statuses + auto log on status change.
-
-### Epic E — Log entries and timeline (MVP 1)
-- E1 (**Done**): Timeline view (compact markers; expand/collapse).
-- E2 (**Not done**): Fast log creation (shortcut; drafts). *(Basic add log exists; no drafts/shortcut wiring.)*
-- E3 (**Not done**): Log metadata (tags, confidence, entry type). *(Confidence + entry type exist; tags missing.)*
-- E4 (**Not done**): UI density control via progressive disclosure.
-
-### Epic F — Evidence (MVP 1 → MVP 2)
-- F1 (MVP 1) (**Done**): Attach URL to a log.
-- F2 (MVP 2) (**Not done**): Snippet capture with attribution.
-- F3 (MVP 2) (**Not done**): File attachments (PDF/images) stored locally.
-
-### Epic G — Search and filters (MVP 1)
-- G1 (**Not done**): Global search across assets/research questions/scenarios/logs/evidence.
-- G2 (**Not done**): Filters (date, tags, confidence, entry type).
-
-### Epic H — Export, backup, portability (MVP 1)
-- H1 (**Not done**): Export/import JSON.
-- H2 (**Not done**): Export Markdown per scenario.
-- H3 (**Not done**): Automatic local backups (versioned folder).
-
-### Epic I — Review loop and reminders (MVP 2)
-- I1 (**Done**): Local reminder scheduling per scenario. *(Cadence selector, due indicators, macOS notifications)*
-- I2 (**Not done**): Review mode wizard (reinforce/revise/invalidate).
-- I3 (**Partial**): Structured review log generation. *(Auto-creates log on "Complete Review", but no full wizard)*
-
-### Epic J — Scenario comparison (MVP 2)
-- J1 (**Not done**): Scenario grouping (bull/base/bear) per research question.
-- J2 (**Not done**): Compare view (drivers/invalidation side-by-side).
-- J3 (**Not done**): "Which is playing out?" selector that creates a log.
-
-### Epic K — Premium features (MVP 3)
-- K1 (**Not done**): Behavioral analytics dashboard.
-- K2 (**Not done**): AI-assisted scenario summaries (editable, non-destructive).
-- K3 (**Not done**): AI critique prompts (Socratic questioning).
-- K4 (**Not done**): Premium export templates (investor memo).
-
-## 12. Definition of Done
+## 11. Definition of Done
 - Acceptance criteria met.
 - Unit tests for persistence, integrity rules, and exports.
 - Basic UI tests for create/edit flows.
 - No P0 crashes; acceptable performance on large datasets.
 - Release notes and help/privacy docs updated.
 
-## 13. Risks and mitigations
-- Scope creep: lock MVP 1 to journaling + search + export.
-- Storage complexity: keep schema minimal; plan migrations early.
-- Copyright: store links and short snippets with attribution.
-- Premium AI: additive and opt-in; never required for core.
+## 11.1 Success Metrics
+To measure the effectiveness of Hyppo and validate the workflow improvements identified in the validation report, the following metrics should be tracked (where technically feasible):
 
-## 14. Parking lot (explicitly deferred)
+### Quick Capture Friction (MVP 2)
+- **Target:** Time from shortcut/keyboard trigger to save completion < 5 seconds
+- **Measurement:** Track capture abandonment rate (started but not completed)
+- **Goal:** < 20% abandonment rate for Quick Capture flows
+
+### Evidence Collection Rate
+- **Target:** Average evidence items per week per active user
+- **Measurement:** Track evidence creation frequency over time
+- **Goal:** Establish baseline in MVP 1, aim for 2x increase with Quick Capture in MVP 2
+
+### Review Completion Rate
+- **Target:** % of scheduled reviews that are completed (not just snoozed)
+- **Measurement:** Track review reminders vs. completed reviews
+- **Goal:** > 70% completion rate for scheduled reviews
+
+### Search Effectiveness
+- **Target:** Users can find relevant information within 3 search queries
+- **Measurement:** Track search result click-through rate
+- **Goal:** > 60% of searches result in user navigating to a result
+
+### Data Retention
+- **Target:** Users maintain active research (at least 1 log entry per month)
+- **Measurement:** Track monthly active users with new log entries
+- **Goal:** > 50% of users remain active after 3 months
+
+**Note:** Metrics collection should respect privacy constraints. Consider opt-in analytics or local-only tracking that users can review.
+
+## 12. Risks and Mitigations
+- **Scope creep:** Lock MVP 1 to journaling + search + export.
+- **Storage complexity:** Keep schema minimal; plan migrations early.
+- **Copyright:** Store links and short snippets with attribution.
+- **Premium AI:** Additive and opt-in; never required for core.
+
+## 13. Parking Lot (Explicitly Deferred)
 - Stock-specific news dashboard/feed (auto-ingested) tied to tracked theses.
 - Continuous automated internet “scouring” / research collector.
 - Large-scale sentiment analysis of external articles.
@@ -319,6 +284,18 @@ User flow: open app → assets → asset → research questions → scenarios �
 - Social/community features.
 - Multi-user teams/workspaces.
 
-## 15. Next step
+## 14. Next Steps
 Convert MVP 1 into a sprint plan (Sprint 0 setup; Sprint 1 CRUD; Sprint 2 timeline; Sprint 3 search/export) and create wireframes for: Asset list, Research Question detail, Scenario detail, Add Log, Timeline (collapsed/expanded), and Global Search.
+
+---
+
+### 📝 AI Maintenance Instructions
+**CRITICAL for all AI Assistants:**
+- **Keep this document synchronized:** Whenever a feature is implemented or its specification changes, update the corresponding flow in **Section 8.3**.
+- **Emoji Status Tracking:** 
+  - Use 🟢 for Fully Specified & Implemented.
+  - Use 🟡 for Partially Specified or In Progress.
+  - Use ⚪️ for Not Started or Requires Clarification.
+- **Roadmap Alignment:** Ensure the high-level phase statuses in **Section 10** match the granular progress in `roadmap.md`.
+- **Thoroughness:** If you modify a data model or a UI flow, verify if it impacts the "Fields required" or "Steps" listed in this document.
 
