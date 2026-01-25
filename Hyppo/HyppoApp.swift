@@ -144,6 +144,13 @@ struct HyppoApp: App {
                 }
                 .keyboardShortcut("l", modifiers: [.command, .shift])
             }
+            
+            CommandGroup(after: .sidebar) {
+                Button("Global Search") {
+                    NotificationCenter.default.post(name: .showGlobalSearch, object: nil)
+                }
+                .keyboardShortcut("f", modifiers: [.command])
+            }
         }
         
         // Settings window
@@ -167,4 +174,7 @@ extension Notification.Name {
     
     /// Notification to trigger Add Log Entry action
     static let addLogEntry = Notification.Name("addLogEntry")
+    
+    /// Notification to trigger Global Search
+    static let showGlobalSearch = Notification.Name("showGlobalSearch")
 }

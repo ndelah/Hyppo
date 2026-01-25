@@ -37,6 +37,9 @@ final class Scenario {
     /// Optional key risks to the scenario (stored as JSON array)
     var keyRisksData: Data?
     
+    /// Optional pre-mortem text: "Imagine you've lost 50% on this investment. What went wrong?"
+    var preMortemText: String?
+    
     /// Current confidence level (1-5, optional)
     var confidenceCurrent: Int?
     

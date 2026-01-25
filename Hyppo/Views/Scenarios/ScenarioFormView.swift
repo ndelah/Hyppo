@@ -48,6 +48,7 @@ struct ScenarioFormView: View {
     @State private var invalidationRules: [String] = [""]
     @State private var catalysts: [String] = []
     @State private var keyRisks: [String] = []
+    @State private var preMortemText: String = ""
     @State private var confidence: Int? = nil
     @State private var validationErrors: [String] = []
     
@@ -66,6 +67,7 @@ struct ScenarioFormView: View {
             _invalidationRules = State(initialValue: scenario.invalidationRules.isEmpty ? [""] : scenario.invalidationRules)
             _catalysts = State(initialValue: scenario.catalysts)
             _keyRisks = State(initialValue: scenario.keyRisks)
+            _preMortemText = State(initialValue: scenario.preMortemText ?? "")
             _confidence = State(initialValue: scenario.confidenceCurrent)
         }
     }
@@ -257,6 +259,30 @@ struct ScenarioFormView: View {
                     
                     EditableListSection(items: $keyRisks, placeholder: "Add a key risk...")
                 }
+                
+                Divider()
+                
+                // Pre-Mortem
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Pre-Mortem")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    
+                    Text("Imagine it is 3 years from now, and you have lost 50% of your capital on this investment. What went wrong?")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    TextEditor(text: $preMortemText)
+                        .font(.body)
+                        .frame(minHeight: 100)
+                        .padding(4)
+                        .background(Color(nsColor: .textBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        )
+                }
             }
             .padding(.top, 8)
         }
@@ -373,6 +399,7 @@ struct ScenarioFormView: View {
                 keyRisks: cleanRisks.isEmpty ? nil : cleanRisks,
                 confidence: confidence
             )
+            newScenario.preMortemText = preMortemText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : preMortemText.trimmingCharacters(in: .whitespacesAndNewlines)
             onSave(newScenario)
             
         case .edit(let scenario):
@@ -385,6 +412,7 @@ struct ScenarioFormView: View {
                 keyRisks: cleanRisks.isEmpty ? nil : cleanRisks,
                 confidence: confidence
             )
+            scenario.preMortemText = preMortemText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : preMortemText.trimmingCharacters(in: .whitespacesAndNewlines)
             onSave(scenario)
         }
         

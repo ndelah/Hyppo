@@ -25,6 +25,7 @@ struct MainNavigationView: View {
     @State private var showingAddAssetSheet = false
     @State private var showingAddLogSheet = false
     @State private var showingNoScenarioAlert = false
+    @State private var showingGlobalSearch = false
     
     // MARK: - Body
     
@@ -81,6 +82,9 @@ struct MainNavigationView: View {
                 showingNoScenarioAlert = true
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .showGlobalSearch)) { _ in
+            showingGlobalSearch = true
+        }
         // Shortcut-triggered sheets
         .sheet(isPresented: $showingAddAssetSheet) {
             AssetFormView(mode: .add) { newAsset in
@@ -100,6 +104,9 @@ struct MainNavigationView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text("Please select a scenario first to add a log entry. Use ⌘⇧L after selecting a scenario.")
+        }
+        .sheet(isPresented: $showingGlobalSearch) {
+            GlobalSearchView()
         }
     }
 }

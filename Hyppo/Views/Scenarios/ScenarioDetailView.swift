@@ -42,6 +42,7 @@ struct ScenarioDetailView: View {
     @State private var isInvalidationRulesExpanded = true
     @State private var isCatalystsExpanded = true
     @State private var isKeyRisksExpanded = true
+    @State private var isPreMortemExpanded = true
     
     // Export state
     @State private var showingMarkdownExport = false
@@ -282,6 +283,21 @@ struct ScenarioDetailView: View {
                 }
             }
             
+            // Pre-Mortem (if any)
+            if let preMortem = scenario.preMortemText, !preMortem.isEmpty {
+                CollapsibleSection(
+                    title: "Pre-Mortem",
+                    iconName: "exclamationmark.triangle.fill",
+                    isExpanded: $isPreMortemExpanded,
+                    itemCount: nil
+                ) {
+                    Text(preMortem)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 4)
+                }
+            }
+            
             // Expand/Collapse all button
             HStack {
                 Spacer()
@@ -305,11 +321,12 @@ struct ScenarioDetailView: View {
             isInvalidationRulesExpanded = shouldExpand
             isCatalystsExpanded = shouldExpand
             isKeyRisksExpanded = shouldExpand
+            isPreMortemExpanded = shouldExpand
         }
     }
     
     private var allSectionsExpanded: Bool {
-        isScenarioStatementExpanded && isKeyDriversExpanded && isInvalidationRulesExpanded
+        isScenarioStatementExpanded && isKeyDriversExpanded && isInvalidationRulesExpanded && isCatalystsExpanded && isKeyRisksExpanded && isPreMortemExpanded
     }
     
     private func toggleAllSections() {
@@ -319,6 +336,7 @@ struct ScenarioDetailView: View {
         isInvalidationRulesExpanded = newState
         isCatalystsExpanded = newState
         isKeyRisksExpanded = newState
+        isPreMortemExpanded = newState
     }
     
     /// Filtered log entries based on user preferences
