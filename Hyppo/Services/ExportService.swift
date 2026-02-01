@@ -57,9 +57,6 @@ struct DriverExport: Codable {
     let title: String
     let driverDescription: String?
     let position: Int
-    let validationQuestion: String?
-    let dataSources: [String]?
-    let proofThreshold: String?
     let subDrivers: [DriverExport]
 }
 
@@ -190,9 +187,6 @@ final class ExportService {
                         title: driver.title,
                         driverDescription: driver.driverDescription,
                         position: driver.position,
-                        validationQuestion: driver.validationQuestion,
-                        dataSources: driver.dataSources,
-                        proofThreshold: driver.proofThreshold,
                         subDrivers: subDriverExports
                     )
                 }
@@ -348,9 +342,6 @@ final class ExportService {
                         title: driverExport.title,
                         driverDescription: driverExport.driverDescription,
                         position: driverExport.position,
-                        validationQuestion: driverExport.validationQuestion,
-                        dataSources: driverExport.dataSources,
-                        proofThreshold: driverExport.proofThreshold,
                         parentDriver: parent
                     )
                     driver.researchQuestion = researchQuestion
@@ -479,19 +470,10 @@ final class ExportService {
                 if let desc = driver.driverDescription, !desc.isEmpty {
                     md += "\(desc)\n\n"
                 }
-                if let question = driver.validationQuestion, !question.isEmpty {
-                    md += "- **Validation Question:** \(question)\n"
-                }
-                if let sources = driver.dataSources, !sources.isEmpty {
-                    md += "- **Data Sources:** \(sources.joined(separator: ", "))\n"
-                }
-                if let threshold = driver.proofThreshold, !threshold.isEmpty {
-                    md += "- **Proof Threshold:** \(threshold)\n"
-                }
                 
                 // Sub-drivers
                 if let subs = driver.subDrivers, !subs.isEmpty {
-                    md += "\n**Sub-assumptions:**\n"
+                    md += "**Sub-assumptions:**\n"
                     for sub in subs.sorted(by: { $0.position < $1.position }) {
                         md += "  - \(sub.title)\n"
                     }

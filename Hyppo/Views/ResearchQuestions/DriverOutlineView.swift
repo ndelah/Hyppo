@@ -5,7 +5,6 @@
  - Add/edit/delete drivers and sub-drivers inline
  - Drag-and-drop reordering for top-level drivers
  - Expand/collapse controls for sub-drivers
- - Research plan details (validation question, data sources, thresholds)
  
  Used within the Research Wizard and Research Question forms.
  */
@@ -178,36 +177,24 @@ struct DriverDTO: Identifiable, Equatable {
     let id: UUID
     var title: String
     var description: String = ""
-    var validationQuestion: String = ""
-    var dataSources: [String] = []
-    var proofThreshold: String = ""
     var subDrivers: [DriverDTO] = []
     var isExpanded: Bool = false
     var isSubDriver: Bool = false
-    var showDetails: Bool = false
     
     init(
         id: UUID = UUID(),
         title: String,
         description: String = "",
-        validationQuestion: String = "",
-        dataSources: [String] = [],
-        proofThreshold: String = "",
         subDrivers: [DriverDTO] = [],
         isExpanded: Bool = false,
-        isSubDriver: Bool = false,
-        showDetails: Bool = false
+        isSubDriver: Bool = false
     ) {
         self.id = id
         self.title = title
         self.description = description
-        self.validationQuestion = validationQuestion
-        self.dataSources = dataSources
-        self.proofThreshold = proofThreshold
         self.subDrivers = subDrivers
         self.isExpanded = isExpanded
         self.isSubDriver = isSubDriver
-        self.showDetails = showDetails
     }
 }
 
@@ -261,16 +248,6 @@ struct DriverRowView: View {
                 
                 // Action buttons grouped tightly
                 HStack(spacing: 4) {
-                    // Research plan button
-                    Button {
-                        driver.showDetails.toggle()
-                    } label: {
-                        Image(systemName: "doc.text.magnifyingglass")
-                            .foregroundStyle(driver.showDetails ? .blue : .secondary)
-                    }
-                    .buttonStyle(.borderless)
-                    .help("Edit Research Plan")
-                    
                     // Move up/down buttons (visible on hover, but always reserve space to prevent layout jitter)
                     HStack(spacing: 0) {
                         Button {
@@ -325,59 +302,7 @@ struct DriverRowView: View {
             .onHover { hovering in
                 isHovering = hovering
             }
-            
-            // Research plan details
-            if driver.showDetails {
-                ResearchPlanDetailsView(driver: $driver, isSubDriver: isSubDriver)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
         }
-        .animation(.easeInOut(duration: 0.2), value: driver.showDetails)
-    }
-}
-
-// MARK: - Research Plan Details View
-
-/**
- Separate view for research plan details to ensure proper state observation.
- */
-struct ResearchPlanDetailsView: View {
-    @Binding var driver: DriverDTO
-    let isSubDriver: Bool
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Validation Question
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Validation Question")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                TextField("What question validates this assumption?", text: $driver.validationQuestion)
-                    .textFieldStyle(.roundedBorder)
-            }
-            
-            // Proof Threshold
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Proof Threshold")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                TextField("What data would prove this true/false?", text: $driver.proofThreshold)
-                    .textFieldStyle(.roundedBorder)
-            }
-            
-            // Data Sources
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Data Sources")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                SourceTypePicker(selectedSources: $driver.dataSources)
-            }
-        }
-        .padding()
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .padding(.top, 8)
-        .padding(.leading, isSubDriver ? 24 : 20)
     }
 }
 

@@ -76,16 +76,10 @@ struct ResearchQuestionFormView: View {
                 DriverDTO(
                     title: d.title,
                     description: d.driverDescription ?? "",
-                    validationQuestion: d.validationQuestion ?? "",
-                    dataSources: d.dataSources ?? [],
-                    proofThreshold: d.proofThreshold ?? "",
                     subDrivers: (d.subDrivers ?? []).map { sd in
                         DriverDTO(
                             title: sd.title,
                             description: sd.driverDescription ?? "",
-                            validationQuestion: sd.validationQuestion ?? "",
-                            dataSources: sd.dataSources ?? [],
-                            proofThreshold: sd.proofThreshold ?? "",
                             isSubDriver: true
                         )
                     }
@@ -416,10 +410,7 @@ struct ResearchQuestionFormView: View {
                 let driver = Driver(
                     title: d.title,
                     driverDescription: d.description,
-                    position: index,
-                    validationQuestion: d.validationQuestion,
-                    dataSources: d.dataSources,
-                    proofThreshold: d.proofThreshold
+                    position: index
                 )
                 driver.researchQuestion = rq
                 
@@ -429,9 +420,6 @@ struct ResearchQuestionFormView: View {
                             title: sd.title,
                             driverDescription: sd.description,
                             position: subIndex,
-                            validationQuestion: sd.validationQuestion,
-                            dataSources: sd.dataSources,
-                            proofThreshold: sd.proofThreshold,
                             parentDriver: driver
                         )
                         subDriver.researchQuestion = rq

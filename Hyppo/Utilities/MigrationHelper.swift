@@ -230,10 +230,7 @@ final class MigrationHelper {
         let driver = Driver(
             title: title,
             driverDescription: description,
-            position: 0,
-            validationQuestion: "What evidence supports or contradicts this assumption?",
-            dataSources: ["SEC filings", "Earnings calls", "Industry reports"],
-            proofThreshold: nil
+            position: 0
         )
         
         driver.researchQuestion = rq

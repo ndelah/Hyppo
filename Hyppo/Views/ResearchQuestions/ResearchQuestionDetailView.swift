@@ -66,15 +66,8 @@ struct ResearchQuestionDetailView: View {
                 
                 Divider()
                 
-                // Research plan table
-                CollapsibleSection(
-                    title: "Research Plan",
-                    iconName: "tablecells",
-                    isExpanded: .constant(true)
-                ) {
-                    ResearchPlanTableView(drivers: researchQuestion.drivers ?? [])
-                        .frame(height: 200)
-                }
+                // Research tasks
+                ResearchTasksView(drivers: researchQuestion.drivers ?? [])
                 
                 Divider()
                 

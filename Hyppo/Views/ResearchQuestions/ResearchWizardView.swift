@@ -60,16 +60,10 @@ struct ResearchWizardView: View {
                 DriverDTO(
                     title: d.title,
                     description: d.driverDescription ?? "",
-                    validationQuestion: d.validationQuestion ?? "",
-                    dataSources: d.dataSources ?? [],
-                    proofThreshold: d.proofThreshold ?? "",
                     subDrivers: (d.subDrivers ?? []).map { sd in
                         DriverDTO(
                             title: sd.title,
                             description: sd.driverDescription ?? "",
-                            validationQuestion: sd.validationQuestion ?? "",
-                            dataSources: sd.dataSources ?? [],
-                            proofThreshold: sd.proofThreshold ?? "",
                             isSubDriver: true
                         )
                     }
@@ -352,28 +346,6 @@ struct ResearchWizardView: View {
                                         .font(.subheadline)
                                         .fontWeight(.medium)
                                     
-                                    if !driver.validationQuestion.isEmpty {
-                                        HStack(alignment: .top, spacing: 4) {
-                                            Text("Q:")
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                            Text(driver.validationQuestion)
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    
-                                    if !driver.proofThreshold.isEmpty {
-                                        HStack(alignment: .top, spacing: 4) {
-                                            Text("Threshold:")
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                            Text(driver.proofThreshold)
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    
                                     // Sub-drivers
                                     ForEach(driver.subDrivers.filter { !$0.title.isEmpty }) { sub in
                                         Text("  → \(sub.title)")
@@ -559,10 +531,7 @@ struct ResearchWizardView: View {
                 let driver = Driver(
                     title: trimmedTitle,
                     driverDescription: d.description.isEmpty ? nil : d.description,
-                    position: index,
-                    validationQuestion: d.validationQuestion.isEmpty ? nil : d.validationQuestion,
-                    dataSources: d.dataSources.isEmpty ? nil : d.dataSources,
-                    proofThreshold: d.proofThreshold.isEmpty ? nil : d.proofThreshold
+                    position: index
                 )
                 driver.researchQuestion = rq
                 
@@ -573,9 +542,6 @@ struct ResearchWizardView: View {
                             title: trimmedSubTitle,
                             driverDescription: sd.description.isEmpty ? nil : sd.description,
                             position: subIndex,
-                            validationQuestion: sd.validationQuestion.isEmpty ? nil : sd.validationQuestion,
-                            dataSources: sd.dataSources.isEmpty ? nil : sd.dataSources,
-                            proofThreshold: sd.proofThreshold.isEmpty ? nil : sd.proofThreshold,
                             parentDriver: driver
                         )
                         subDriver.researchQuestion = rq
@@ -586,58 +552,6 @@ struct ResearchWizardView: View {
         
         onSave(rq)
         dismiss()
-    }
-}
-
-// MARK: - Supporting Types
-
-/**
- Extracted view for editing a selected driver's research plan details.
- Using a separate view helps avoid binding/index issues with inline closures.
- */
-struct SelectedDriverEditView: View {
-    @Binding var driver: DriverDTO
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Validation Question
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Validation Question")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                Text("What specific question needs to be answered?")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                TextField("e.g., What is the YoY growth rate of AI training compute demand?", text: $driver.validationQuestion)
-                    .textFieldStyle(.roundedBorder)
-            }
-            
-            // Data Sources
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Data Sources")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                Text("Where will you find the data?")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                SourceTypePicker(selectedSources: $driver.dataSources)
-            }
-            
-            // Proof Threshold
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Proof Threshold")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                Text("What specific data would validate or invalidate this assumption?")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                TextField("e.g., Revenue growth > 20% YoY validates; < 10% invalidates", text: $driver.proofThreshold)
-                    .textFieldStyle(.roundedBorder)
-            }
-        }
-        .padding()
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 

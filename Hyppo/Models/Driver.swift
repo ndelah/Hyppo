@@ -2,8 +2,7 @@
  Driver model representing an assumption or key driver in the investment thesis.
  
  Drivers are organized in a 2-level hierarchy (Top-level Drivers and Sub-drivers).
- They include research plan fields like validation questions, data sources, and proof thresholds.
- Evidence is now attached directly to Drivers.
+ Evidence and ResearchTasks are attached directly to Drivers.
  */
 
 import Foundation
@@ -25,17 +24,6 @@ final class Driver {
     /// Ordering among siblings
     var position: Int
     
-    // MARK: - Research Plan (Optional)
-    
-    /// The specific question to answer to validate this driver
-    var validationQuestion: String?
-    
-    /// Likely data sources (e.g., ["Earnings calls", "10-K filings"])
-    var dataSources: [String]?
-    
-    /// What specific data would prove this true or false
-    var proofThreshold: String?
-    
     // MARK: - Relationships
     
     /// Parent research question
@@ -52,24 +40,22 @@ final class Driver {
     @Relationship(deleteRule: .cascade)
     var evidence: [Evidence]?
     
+    /// Research tasks for this driver
+    @Relationship(deleteRule: .cascade, inverse: \ResearchTask.driver)
+    var tasks: [ResearchTask]?
+    
     // MARK: - Initialization
     
     init(
         title: String,
         driverDescription: String? = nil,
         position: Int = 0,
-        validationQuestion: String? = nil,
-        dataSources: [String]? = nil,
-        proofThreshold: String? = nil,
         parentDriver: Driver? = nil
     ) {
         self.driverId = UUID()
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.driverDescription = driverDescription?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.position = position
-        self.validationQuestion = validationQuestion?.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.dataSources = dataSources
-        self.proofThreshold = proofThreshold?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.parentDriver = parentDriver
         self.createdAt = Date()
         self.updatedAt = Date()
@@ -116,6 +102,23 @@ final class Driver {
     var hasBlindSpot: Bool {
         if directEvidenceCount > 0 { return false }
         return subDrivers?.allSatisfy { $0.hasBlindSpot } ?? true
+    }
+    
+    // MARK: - Task Progress
+    
+    /// Count of tasks directly attached to this driver
+    var taskCount: Int {
+        tasks?.count ?? 0
+    }
+    
+    /// Count of completed tasks
+    var completedTaskCount: Int {
+        tasks?.filter { $0.isCompleted }.count ?? 0
+    }
+    
+    /// Tasks sorted by position
+    var sortedTasks: [ResearchTask] {
+        tasks?.sorted { $0.position < $1.position } ?? []
     }
 }
 
