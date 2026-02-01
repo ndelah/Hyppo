@@ -116,7 +116,7 @@ struct ResearchQuestionFormView: View {
             Divider()
             
             // Form content
-            ScrollView {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 16) {
                     // Core question section
                     coreQuestionSection
@@ -132,22 +132,7 @@ struct ResearchQuestionFormView: View {
                     }
                     
                     // Invalidation rules section
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Kill Criteria")
-                            .font(.headline)
-                        ForEach(killCriteria.indices, id: \.self) { index in
-                            HStack {
-                                TextField("Condition", text: $killCriteria[index].condition)
-                                    .textFieldStyle(.roundedBorder)
-                                Button { killCriteria.remove(at: index) } label: {
-                                    Image(systemName: "minus.circle.fill").foregroundStyle(.red)
-                                }.buttonStyle(.plain)
-                            }
-                        }
-                        Button { killCriteria.append(KillCriteriaDTO(condition: "")) } label: {
-                            Label("Add Kill Criteria", systemImage: "plus.circle").font(.caption)
-                        }.buttonStyle(.plain).foregroundStyle(.blue)
-                    }
+                    killCriteriaSection
                     
                     // Confidence section
                     confidenceSection
@@ -255,8 +240,31 @@ struct ResearchQuestionFormView: View {
         }
     }
     
-    // Note: keyDriversSection and invalidationRulesSection have been replaced by
-    // inline VStacks in the body that use $drivers and $killCriteria with DriverOutlineView
+    private var killCriteriaSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Kill Criteria")
+                .font(.headline)
+            ForEach(killCriteria.indices, id: \.self) { index in
+                HStack {
+                    TextField("Condition", text: $killCriteria[index].condition)
+                        .textFieldStyle(.roundedBorder)
+                    Button {
+                        killCriteria.remove(at: index)
+                    } label: {
+                        Image(systemName: "minus.circle.fill").foregroundStyle(.red)
+                    }
+                    .buttonStyle(.borderless)
+                }
+            }
+            Button {
+                killCriteria.append(KillCriteriaDTO(condition: ""))
+            } label: {
+                Label("Add Kill Criteria", systemImage: "plus.circle").font(.caption)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.blue)
+        }
+    }
     
     private var scenariosSection: some View {
         VStack(alignment: .leading, spacing: 8) {

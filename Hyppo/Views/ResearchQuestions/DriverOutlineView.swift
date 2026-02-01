@@ -33,17 +33,11 @@ struct DriverOutlineView: View {
                     VStack(spacing: 0) {
                         // Main driver row with drag support
                         DriverRowView(
-                            driver: Binding(
-                                get: { drivers[index] },
-                                set: { drivers[index] = $0 }
-                            ),
-                            onDelete: { drivers.remove(at: index) },
-                            onAddSubDriver: {
-                                drivers[index].subDrivers.append(DriverDTO(title: "", isSubDriver: true))
-                                drivers[index].isExpanded = true
-                            },
-                            onMoveUp: index > 0 ? { moveDriver(from: index, to: index - 1) } : nil,
-                            onMoveDown: index < drivers.count - 1 ? { moveDriver(from: index, to: index + 1) } : nil
+                            driver: $drivers[index],
+                            onDelete: { deleteDriver(at: index) },
+                            onAddSubDriver: { addSubDriver(at: index) },
+                            onMoveUp: index > 0 ? { moveDriverUp(at: index) } : nil,
+                            onMoveDown: index < drivers.count - 1 ? { moveDriverDown(at: index) } : nil
                         )
                         .opacity(draggedDriverId == driver.id ? 0.5 : 1.0)
                         .draggable(driver.id.uuidString) {
@@ -51,7 +45,7 @@ struct DriverOutlineView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "line.3.horizontal")
                                     .foregroundStyle(.secondary)
-                                Text(driver.title.isEmpty ? "Assumption \(index + 1)" : driver.title)
+                                Text(driver.title.isEmpty ? "Assumption" : driver.title)
                                     .lineLimit(1)
                             }
                             .padding(.horizontal, 12)
@@ -70,22 +64,19 @@ struct DriverOutlineView: View {
                             }
                             moveDriver(from: fromIndex, to: index)
                             return true
-                        } isTargeted: { isTargeted in
+                        } isTargeted: { _ in
                             // Visual feedback handled by opacity
                         }
                         
-                        // Sub-drivers
-                        if driver.isExpanded {
-                            ForEach(Array(drivers[index].subDrivers.enumerated()), id: \.element.id) { subIndex, subDriver in
+                        // Sub-drivers (only show if expanded)
+                        if drivers[index].isExpanded {
+                            ForEach(Array(drivers[index].subDrivers.enumerated()), id: \.element.id) { subIndex, _ in
                                 DriverRowView(
-                                    driver: Binding(
-                                        get: { drivers[index].subDrivers[subIndex] },
-                                        set: { drivers[index].subDrivers[subIndex] = $0 }
-                                    ),
-                                    onDelete: { drivers[index].subDrivers.remove(at: subIndex) },
+                                    driver: $drivers[index].subDrivers[subIndex],
+                                    onDelete: { deleteSubDriver(parentIndex: index, subIndex: subIndex) },
                                     onAddSubDriver: nil,
-                                    onMoveUp: subIndex > 0 ? { moveSubDriver(parentIndex: index, from: subIndex, to: subIndex - 1) } : nil,
-                                    onMoveDown: subIndex < drivers[index].subDrivers.count - 1 ? { moveSubDriver(parentIndex: index, from: subIndex, to: subIndex + 1) } : nil,
+                                    onMoveUp: subIndex > 0 ? { moveSubDriverUp(parentIndex: index, subIndex: subIndex) } : nil,
+                                    onMoveDown: subIndex < drivers[index].subDrivers.count - 1 ? { moveSubDriverDown(parentIndex: index, subIndex: subIndex) } : nil,
                                     isSubDriver: true
                                 )
                                 .padding(.leading, 24)
@@ -95,16 +86,13 @@ struct DriverOutlineView: View {
                     }
                 }
             }
-            .animation(.easeInOut(duration: 0.2), value: drivers.map { $0.id })
             .onDrop(of: [.text], isTargeted: nil) { _ in
                 draggedDriverId = nil
                 return false
             }
             
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    drivers.append(DriverDTO(title: ""))
-                }
+                drivers.append(DriverDTO(title: ""))
             } label: {
                 Label("Add Assumption", systemImage: "plus.circle")
                     .font(.caption)
@@ -115,20 +103,67 @@ struct DriverOutlineView: View {
         }
     }
     
-    // MARK: - Reordering Actions
+    // MARK: - Actions
+    
+    private func deleteDriver(at index: Int) {
+        guard index < drivers.count else { return }
+        _ = withAnimation(.easeInOut(duration: 0.2)) {
+            drivers.remove(at: index)
+        }
+    }
+    
+    private func deleteSubDriver(parentIndex: Int, subIndex: Int) {
+        guard parentIndex < drivers.count,
+              subIndex < drivers[parentIndex].subDrivers.count else { return }
+        _ = withAnimation(.easeInOut(duration: 0.2)) {
+            drivers[parentIndex].subDrivers.remove(at: subIndex)
+        }
+    }
+    
+    private func addSubDriver(at parentIndex: Int) {
+        guard parentIndex < drivers.count else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            drivers[parentIndex].subDrivers.append(DriverDTO(title: "", isSubDriver: true))
+            drivers[parentIndex].isExpanded = true
+        }
+    }
+    
+    private func moveDriverUp(at index: Int) {
+        guard index > 0, index < drivers.count else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            drivers.swapAt(index, index - 1)
+        }
+    }
+    
+    private func moveDriverDown(at index: Int) {
+        guard index < drivers.count - 1 else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            drivers.swapAt(index, index + 1)
+        }
+    }
+    
+    private func moveSubDriverUp(parentIndex: Int, subIndex: Int) {
+        guard parentIndex < drivers.count,
+              subIndex > 0,
+              subIndex < drivers[parentIndex].subDrivers.count else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            drivers[parentIndex].subDrivers.swapAt(subIndex, subIndex - 1)
+        }
+    }
+    
+    private func moveSubDriverDown(parentIndex: Int, subIndex: Int) {
+        guard parentIndex < drivers.count,
+              subIndex < drivers[parentIndex].subDrivers.count - 1 else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            drivers[parentIndex].subDrivers.swapAt(subIndex, subIndex + 1)
+        }
+    }
     
     private func moveDriver(from source: Int, to destination: Int) {
         withAnimation(.easeInOut(duration: 0.2)) {
             let driver = drivers.remove(at: source)
             drivers.insert(driver, at: destination)
             draggedDriverId = nil
-        }
-    }
-    
-    private func moveSubDriver(parentIndex: Int, from source: Int, to destination: Int) {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            let subDriver = drivers[parentIndex].subDrivers.remove(at: source)
-            drivers[parentIndex].subDrivers.insert(subDriver, at: destination)
         }
     }
 }
@@ -174,10 +209,6 @@ struct DriverDTO: Identifiable, Equatable {
         self.isSubDriver = isSubDriver
         self.showDetails = showDetails
     }
-    
-    static func == (lhs: DriverDTO, rhs: DriverDTO) -> Bool {
-        lhs.id == rhs.id
-    }
 }
 
 // MARK: - Driver Row View
@@ -198,16 +229,15 @@ struct DriverRowView: View {
                 // Expand/collapse or sub-driver indicator
                 if !isSubDriver {
                     Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            driver.isExpanded.toggle()
-                        }
+                        driver.isExpanded.toggle()
                     } label: {
                         Image(systemName: "chevron.right")
                             .rotationEffect(.degrees(driver.isExpanded ? 90 : 0))
                             .foregroundStyle(.secondary)
                             .frame(width: 12)
+                            .animation(.easeInOut(duration: 0.2), value: driver.isExpanded)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
                     .opacity(driver.subDrivers.isEmpty ? 0.3 : 1.0)
                 } else {
                     Image(systemName: "arrow.turn.down.right")
@@ -225,20 +255,18 @@ struct DriverRowView: View {
                         .frame(width: 16)
                 }
                 
-                // Title field
+                // Title field - direct binding to driver.title
                 TextField(isSubDriver ? "Sub-assumption..." : "Main assumption...", text: $driver.title)
                     .textFieldStyle(.roundedBorder)
                 
                 // Research plan button
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        driver.showDetails.toggle()
-                    }
+                    driver.showDetails.toggle()
                 } label: {
                     Image(systemName: "doc.text.magnifyingglass")
                         .foregroundStyle(driver.showDetails ? .blue : .secondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .help("Edit Research Plan")
                 
                 // Move up/down buttons (visible on hover)
@@ -252,7 +280,7 @@ struct DriverRowView: View {
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.borderless)
                             .help("Move up")
                         }
                         
@@ -264,7 +292,7 @@ struct DriverRowView: View {
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.borderless)
                             .help("Move down")
                         }
                     }
@@ -279,20 +307,18 @@ struct DriverRowView: View {
                         Image(systemName: "plus.square.dashed")
                             .foregroundStyle(.blue)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
                     .help("Add Sub-assumption")
                 }
                 
                 // Delete button
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        onDelete()
-                    }
+                    onDelete()
                 } label: {
                     Image(systemName: "minus.circle.fill")
                         .foregroundStyle(.red)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
             }
             .padding(.vertical, 4)
             .onHover { hovering in
@@ -301,13 +327,24 @@ struct DriverRowView: View {
             
             // Research plan details
             if driver.showDetails {
-                researchPlanDetails
+                ResearchPlanDetailsView(driver: $driver, isSubDriver: isSubDriver)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: driver.showDetails)
     }
+}
+
+// MARK: - Research Plan Details View
+
+/**
+ Separate view for research plan details to ensure proper state observation.
+ */
+struct ResearchPlanDetailsView: View {
+    @Binding var driver: DriverDTO
+    let isSubDriver: Bool
     
-    private var researchPlanDetails: some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Validation Question
             VStack(alignment: .leading, spacing: 4) {
@@ -345,28 +382,55 @@ struct DriverRowView: View {
 
 // MARK: - Source Type Picker
 
+/**
+ A picker for selecting data source types with visual toggle buttons.
+ */
 struct SourceTypePicker: View {
     @Binding var selectedSources: [String]
     
     var body: some View {
         FlowLayout(spacing: 6) {
             ForEach(SourceType.allCases) { type in
-                Toggle(isOn: Binding(
-                    get: { selectedSources.contains(type.rawValue) },
-                    set: { isOn in
-                        if isOn {
-                            selectedSources.append(type.rawValue)
-                        } else {
+                SourceTypeChip(
+                    type: type,
+                    isSelected: selectedSources.contains(type.rawValue),
+                    onTap: {
+                        if selectedSources.contains(type.rawValue) {
                             selectedSources.removeAll { $0 == type.rawValue }
+                        } else {
+                            selectedSources.append(type.rawValue)
                         }
                     }
-                )) {
-                    Label(type.displayName, systemImage: type.iconName)
-                        .font(.caption2)
-                }
-                .toggleStyle(.button)
+                )
             }
         }
+    }
+}
+
+/**
+ Individual source type chip button.
+ */
+struct SourceTypeChip: View {
+    let type: SourceType
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            Label(type.displayName, systemImage: type.iconName)
+                .font(.caption2)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(isSelected ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                .foregroundStyle(isSelected ? .white : .primary)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .strokeBorder(isSelected ? Color.accentColor : Color(nsColor: .separatorColor), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 0.15), value: isSelected)
     }
 }
 

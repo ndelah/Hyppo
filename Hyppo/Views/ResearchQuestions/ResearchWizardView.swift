@@ -41,7 +41,7 @@ struct ResearchWizardView: View {
     @State private var killCriteria: [KillCriteriaDTO] = [
         KillCriteriaDTO(condition: "")
     ]
-    @State private var selectedDriverIndex: Int = 0
+    @State private var selectedDriverId: UUID?
     
     // MARK: - Initialization
     
@@ -330,65 +330,41 @@ struct ResearchWizardView: View {
                         HStack(spacing: 8) {
                             ForEach(Array(validDriversForDesign.enumerated()), id: \.element.id) { index, driver in
                                 Button {
-                                    selectedDriverIndex = index
+                                    selectedDriverId = driver.id
                                 } label: {
                                     Text(driver.title.isEmpty ? "Assumption \(index + 1)" : driver.title)
                                         .font(.caption)
                                         .lineLimit(1)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 6)
-                                        .background(selectedDriverIndex == index ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
-                                        .foregroundStyle(selectedDriverIndex == index ? .white : .primary)
+                                        .background(selectedDriverId == driver.id ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                                        .foregroundStyle(selectedDriverId == driver.id ? .white : .primary)
                                         .clipShape(Capsule())
                                 }
                                 .buttonStyle(.plain)
                             }
                         }
                     }
+                    .onAppear {
+                        // Auto-select first driver if none selected
+                        if selectedDriverId == nil {
+                            selectedDriverId = validDriversForDesign.first?.id
+                        }
+                    }
+                    .onChange(of: validDriversForDesign.count) { _, _ in
+                        // Reset selection if the current selected driver was deleted
+                        if let selected = selectedDriverId,
+                           !validDriversForDesign.contains(where: { $0.id == selected }) {
+                            selectedDriverId = validDriversForDesign.first?.id
+                        }
+                    }
                     
                     // Selected driver details
-                    if selectedDriverIndex < validDriversForDesign.count {
-                        let driverIndex = drivers.firstIndex(where: { $0.id == validDriversForDesign[selectedDriverIndex].id })!
-                        
-                        VStack(alignment: .leading, spacing: 16) {
-                            // Validation Question
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Validation Question")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                Text("What specific question needs to be answered?")
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                                TextField("e.g., What is the YoY growth rate of AI training compute demand?", text: $drivers[driverIndex].validationQuestion)
-                                    .textFieldStyle(.roundedBorder)
-                            }
-                            
-                            // Data Sources
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Data Sources")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                Text("Where will you find the data?")
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                                SourceTypePicker(selectedSources: $drivers[driverIndex].dataSources)
-                            }
-                            
-                            // Proof Threshold
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Proof Threshold")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                Text("What specific data would validate or invalidate this assumption?")
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                                TextField("e.g., Revenue growth > 20% YoY validates; < 10% invalidates", text: $drivers[driverIndex].proofThreshold)
-                                    .textFieldStyle(.roundedBorder)
-                            }
-                        }
-                        .padding()
-                        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    if let selectedId = selectedDriverId,
+                       let driverIndex = drivers.firstIndex(where: { $0.id == selectedId }) {
+                        SelectedDriverEditView(
+                            driver: $drivers[driverIndex]
+                        )
                     }
                 }
             }
@@ -412,8 +388,12 @@ struct ResearchWizardView: View {
                     .foregroundStyle(.secondary)
                 
                 VStack(spacing: 12) {
-                    ForEach(killCriteria.indices, id: \.self) { index in
-                        killCriteriaRow(index: index)
+                    ForEach(Array(killCriteria.enumerated()), id: \.element.id) { index, _ in
+                        KillCriteriaRowView(
+                            criteria: $killCriteria[index],
+                            canDelete: killCriteria.count > 1,
+                            onDelete: { deleteKillCriteria(at: index) }
+                        )
                     }
                 }
                 
@@ -442,54 +422,6 @@ struct ResearchWizardView: View {
         }
     }
     
-    private func killCriteriaRow(index: Int) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: "xmark.octagon.fill")
-                    .foregroundStyle(.red.opacity(0.7))
-                    .frame(width: 20)
-                
-                TextField("e.g., If Gross Margin drops below 60%", text: $killCriteria[index].condition)
-                    .textFieldStyle(.roundedBorder)
-                
-                Button {
-                    if killCriteria.count > 1 {
-                        killCriteria.remove(at: index)
-                    }
-                } label: {
-                    Image(systemName: "minus.circle.fill")
-                        .foregroundStyle(killCriteria.count > 1 ? .red : .gray)
-                }
-                .buttonStyle(.plain)
-                .disabled(killCriteria.count <= 1)
-            }
-            
-            HStack(spacing: 12) {
-                HStack(spacing: 4) {
-                    Text("Threshold:")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    TextField("60%", text: $killCriteria[index].threshold)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 80)
-                }
-                
-                HStack(spacing: 4) {
-                    Text("Monitor via:")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    TextField("10-Q filings", text: $killCriteria[index].dataSource)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 120)
-                }
-            }
-            .padding(.leading, 28)
-        }
-        .padding(12)
-        .background(Color.red.opacity(0.03))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.red.opacity(0.1)))
-    }
     
     // MARK: - Step 3: Review & Save
     
@@ -714,6 +646,16 @@ struct ResearchWizardView: View {
         .padding()
     }
     
+    // MARK: - Actions
+    
+    /// Deletes a kill criteria by index
+    private func deleteKillCriteria(at index: Int) {
+        guard index < killCriteria.count else { return }
+        withAnimation(.easeInOut(duration: 0.2)) {
+            killCriteria.remove(at: index)
+        }
+    }
+    
     // MARK: - Validation
     
     private func validateCurrentStep() -> Bool {
@@ -827,6 +769,56 @@ struct ResearchWizardView: View {
 // MARK: - Supporting Types
 
 /**
+ Extracted view for editing a selected driver's research plan details.
+ Using a separate view helps avoid binding/index issues with inline closures.
+ */
+struct SelectedDriverEditView: View {
+    @Binding var driver: DriverDTO
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Validation Question
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Validation Question")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text("What specific question needs to be answered?")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                TextField("e.g., What is the YoY growth rate of AI training compute demand?", text: $driver.validationQuestion)
+                    .textFieldStyle(.roundedBorder)
+            }
+            
+            // Data Sources
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Data Sources")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text("Where will you find the data?")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                SourceTypePicker(selectedSources: $driver.dataSources)
+            }
+            
+            // Proof Threshold
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Proof Threshold")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text("What specific data would validate or invalidate this assumption?")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                TextField("e.g., Revenue growth > 20% YoY validates; < 10% invalidates", text: $driver.proofThreshold)
+                    .textFieldStyle(.roundedBorder)
+            }
+        }
+        .padding()
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+/**
  Data Transfer Object for Kill Criteria to simplify form state management.
  */
 struct KillCriteriaDTO: Identifiable {
@@ -834,6 +826,63 @@ struct KillCriteriaDTO: Identifiable {
     var condition: String
     var threshold: String = ""
     var dataSource: String = ""
+}
+
+/**
+ Extracted view for kill criteria row editing.
+ Using a separate view avoids binding/index issues with closures.
+ */
+struct KillCriteriaRowView: View {
+    @Binding var criteria: KillCriteriaDTO
+    let canDelete: Bool
+    let onDelete: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "xmark.octagon.fill")
+                    .foregroundStyle(.red.opacity(0.7))
+                    .frame(width: 20)
+                
+                TextField("e.g., If Gross Margin drops below 60%", text: $criteria.condition)
+                    .textFieldStyle(.roundedBorder)
+                
+                Button {
+                    onDelete()
+                } label: {
+                    Image(systemName: "minus.circle.fill")
+                        .foregroundStyle(canDelete ? .red : .gray)
+                }
+                .buttonStyle(.borderless)
+                .disabled(!canDelete)
+            }
+            
+            HStack(spacing: 12) {
+                HStack(spacing: 4) {
+                    Text("Threshold:")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    TextField("60%", text: $criteria.threshold)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 80)
+                }
+                
+                HStack(spacing: 4) {
+                    Text("Monitor via:")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    TextField("10-Q filings", text: $criteria.dataSource)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 120)
+                }
+            }
+            .padding(.leading, 28)
+        }
+        .padding(12)
+        .background(Color.red.opacity(0.03))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.red.opacity(0.1)))
+    }
 }
 
 // MARK: - Preview

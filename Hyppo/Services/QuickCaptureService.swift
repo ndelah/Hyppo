@@ -298,6 +298,7 @@ final class QuickCaptureService: ObservableObject {
                 state.validationError = "Metric value is required"
                 return false
             }
+            return true
             
         case .note:
             guard !state.snippetText.trimmingCharacters(in: .whitespaces).isEmpty ||
@@ -318,9 +319,8 @@ final class QuickCaptureService: ObservableObject {
                 state.validationError = "Invalid URL format"
                 return false
             }
+            return true
         }
-        
-        return true
     }
     
     /**
