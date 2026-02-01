@@ -1,9 +1,9 @@
 /**
  ReviewWizardView provides a guided review workflow for research questions.
  
- Walks the user through reviewing key drivers, checking invalidation rules,
- and deciding on an outcome (reinforce/revise/invalidate). Generates a
- structured review log entry upon completion.
+ Walks the user through reviewing key drivers and deciding on an outcome
+ (reinforce/revise/invalidate). Generates a structured review log entry
+ upon completion.
  */
 
 import SwiftUI
@@ -62,21 +62,6 @@ struct DriverAssessment: Identifiable {
     }
 }
 
-// MARK: - Rule Check
-
-/// Tracks check of each invalidation rule
-struct RuleCheck: Identifiable {
-    let id: UUID
-    let condition: String
-    var isTriggered: Bool = false
-    var notes: String = ""
-    
-    init(criteria: KillCriteria) {
-        self.id = criteria.criteriaId
-        self.condition = criteria.condition
-    }
-}
-
 // MARK: - Review Wizard View
 
 struct ReviewWizardView: View {
@@ -94,7 +79,6 @@ struct ReviewWizardView: View {
     
     @State private var currentStep: WizardStep = .overview
     @State private var driverAssessments: [DriverAssessment] = []
-    @State private var ruleChecks: [RuleCheck] = []
     @State private var selectedOutcome: ReviewOutcome = .reinforce
     @State private var newConfidence: Int = 3
     @State private var overallNotes: String = ""
@@ -105,15 +89,13 @@ struct ReviewWizardView: View {
     enum WizardStep: Int, CaseIterable {
         case overview = 0
         case drivers = 1
-        case rules = 2
-        case outcome = 3
-        case summary = 4
+        case outcome = 2
+        case summary = 3
         
         var title: String {
             switch self {
             case .overview: return "Review Overview"
             case .drivers: return "Check Key Drivers"
-            case .rules: return "Check Invalidation Rules"
             case .outcome: return "Select Outcome"
             case .summary: return "Review Summary"
             }
@@ -123,7 +105,6 @@ struct ReviewWizardView: View {
             switch self {
             case .overview: return "doc.text.magnifyingglass"
             case .drivers: return "arrow.up.forward"
-            case .rules: return "xmark.circle"
             case .outcome: return "questionmark.circle"
             case .summary: return "checkmark.circle"
             }
@@ -230,8 +211,6 @@ struct ReviewWizardView: View {
             overviewStep
         case .drivers:
             driversStep
-        case .rules:
-            rulesStep
         case .outcome:
             outcomeStep
         case .summary:
@@ -292,16 +271,14 @@ struct ReviewWizardView: View {
                 
                 VStack(alignment: .leading, spacing: 8) {
                     reviewProcessItem(number: 1, text: "Check if each key driver is still valid")
-                    reviewProcessItem(number: 2, text: "Verify if any invalidation rules have triggered")
-                    reviewProcessItem(number: 3, text: "Decide on an outcome: Reinforce, Revise, or Invalidate")
-                    reviewProcessItem(number: 4, text: "Add notes and confirm your review")
+                    reviewProcessItem(number: 2, text: "Decide on an outcome: Reinforce, Revise, or Invalidate")
+                    reviewProcessItem(number: 3, text: "Add notes and confirm your review")
                 }
             }
             
             // Quick stats
             HStack(spacing: 24) {
                 statBox(title: "Assumptions", value: "\(researchQuestion.drivers?.count ?? 0)", icon: "target")
-                statBox(title: "Kill Criteria", value: "\(researchQuestion.killCriteria?.count ?? 0)", icon: "xmark.circle")
                 statBox(title: "Log Entries", value: "\(researchQuestion.logEntriesCount)", icon: "note.text")
             }
         }
@@ -363,42 +340,6 @@ struct ReviewWizardView: View {
                     Text("\(validCount) of \(driverAssessments.count) assumptions still valid")
                         .font(.caption)
                         .foregroundStyle(validCount == driverAssessments.count ? .green : .orange)
-                }
-            }
-        }
-    }
-    
-    // MARK: - Rules Step
-    
-    private var rulesStep: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Check if any kill criteria have been triggered:")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            
-            if ruleChecks.isEmpty {
-                Text("No kill criteria defined for this research question.")
-                    .font(.subheadline)
-                    .foregroundStyle(.tertiary)
-                    .padding()
-            } else {
-                ForEach($ruleChecks) { $check in
-                    RuleCheckCard(ruleCheck: $check)
-                }
-                
-                // Summary
-                let triggeredCount = ruleChecks.filter { $0.isTriggered }.count
-                HStack {
-                    Spacer()
-                    if triggeredCount > 0 {
-                        Label("\(triggeredCount) criteria triggered!", systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                    } else {
-                        Label("No criteria triggered", systemImage: "checkmark.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.green)
-                    }
                 }
             }
         }
@@ -537,18 +478,6 @@ struct ReviewWizardView: View {
                     isWarning: !invalidDrivers.isEmpty
                 )
                 
-                // Rules summary
-                let triggeredRules = ruleChecks.filter { $0.isTriggered }
-                summaryRow(
-                    label: "Kill Criteria",
-                    value: ruleChecks.isEmpty
-                        ? "No criteria defined"
-                        : (triggeredRules.isEmpty
-                            ? "No criteria triggered"
-                            : "\(triggeredRules.count) criteria triggered"),
-                    isWarning: !triggeredRules.isEmpty
-                )
-                
                 // Confidence
                 summaryRow(
                     label: "Confidence",
@@ -637,15 +566,15 @@ struct ReviewWizardView: View {
     
     private func initializeAssessments() {
         driverAssessments = (researchQuestion.drivers ?? []).map { DriverAssessment(driver: $0) }
-        ruleChecks = (researchQuestion.killCriteria ?? []).map { RuleCheck(criteria: $0) }
         newConfidence = researchQuestion.confidenceCurrent ?? 3
     }
     
     private var suggestedOutcome: ReviewOutcome? {
-        let hasTriggeredRules = ruleChecks.contains { $0.isTriggered }
         let invalidDriverCount = driverAssessments.filter { !$0.isStillValid }.count
+        let totalDrivers = driverAssessments.count
         
-        if hasTriggeredRules {
+        // If more than half of drivers are invalid, suggest invalidation
+        if totalDrivers > 0 && invalidDriverCount > totalDrivers / 2 {
             return .invalidate
         } else if invalidDriverCount > 0 {
             return .revise
@@ -675,19 +604,6 @@ struct ReviewWizardView: View {
                 body += "- \(status) \(assessment.title)\n"
                 if !assessment.notes.isEmpty {
                     body += "  - Note: \(assessment.notes)\n"
-                }
-            }
-            body += "\n"
-        }
-        
-        // Rules check
-        if !ruleChecks.isEmpty {
-            body += "### Kill Criteria Check\n"
-            for check in ruleChecks {
-                let status = check.isTriggered ? "⚠️ TRIGGERED" : "✓ Not triggered"
-                body += "- \(status): \(check.condition)\n"
-                if !check.notes.isEmpty {
-                    body += "  - Note: \(check.notes)\n"
                 }
             }
             body += "\n"
@@ -787,52 +703,6 @@ private struct DriverAssessmentCard: View {
     }
 }
 
-// MARK: - Rule Check Card
-
-private struct RuleCheckCard: View {
-    @Binding var ruleCheck: RuleCheck
-    @State private var isExpanded = false
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Button {
-                    ruleCheck.isTriggered.toggle()
-                } label: {
-                    Image(systemName: ruleCheck.isTriggered ? "exclamationmark.triangle.fill" : "checkmark.shield.fill")
-                        .font(.title2)
-                        .foregroundStyle(ruleCheck.isTriggered ? .red : .green)
-                }
-                .buttonStyle(.plain)
-                
-                Text(ruleCheck.condition)
-                    .font(.subheadline)
-                    .foregroundStyle(ruleCheck.isTriggered ? .red : .primary)
-                
-                Spacer()
-                
-                Button {
-                    withAnimation { isExpanded.toggle() }
-                } label: {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-            }
-            
-            if isExpanded {
-                TextField("Add notes...", text: $ruleCheck.notes, axis: .vertical)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.caption)
-            }
-        }
-        .padding()
-        .background(ruleCheck.isTriggered ? Color.red.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-}
-
 // MARK: - Outcome Selection Card
 
 private struct OutcomeSelectionCard: View {
@@ -885,5 +755,5 @@ private struct OutcomeSelectionCard: View {
     )
     
     return ReviewWizardView(researchQuestion: question) { }
-        .modelContainer(for: [ResearchQuestion.self, LogEntry.self, Tag.self, Driver.self, KillCriteria.self], inMemory: true)
+        .modelContainer(for: [ResearchQuestion.self, LogEntry.self, Tag.self, Driver.self], inMemory: true)
 }

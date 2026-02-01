@@ -62,7 +62,6 @@ struct LogEntryFormView: View {
     @State private var title: String = ""
     @State private var bodyText: String = ""
     @State private var entryType: LogEntryType = .observation
-    @State private var confidence: Int? = nil
     @State private var occurredAt: Date = Date()
     @State private var selectedTags: [Tag] = []
     @State private var validationErrors: [String] = []
@@ -85,7 +84,6 @@ struct LogEntryFormView: View {
             _title = State(initialValue: logEntry.title)
             _bodyText = State(initialValue: logEntry.body)
             _entryType = State(initialValue: logEntry.entryType)
-            _confidence = State(initialValue: logEntry.confidence)
             _occurredAt = State(initialValue: logEntry.occurredAt)
             _selectedTags = State(initialValue: logEntry.tags ?? [])
             _selectedDriver = State(initialValue: logEntry.driver)
@@ -207,42 +205,6 @@ struct LogEntryFormView: View {
                     // McKinsey Framework Section - Driver Linkage
                     if showDriverSection {
                         driverLinkageSection
-                    }
-                    
-                    // Confidence level
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Confidence Level (Optional)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        HStack(spacing: 10) {
-                            ForEach(ConfidenceLevel.allCases, id: \.rawValue) { level in
-                                Button {
-                                    if confidence == level.rawValue {
-                                        confidence = nil
-                                    } else {
-                                        confidence = level.rawValue
-                                    }
-                                } label: {
-                                    Text("\(level.rawValue)")
-                                        .font(.subheadline)
-                                        .fontWeight(.semibold)
-                                        .frame(width: 36, height: 36)
-                                        .background(confidence == level.rawValue ? Color.blue : Color(nsColor: .controlBackgroundColor))
-                                        .foregroundStyle(confidence == level.rawValue ? .white : .primary)
-                                        .clipShape(Circle())
-                                }
-                                .buttonStyle(.plain)
-                            }
-                            
-                            if confidence != nil {
-                                Button("Clear") {
-                                    confidence = nil
-                                }
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            }
-                        }
                     }
                     
                     // Tags
@@ -433,7 +395,6 @@ struct LogEntryFormView: View {
                 title: title,
                 body: bodyText,
                 entryType: entryType,
-                confidence: confidence,
                 occurredAt: occurredAt,
                 isSystemGenerated: false
             )
@@ -464,7 +425,6 @@ struct LogEntryFormView: View {
                 title: title,
                 body: bodyText,
                 entryType: entryType,
-                confidence: confidence,
                 occurredAt: occurredAt
             )
             logEntry.tags = selectedTags.isEmpty ? nil : selectedTags

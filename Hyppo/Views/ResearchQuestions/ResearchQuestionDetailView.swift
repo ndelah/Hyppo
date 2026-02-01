@@ -39,7 +39,6 @@ struct ResearchQuestionDetailView: View {
     // Section expansion states
     @State private var isThesisStatementExpanded = true
     @State private var isKeyDriversExpanded = true
-    @State private var isInvalidationRulesExpanded = true
     @State private var isScenariosExpanded = true
     @State private var isCatalystsExpanded = true
     @State private var isKeyRisksExpanded = true
@@ -281,22 +280,6 @@ struct ResearchQuestionDetailView: View {
                 }
             }
             
-            // Kill criteria (formerly invalidation rules)
-            if !(researchQuestion.killCriteria?.isEmpty ?? true) {
-                CollapsibleSection(
-                    title: "Kill Criteria",
-                    iconName: "xmark.circle",
-                    isExpanded: $isInvalidationRulesExpanded,
-                    itemCount: researchQuestion.killCriteria?.count ?? 0
-                ) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        ForEach(researchQuestion.killCriteria ?? []) { criteria in
-                            BulletPoint(text: criteria.condition, color: .red)
-                        }
-                    }
-                }
-            }
-            
             // Scenarios
             if !researchQuestion.scenarios.isEmpty {
                 CollapsibleSection(
@@ -347,7 +330,6 @@ struct ResearchQuestionDetailView: View {
             let shouldExpand = displayDensity.expandSectionsByDefault
             isThesisStatementExpanded = shouldExpand
             isKeyDriversExpanded = shouldExpand
-            isInvalidationRulesExpanded = shouldExpand
             isScenariosExpanded = shouldExpand
             isCatalystsExpanded = shouldExpand
             isKeyRisksExpanded = shouldExpand
@@ -356,14 +338,13 @@ struct ResearchQuestionDetailView: View {
     }
     
     private var allSectionsExpanded: Bool {
-        isThesisStatementExpanded && isKeyDriversExpanded && isInvalidationRulesExpanded && isScenariosExpanded && isCatalystsExpanded && isKeyRisksExpanded && isPreMortemExpanded
+        isThesisStatementExpanded && isKeyDriversExpanded && isScenariosExpanded && isCatalystsExpanded && isKeyRisksExpanded && isPreMortemExpanded
     }
     
     private func toggleAllSections() {
         let newState = !allSectionsExpanded
         isThesisStatementExpanded = newState
         isKeyDriversExpanded = newState
-        isInvalidationRulesExpanded = newState
         isScenariosExpanded = newState
         isCatalystsExpanded = newState
         isKeyRisksExpanded = newState
@@ -700,13 +681,6 @@ struct LogEntryCard: View {
                             .clipShape(Capsule())
                     }
                     
-                    // Confidence
-                    if let confidence = logEntry.confidenceLevel {
-                        Label(confidence.shortLabel, systemImage: "gauge")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    
                     // Evidence count
                     if logEntry.evidenceCount > 0 {
                         Label("\(logEntry.evidenceCount)", systemImage: "link")
@@ -1025,6 +999,6 @@ struct ResearchQuestionDetailView_Previews: PreviewProvider {
         )
         
         return ResearchQuestionDetailView(researchQuestion: question)
-            .modelContainer(for: [Asset.self, ResearchQuestion.self, LogEntry.self, Evidence.self, ReviewReminder.self, Driver.self, KillCriteria.self], inMemory: true)
+            .modelContainer(for: [Asset.self, ResearchQuestion.self, LogEntry.self, Evidence.self, ReviewReminder.self, Driver.self], inMemory: true)
     }
 }

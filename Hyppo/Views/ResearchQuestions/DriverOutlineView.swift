@@ -259,66 +259,67 @@ struct DriverRowView: View {
                 TextField(isSubDriver ? "Sub-assumption..." : "Main assumption...", text: $driver.title)
                     .textFieldStyle(.roundedBorder)
                 
-                // Research plan button
-                Button {
-                    driver.showDetails.toggle()
-                } label: {
-                    Image(systemName: "doc.text.magnifyingglass")
-                        .foregroundStyle(driver.showDetails ? .blue : .secondary)
-                }
-                .buttonStyle(.borderless)
-                .help("Edit Research Plan")
-                
-                // Move up/down buttons (visible on hover)
-                if isHovering {
-                    HStack(spacing: 2) {
-                        if let onMoveUp = onMoveUp {
-                            Button {
-                                onMoveUp()
-                            } label: {
-                                Image(systemName: "chevron.up")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.borderless)
-                            .help("Move up")
-                        }
-                        
-                        if let onMoveDown = onMoveDown {
-                            Button {
-                                onMoveDown()
-                            } label: {
-                                Image(systemName: "chevron.down")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.borderless)
-                            .help("Move down")
-                        }
-                    }
-                    .frame(width: 32)
-                }
-                
-                // Add sub-driver button
-                if let onAddSubDriver = onAddSubDriver {
+                // Action buttons grouped tightly
+                HStack(spacing: 4) {
+                    // Research plan button
                     Button {
-                        onAddSubDriver()
+                        driver.showDetails.toggle()
                     } label: {
-                        Image(systemName: "plus.square.dashed")
-                            .foregroundStyle(.blue)
+                        Image(systemName: "doc.text.magnifyingglass")
+                            .foregroundStyle(driver.showDetails ? .blue : .secondary)
                     }
                     .buttonStyle(.borderless)
-                    .help("Add Sub-assumption")
+                    .help("Edit Research Plan")
+                    
+                    // Move up/down buttons (visible on hover, but always reserve space to prevent layout jitter)
+                    HStack(spacing: 0) {
+                        Button {
+                            onMoveUp?()
+                        } label: {
+                            Image(systemName: "chevron.up")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Move up")
+                        .disabled(onMoveUp == nil)
+                        .opacity(isHovering && onMoveUp != nil ? 1.0 : 0.0)
+                        
+                        Button {
+                            onMoveDown?()
+                        } label: {
+                            Image(systemName: "chevron.down")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Move down")
+                        .disabled(onMoveDown == nil)
+                        .opacity(isHovering && onMoveDown != nil ? 1.0 : 0.0)
+                    }
+                    .frame(width: 24)
+                    
+                    // Add sub-driver button
+                    if let onAddSubDriver = onAddSubDriver {
+                        Button {
+                            onAddSubDriver()
+                        } label: {
+                            Image(systemName: "plus.square.dashed")
+                                .foregroundStyle(.blue)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Add Sub-assumption")
+                    }
+                    
+                    // Delete button
+                    Button {
+                        onDelete()
+                    } label: {
+                        Image(systemName: "minus.circle.fill")
+                            .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.borderless)
                 }
-                
-                // Delete button
-                Button {
-                    onDelete()
-                } label: {
-                    Image(systemName: "minus.circle.fill")
-                        .foregroundStyle(.red)
-                }
-                .buttonStyle(.borderless)
             }
             .padding(.vertical, 4)
             .onHover { hovering in

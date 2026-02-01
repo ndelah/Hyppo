@@ -47,7 +47,6 @@ struct ResearchQuestionFormView: View {
     @State private var context: String = ""
     @State private var thesisStatement: String = ""
     @State private var drivers: [DriverDTO] = []
-    @State private var killCriteria: [KillCriteriaDTO] = []
     @State private var scenarios: [SimpleScenario] = []
     @State private var catalysts: [String] = []
     @State private var keyRisks: [String] = []
@@ -92,9 +91,6 @@ struct ResearchQuestionFormView: View {
             }
             _drivers = State(initialValue: dtos)
             
-            let kcDtos = (question.killCriteria ?? []).map { KillCriteriaDTO(condition: $0.condition) }
-            _killCriteria = State(initialValue: kcDtos)
-            
             _confidence = State(initialValue: question.confidenceCurrent)
             _priority = State(initialValue: question.priority)
         }
@@ -130,9 +126,6 @@ struct ResearchQuestionFormView: View {
                             .font(.headline)
                         DriverOutlineView(drivers: $drivers, prompt: "What assumptions must be true?")
                     }
-                    
-                    // Invalidation rules section
-                    killCriteriaSection
                     
                     // Confidence section
                     confidenceSection
@@ -237,32 +230,6 @@ struct ResearchQuestionFormView: View {
                     RoundedRectangle(cornerRadius: 6)
                         .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                 )
-        }
-    }
-    
-    private var killCriteriaSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Kill Criteria")
-                .font(.headline)
-            ForEach(killCriteria.indices, id: \.self) { index in
-                HStack {
-                    TextField("Condition", text: $killCriteria[index].condition)
-                        .textFieldStyle(.roundedBorder)
-                    Button {
-                        killCriteria.remove(at: index)
-                    } label: {
-                        Image(systemName: "minus.circle.fill").foregroundStyle(.red)
-                    }
-                    .buttonStyle(.borderless)
-                }
-            }
-            Button {
-                killCriteria.append(KillCriteriaDTO(condition: ""))
-            } label: {
-                Label("Add Kill Criteria", systemImage: "plus.circle").font(.caption)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.blue)
         }
     }
     
@@ -448,7 +415,7 @@ struct ResearchQuestionFormView: View {
                 confidence: confidence,
                 priority: priority
             )
-            saveDriversAndCriteria(to: question)
+            saveDrivers(to: question)
             onSave(question)
             
         case .edit(let question):
@@ -462,16 +429,15 @@ struct ResearchQuestionFormView: View {
             
             // Clear existing and re-save
             question.drivers?.forEach { modelContext.delete($0) }
-            question.killCriteria?.forEach { modelContext.delete($0) }
             
-            saveDriversAndCriteria(to: question)
+            saveDrivers(to: question)
             onSave(question)
         }
         
         dismiss()
     }
     
-    private func saveDriversAndCriteria(to rq: ResearchQuestion) {
+    private func saveDrivers(to rq: ResearchQuestion) {
         for (index, d) in drivers.enumerated() {
             if !d.title.isEmpty {
                 let driver = Driver(
@@ -498,13 +464,6 @@ struct ResearchQuestionFormView: View {
                         subDriver.researchQuestion = rq
                     }
                 }
-            }
-        }
-        
-        for kc in killCriteria {
-            if !kc.condition.isEmpty {
-                let criteria = KillCriteria(condition: kc.condition)
-                criteria.researchQuestion = rq
             }
         }
     }

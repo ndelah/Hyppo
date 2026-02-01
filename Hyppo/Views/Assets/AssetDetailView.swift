@@ -18,13 +18,13 @@ struct AssetDetailView: View {
     
     @Bindable var asset: Asset
     @Binding var selectedResearchQuestion: ResearchQuestion?
+    @Binding var statusFilter: ResearchQuestionStatus?
     
     // MARK: - State
     
     @State private var showingAddQuestion = false
     @State private var showingEditAsset = false
     @State private var searchText = ""
-    @State private var statusFilter: ResearchQuestionStatus? = nil
     
     // MARK: - Computed Properties
     
@@ -362,7 +362,8 @@ struct ResearchQuestionRowView: View {
     let asset = Asset(ticker: "AAPL", name: "Apple Inc.", exchange: "NASDAQ", currency: "USD")
     return AssetDetailView(
         asset: asset,
-        selectedResearchQuestion: .constant(nil)
+        selectedResearchQuestion: .constant(nil),
+        statusFilter: .constant(nil)
     )
     .modelContainer(for: [Asset.self, ResearchQuestion.self, ReviewReminder.self], inMemory: true)
 }

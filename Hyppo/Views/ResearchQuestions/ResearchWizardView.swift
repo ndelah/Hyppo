@@ -1,11 +1,10 @@
 /**
- ResearchWizardView provides a guided 3-step wizard for creating research questions
+ ResearchWizardView provides a guided 2-step wizard for creating research questions
  following the McKinsey Mind framework.
  
  Steps:
  1. Frame the Problem - Define question, hypothesis, and core assumptions (2+ required)
- 2. Design the Analysis - Add validation questions, data sources, thresholds, and kill criteria
- 3. Review & Save - Confirm the structured research plan before saving
+ 2. Review & Save - Confirm the structured research plan before saving
  */
 
 import SwiftUI
@@ -37,10 +36,6 @@ struct ResearchWizardView: View {
         DriverDTO(title: "")
     ]
     
-    // Step 2: Design the Analysis
-    @State private var killCriteria: [KillCriteriaDTO] = [
-        KillCriteriaDTO(condition: "")
-    ]
     @State private var selectedDriverId: UUID?
     
     // MARK: - Initialization
@@ -77,11 +72,6 @@ struct ResearchWizardView: View {
             if dtos.count >= 2 {
                 _drivers = State(initialValue: dtos)
             }
-            
-            let kcDtos = (question.killCriteria ?? []).map { KillCriteriaDTO(condition: $0.condition, threshold: $0.threshold ?? "", dataSource: $0.dataSource ?? "") }
-            if !kcDtos.isEmpty {
-                _killCriteria = State(initialValue: kcDtos)
-            }
         }
     }
     
@@ -91,11 +81,6 @@ struct ResearchWizardView: View {
         let trimmedQuestion = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
         let validDrivers = drivers.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         return !trimmedQuestion.isEmpty && validDrivers.count >= 2
-    }
-    
-    private var isStep2Valid: Bool {
-        let validKillCriteria = killCriteria.filter { !$0.condition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        return validKillCriteria.count >= 1
     }
     
     private var validDriversForDesign: [DriverDTO] {
@@ -116,8 +101,7 @@ struct ResearchWizardView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     switch currentStep {
                     case 1: frameStep
-                    case 2: designStep
-                    case 3: reviewStep
+                    case 2: reviewStep
                     default: EmptyView()
                     }
                 }
@@ -152,7 +136,7 @@ struct ResearchWizardView: View {
                 
                 Spacer()
                 
-                Text("Step \(currentStep) of 3")
+                Text("Step \(currentStep) of 2")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -161,9 +145,7 @@ struct ResearchWizardView: View {
             HStack(spacing: 0) {
                 stepIndicator(step: 1, title: "Frame", icon: "lightbulb")
                 stepConnector(completed: currentStep > 1)
-                stepIndicator(step: 2, title: "Design", icon: "hammer")
-                stepConnector(completed: currentStep > 2)
-                stepIndicator(step: 3, title: "Review", icon: "checkmark.circle")
+                stepIndicator(step: 2, title: "Review", icon: "checkmark.circle")
             }
         }
         .padding()
@@ -295,142 +277,14 @@ struct ResearchWizardView: View {
         }
     }
     
-    // MARK: - Step 2: Design the Analysis
-    
-    private var designStep: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            // Header
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Image(systemName: "2.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(Color.accentColor)
-                    Text("Design the Analysis")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                }
-                
-                Text("Define how you'll validate each assumption and what would prove you wrong.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            
-            // Research Plan per Driver
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Research Plan by Assumption")
-                    .font(.headline)
-                
-                if validDriversForDesign.isEmpty {
-                    Text("No assumptions defined yet.")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                } else {
-                    // Driver selector tabs
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(Array(validDriversForDesign.enumerated()), id: \.element.id) { index, driver in
-                                Button {
-                                    selectedDriverId = driver.id
-                                } label: {
-                                    Text(driver.title.isEmpty ? "Assumption \(index + 1)" : driver.title)
-                                        .font(.caption)
-                                        .lineLimit(1)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(selectedDriverId == driver.id ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
-                                        .foregroundStyle(selectedDriverId == driver.id ? .white : .primary)
-                                        .clipShape(Capsule())
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-                    .onAppear {
-                        // Auto-select first driver if none selected
-                        if selectedDriverId == nil {
-                            selectedDriverId = validDriversForDesign.first?.id
-                        }
-                    }
-                    .onChange(of: validDriversForDesign.count) { _, _ in
-                        // Reset selection if the current selected driver was deleted
-                        if let selected = selectedDriverId,
-                           !validDriversForDesign.contains(where: { $0.id == selected }) {
-                            selectedDriverId = validDriversForDesign.first?.id
-                        }
-                    }
-                    
-                    // Selected driver details
-                    if let selectedId = selectedDriverId,
-                       let driverIndex = drivers.firstIndex(where: { $0.id == selectedId }) {
-                        SelectedDriverEditView(
-                            driver: $drivers[driverIndex]
-                        )
-                    }
-                }
-            }
-            
-            Divider()
-            
-            // Kill Criteria
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Kill Criteria")
-                        .font(.headline)
-                    Text("*")
-                        .foregroundStyle(.red)
-                    Text("(minimum 1)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                Text("Define upfront what would prove you wrong and force an exit.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                VStack(spacing: 12) {
-                    ForEach(Array(killCriteria.enumerated()), id: \.element.id) { index, _ in
-                        KillCriteriaRowView(
-                            criteria: $killCriteria[index],
-                            canDelete: killCriteria.count > 1,
-                            onDelete: { deleteKillCriteria(at: index) }
-                        )
-                    }
-                }
-                
-                Button {
-                    killCriteria.append(KillCriteriaDTO(condition: ""))
-                } label: {
-                    Label("Add Kill Criteria", systemImage: "plus.circle")
-                        .font(.caption)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.blue)
-                
-                // Validation hint
-                let validCount = killCriteria.filter { !$0.condition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
-                if validCount < 1 {
-                    HStack(spacing: 6) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
-                        Text("Define at least 1 kill criteria to ensure falsifiability.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.top, 4)
-                }
-            }
-        }
-    }
-    
-    
-    // MARK: - Step 3: Review & Save
+    // MARK: - Step 2: Review & Save
     
     private var reviewStep: some View {
         VStack(alignment: .leading, spacing: 24) {
             // Header
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Image(systemName: "3.circle.fill")
+                    Image(systemName: "2.circle.fill")
                         .font(.title2)
                         .foregroundStyle(Color.accentColor)
                     Text("Review Research Plan")
@@ -505,42 +359,6 @@ struct ResearchWizardView: View {
                     }
                 }
                 
-                Divider()
-                
-                // Kill Criteria
-                let validKillCriteria = killCriteria.filter { !$0.condition.isEmpty }
-                reviewSection(icon: "xmark.octagon.fill", title: "Kill Criteria (\(validKillCriteria.count))", color: .red) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(validKillCriteria) { criteria in
-                            HStack(alignment: .top, spacing: 8) {
-                                Circle()
-                                    .fill(Color.red.opacity(0.6))
-                                    .frame(width: 6, height: 6)
-                                    .padding(.top, 5)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(criteria.condition)
-                                        .font(.subheadline)
-                                    
-                                    if !criteria.threshold.isEmpty || !criteria.dataSource.isEmpty {
-                                        HStack(spacing: 8) {
-                                            if !criteria.threshold.isEmpty {
-                                                Text("@ \(criteria.threshold)")
-                                                    .font(.caption)
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            if !criteria.dataSource.isEmpty {
-                                                Text("via \(criteria.dataSource)")
-                                                    .font(.caption)
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
             .padding()
             .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
@@ -574,7 +392,6 @@ struct ResearchWizardView: View {
             HStack(spacing: 12) {
                 checklistItem(passed: !questionText.isEmpty, text: "Research question defined")
                 checklistItem(passed: validDriversForDesign.count >= 2, text: "2+ assumptions")
-                checklistItem(passed: killCriteria.filter { !$0.condition.isEmpty }.count >= 1, text: "Kill criteria set")
             }
         }
         .padding()
@@ -617,7 +434,7 @@ struct ResearchWizardView: View {
                 }
             }
             
-            if currentStep < 3 {
+            if currentStep < 2 {
                 Button {
                     if validateCurrentStep() {
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -646,16 +463,6 @@ struct ResearchWizardView: View {
         .padding()
     }
     
-    // MARK: - Actions
-    
-    /// Deletes a kill criteria by index
-    private func deleteKillCriteria(at index: Int) {
-        guard index < killCriteria.count else { return }
-        withAnimation(.easeInOut(duration: 0.2)) {
-            killCriteria.remove(at: index)
-        }
-    }
-    
     // MARK: - Validation
     
     private func validateCurrentStep() -> Bool {
@@ -668,15 +475,6 @@ struct ResearchWizardView: View {
             }
             if validDriversForDesign.count < 2 {
                 validationMessage = "Please define at least 2 key assumptions."
-                showValidationError = true
-                return false
-            }
-            return true
-            
-        case 2:
-            let validKC = killCriteria.filter { !$0.condition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-            if validKC.isEmpty {
-                validationMessage = "Please define at least 1 kill criteria to ensure your thesis is falsifiable."
                 showValidationError = true
                 return false
             }
@@ -702,9 +500,8 @@ struct ResearchWizardView: View {
                 priority: nil
             )
             
-            // Clear existing drivers and kill criteria
+            // Clear existing drivers
             existing.drivers?.forEach { modelContext.delete($0) }
-            existing.killCriteria?.forEach { modelContext.delete($0) }
             
             rq = existing
         } else {
@@ -745,19 +542,6 @@ struct ResearchWizardView: View {
                         subDriver.researchQuestion = rq
                     }
                 }
-            }
-        }
-        
-        // Save kill criteria
-        for kc in killCriteria {
-            let trimmedCondition = kc.condition.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmedCondition.isEmpty {
-                let criteria = KillCriteria(
-                    condition: trimmedCondition,
-                    threshold: kc.threshold.isEmpty ? nil : kc.threshold,
-                    dataSource: kc.dataSource.isEmpty ? nil : kc.dataSource
-                )
-                criteria.researchQuestion = rq
             }
         }
         
@@ -815,73 +599,6 @@ struct SelectedDriverEditView: View {
         .padding()
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
-
-/**
- Data Transfer Object for Kill Criteria to simplify form state management.
- */
-struct KillCriteriaDTO: Identifiable {
-    let id = UUID()
-    var condition: String
-    var threshold: String = ""
-    var dataSource: String = ""
-}
-
-/**
- Extracted view for kill criteria row editing.
- Using a separate view avoids binding/index issues with closures.
- */
-struct KillCriteriaRowView: View {
-    @Binding var criteria: KillCriteriaDTO
-    let canDelete: Bool
-    let onDelete: () -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: "xmark.octagon.fill")
-                    .foregroundStyle(.red.opacity(0.7))
-                    .frame(width: 20)
-                
-                TextField("e.g., If Gross Margin drops below 60%", text: $criteria.condition)
-                    .textFieldStyle(.roundedBorder)
-                
-                Button {
-                    onDelete()
-                } label: {
-                    Image(systemName: "minus.circle.fill")
-                        .foregroundStyle(canDelete ? .red : .gray)
-                }
-                .buttonStyle(.borderless)
-                .disabled(!canDelete)
-            }
-            
-            HStack(spacing: 12) {
-                HStack(spacing: 4) {
-                    Text("Threshold:")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    TextField("60%", text: $criteria.threshold)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 80)
-                }
-                
-                HStack(spacing: 4) {
-                    Text("Monitor via:")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    TextField("10-Q filings", text: $criteria.dataSource)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 120)
-                }
-            }
-            .padding(.leading, 28)
-        }
-        .padding(12)
-        .background(Color.red.opacity(0.03))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.red.opacity(0.1)))
     }
 }
 

@@ -20,11 +20,15 @@ struct MainNavigationView: View {
     @State private var selectedResearchQuestion: ResearchQuestion?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     
+    // Shared filter state (used by both AssetDetailView and detail column toolbar)
+    @State private var statusFilter: ResearchQuestionStatus? = nil
+    
     // Shortcut-triggered sheets
     @State private var showingAddAssetSheet = false
     @State private var showingAddLogSheet = false
     @State private var showingNoResearchQuestionAlert = false
     @State private var showingGlobalSearch = false
+    @State private var showingAddQuestionFromDetail = false
     
     // MARK: - Body
     
@@ -36,8 +40,12 @@ struct MainNavigationView: View {
         } content: {
             // Content - Research Questions for selected asset
             if let asset = selectedAsset {
-                AssetDetailView(asset: asset, selectedResearchQuestion: $selectedResearchQuestion)
-                    .navigationSplitViewColumnWidth(min: 300, ideal: 350, max: 450)
+                AssetDetailView(
+                    asset: asset,
+                    selectedResearchQuestion: $selectedResearchQuestion,
+                    statusFilter: $statusFilter
+                )
+                .navigationSplitViewColumnWidth(min: 300, ideal: 350, max: 450)
             } else {
                 EmptyStateView.noSelection
             }
@@ -45,12 +53,48 @@ struct MainNavigationView: View {
             // Detail - Research Question detail (single report view)
             if let question = selectedResearchQuestion {
                 ResearchQuestionDetailView(researchQuestion: question)
-            } else if selectedAsset != nil {
+            } else if let asset = selectedAsset {
                 EmptyStateView(
                     iconName: "questionmark.circle",
                     title: "Select a Research Question",
                     description: "Choose a research question from the list to view its details and timeline."
                 )
+                .toolbar {
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        // Status filter menu
+                        Menu {
+                            Button("All Statuses") {
+                                statusFilter = nil
+                            }
+                            Divider()
+                            ForEach(ResearchQuestionStatus.allCases) { status in
+                                Button {
+                                    statusFilter = status
+                                } label: {
+                                    if statusFilter == status {
+                                        Label(status.displayName, systemImage: "checkmark")
+                                    } else {
+                                        Text(status.displayName)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Label("Filter", systemImage: statusFilter == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                        }
+                        
+                        // Add Research Question
+                        Button(action: { showingAddQuestionFromDetail = true }) {
+                            Label("Add Research Question", systemImage: "plus")
+                        }
+                    }
+                }
+                .sheet(isPresented: $showingAddQuestionFromDetail) {
+                    ResearchQuestionFormView(mode: .add, asset: asset) { newQuestion in
+                        modelContext.insert(newQuestion)
+                        newQuestion.asset = asset
+                        selectedResearchQuestion = newQuestion
+                    }
+                }
             } else {
                 EmptyStateView.noSelection
             }

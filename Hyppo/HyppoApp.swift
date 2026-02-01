@@ -21,7 +21,7 @@ struct HyppoApp: App {
         DebugLogger.info(
             location: "HyppoApp:init",
             message: "Hyppo app initializing",
-            data: ["models": "Asset, ResearchQuestion, LogEntry, Evidence, Tag, ReviewReminder, Driver, KillCriteria"]
+            data: ["models": "Asset, ResearchQuestion, LogEntry, Evidence, Tag, ReviewReminder, Driver"]
         )
     }
     
@@ -46,8 +46,7 @@ struct HyppoApp: App {
             Evidence.self,
             Tag.self,
             ReviewReminder.self,
-            Driver.self,
-            KillCriteria.self
+            Driver.self
         ])
         
         do {

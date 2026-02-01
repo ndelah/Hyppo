@@ -783,7 +783,7 @@ struct ReviewReminderBadge: View {
             .foregroundStyle(.secondary)
     }
     .padding()
-    .modelContainer(for: [ResearchQuestion.self, ReviewReminder.self, LogEntry.self, Driver.self, KillCriteria.self], inMemory: true)
+    .modelContainer(for: [ResearchQuestion.self, ReviewReminder.self, LogEntry.self, Driver.self], inMemory: true)
 }
 
 #Preview("Full Card (Legacy)") {
@@ -794,5 +794,5 @@ struct ReviewReminderBadge: View {
     
     ReviewReminderView(researchQuestion: question)
         .padding()
-        .modelContainer(for: [ResearchQuestion.self, ReviewReminder.self, LogEntry.self, Driver.self, KillCriteria.self], inMemory: true)
+        .modelContainer(for: [ResearchQuestion.self, ReviewReminder.self, LogEntry.self, Driver.self], inMemory: true)
 }

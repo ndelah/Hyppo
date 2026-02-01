@@ -9,7 +9,6 @@ import SwiftData
 struct MigrationStatus {
     var questionsProcessed: Int = 0
     var driversCreated: Int = 0
-    var killCriteriaCreated: Int = 0
     var evidenceMigrated: Int = 0
     var errors: [String] = []
     
@@ -18,7 +17,6 @@ struct MigrationStatus {
         Migration completed:
         - Research questions processed: \(questionsProcessed)
         - Drivers created: \(driversCreated)
-        - Kill criteria created: \(killCriteriaCreated)
         - Evidence migrated: \(evidenceMigrated)
         - Errors: \(errors.count)
         """
@@ -32,7 +30,6 @@ struct MigrationStatus {
  
  Handles:
  - Converting old string-array based key drivers to structured Driver models
- - Converting old invalidation rules to KillCriteria models
  - Linking orphaned evidence to appropriate drivers
  - Setting default sentiment values for legacy evidence
  */
@@ -117,7 +114,6 @@ final class MigrationHelper {
                 let result = migrateResearchQuestion(rq, modelContext: modelContext)
                 status.questionsProcessed += 1
                 status.driversCreated += result.driversCreated
-                status.killCriteriaCreated += result.killCriteriaCreated
                 status.errors.append(contentsOf: result.errors)
             }
             
@@ -173,7 +169,6 @@ final class MigrationHelper {
      */
     private struct ResearchQuestionMigrationResult {
         var driversCreated: Int = 0
-        var killCriteriaCreated: Int = 0
         var errors: [String] = []
     }
     
@@ -193,11 +188,6 @@ final class MigrationHelper {
             rq.drivers = []
         }
         
-        // Ensure kill criteria array exists
-        if rq.killCriteria == nil {
-            rq.killCriteria = []
-        }
-        
         // Check if this research question needs driver migration
         let needsDrivers = (rq.drivers?.isEmpty ?? true)
         
@@ -209,19 +199,6 @@ final class MigrationHelper {
             DebugLogger.info(
                 location: "MigrationHelper:migrateResearchQuestion",
                 message: "Created default driver for question: \(rq.questionText.prefix(50))..."
-            )
-        }
-        
-        // Check if this research question needs kill criteria migration
-        let needsKillCriteria = (rq.killCriteria?.isEmpty ?? true)
-        
-        if needsKillCriteria {
-            let defaultCriteria = createDefaultKillCriteria(for: rq, modelContext: modelContext)
-            result.killCriteriaCreated += 1
-            
-            DebugLogger.info(
-                location: "MigrationHelper:migrateResearchQuestion",
-                message: "Created default kill criteria for question: \(rq.questionText.prefix(50))..."
             )
         }
         
@@ -266,32 +243,6 @@ final class MigrationHelper {
         rq.drivers?.append(driver)
         
         return driver
-    }
-    
-    /**
-     Creates a default kill criteria for a research question that has none.
-     
-     - Parameters:
-       - rq: The research question
-       - modelContext: The SwiftData model context
-     - Returns: The created kill criteria
-     */
-    @discardableResult
-    private func createDefaultKillCriteria(for rq: ResearchQuestion, modelContext: ModelContext) -> KillCriteria {
-        let criteria = KillCriteria(
-            condition: "Thesis fundamentally invalidated",
-            threshold: nil,
-            dataSource: "Any primary source",
-            notes: "Default kill criteria - define specific conditions that would invalidate your thesis."
-        )
-        
-        criteria.researchQuestion = rq
-        modelContext.insert(criteria)
-        
-        // Update the relationship
-        rq.killCriteria?.append(criteria)
-        
-        return criteria
     }
     
     /**
@@ -383,11 +334,6 @@ extension MigrationHelper {
                 // Check for missing drivers
                 if rq.drivers?.isEmpty ?? true {
                     issues.append("Research question '\(rq.questionText.prefix(30))...' has no drivers")
-                }
-                
-                // Check for missing kill criteria
-                if rq.killCriteria?.isEmpty ?? true {
-                    issues.append("Research question '\(rq.questionText.prefix(30))...' has no kill criteria")
                 }
             }
             

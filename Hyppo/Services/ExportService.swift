@@ -39,7 +39,6 @@ struct ResearchQuestionExport: Codable {
     let context: String?
     let thesisStatement: String?
     let drivers: [DriverExport]
-    let killCriteria: [KillCriteriaExport]
     let scenarios: [SimpleScenarioExport]
     let confidence: Int?
     let status: String
@@ -63,14 +62,6 @@ struct DriverExport: Codable {
     let dataSources: [String]?
     let proofThreshold: String?
     let subDrivers: [DriverExport]
-}
-
-struct KillCriteriaExport: Codable {
-    let id: String
-    let condition: String
-    let threshold: String?
-    let dataSource: String?
-    let notes: String?
 }
 
 struct SimpleScenarioExport: Codable {
@@ -209,23 +200,12 @@ final class ExportService {
                 
                 let driverExports = question.topLevelDrivers.map { exportDriver($0) }
                 
-                let killCriteriaExports = (question.killCriteria ?? []).map { criteria -> KillCriteriaExport in
-                    KillCriteriaExport(
-                        id: criteria.criteriaId.uuidString,
-                        condition: criteria.condition,
-                        threshold: criteria.threshold,
-                        dataSource: criteria.dataSource,
-                        notes: criteria.notes
-                    )
-                }
-                
                 return ResearchQuestionExport(
                     id: question.questionId.uuidString,
                     questionText: question.questionText,
                     context: question.context,
                     thesisStatement: question.thesisStatement,
                     drivers: driverExports,
-                    killCriteria: killCriteriaExports,
                     scenarios: scenarioExports,
                     confidence: question.confidenceCurrent,
                     status: question.statusRaw,
@@ -391,18 +371,6 @@ final class ExportService {
                     _ = importDriver(driverExport, parent: nil)
                 }
                 
-                // Import kill criteria
-                for criteriaExport in questionExport.killCriteria {
-                    let criteria = KillCriteria(
-                        condition: criteriaExport.condition,
-                        threshold: criteriaExport.threshold,
-                        dataSource: criteriaExport.dataSource,
-                        notes: criteriaExport.notes
-                    )
-                    criteria.researchQuestion = researchQuestion
-                    modelContext.insert(criteria)
-                }
-                
                 // Create review reminder if present
                 if let reminderExport = questionExport.reviewReminder {
                     let reminder = ReviewReminder(
@@ -538,21 +506,6 @@ final class ExportService {
             }
         }
         
-        // Kill Criteria
-        let killCriteria = researchQuestion.killCriteria ?? []
-        if !killCriteria.isEmpty {
-            md += "## Kill Criteria\n\n"
-            md += "*Conditions that would invalidate this thesis:*\n\n"
-            for criteria in killCriteria {
-                md += "- **\(criteria.condition)**"
-                if let threshold = criteria.threshold {
-                    md += " (Threshold: \(threshold))"
-                }
-                md += "\n"
-            }
-            md += "\n"
-        }
-        
         // Scenarios
         if !researchQuestion.scenarios.isEmpty {
             md += "## Scenarios\n\n"
@@ -589,9 +542,6 @@ final class ExportService {
                 md += "### \(typeEmoji) \(entry.title)\n\n"
                 md += "**Date:** \(entryDate)\n"
                 md += "**Type:** \(entry.entryType.displayName)\n"
-                if let confidence = entry.confidenceLevel {
-                    md += "**Confidence:** \(confidence.rawValue)/5\n"
-                }
                 if entry.isSystemGenerated {
                     md += "*System generated*\n"
                 }

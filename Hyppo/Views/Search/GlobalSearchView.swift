@@ -203,14 +203,6 @@ struct GlobalSearchView: View {
             }
         }
         
-        // Search in kill criteria
-        if let criteria = question.killCriteria {
-            let criteriaText = criteria.map { $0.condition }.joined(separator: " ")
-            if criteriaText.lowercased().contains(searchLower) {
-                return true
-            }
-        }
-        
         return false
     }
     
@@ -279,13 +271,6 @@ struct GlobalSearchView: View {
         // Tag filter
         if let tag = selectedTag {
             guard let logTags = logEntry.tags, logTags.contains(where: { $0.tagId == tag.tagId }) else {
-                return false
-            }
-        }
-        
-        // Confidence filter
-        if let confidence = selectedConfidence {
-            guard let logConfidence = logEntry.confidenceLevel, logConfidence == confidence else {
                 return false
             }
         }

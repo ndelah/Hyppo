@@ -185,10 +185,6 @@ final class ResearchQuestion {
     @Relationship(deleteRule: .cascade, inverse: \Driver.researchQuestion)
     var drivers: [Driver]?
     
-    /// Kill criteria that would invalidate the thesis
-    @Relationship(deleteRule: .cascade, inverse: \KillCriteria.researchQuestion)
-    var killCriteria: [KillCriteria]?
-    
     /// Log entries for this research question (ordered chronologically)
     @Relationship(deleteRule: .cascade) var logEntries: [LogEntry]?
     
@@ -256,11 +252,6 @@ final class ResearchQuestion {
     /// Returns true if the question has at least 2 drivers
     var hasMinimumDrivers: Bool {
         (drivers?.count ?? 0) >= 2
-    }
-    
-    /// Returns true if the question has at least 1 kill criteria
-    var hasKillCriteria: Bool {
-        (killCriteria?.count ?? 0) >= 1
     }
     
     /// Returns the count of log entries for this research question

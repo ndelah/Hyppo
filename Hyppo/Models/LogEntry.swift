@@ -181,20 +181,17 @@ final class LogEntry {
        - title: New title
        - body: New body content
        - entryType: New entry type
-       - confidence: New confidence level
        - occurredAt: New occurred date
      */
     func update(
         title: String,
         body: String,
         entryType: LogEntryType,
-        confidence: Int?,
         occurredAt: Date
     ) {
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.body = body.trimmingCharacters(in: .whitespacesAndNewlines)
         self.entryType = entryType
-        self.confidence = confidence
         self.occurredAt = occurredAt
         self.updatedAt = Date()
     }
