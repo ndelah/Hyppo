@@ -222,46 +222,41 @@ struct ReviewWizardView: View {
     
     private var overviewStep: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // Research question info (shown above conviction health)
+            HStack {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Text(researchQuestion.questionText)
+                    .font(.headline)
+                    .lineLimit(2)
+                Spacer()
+                Text(researchQuestion.status.displayName)
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(statusColor.opacity(0.15))
+                    .foregroundStyle(statusColor)
+                    .clipShape(Capsule())
+            }
+            
+            if let thesis = researchQuestion.thesisStatement, !thesis.isEmpty {
+                Text(thesis)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            
+            if let lastReview = researchQuestion.lastReviewedAt {
+                Text("Last reviewed: \(lastReview.formatted(date: .abbreviated, time: .shortened))")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            } else {
+                Text("Never reviewed")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            
             // Conviction Health Dashboard (compact version for overview)
             ConvictionHealthView(drivers: researchQuestion.drivers ?? [], isCompact: true)
-            
-            // Research question info
-            GroupBox {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Image(systemName: researchQuestion.status.iconName)
-                            .foregroundStyle(statusColor)
-                        Text(researchQuestion.questionText)
-                            .font(.headline)
-                            .lineLimit(2)
-                        Spacer()
-                        Text(researchQuestion.status.displayName)
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(statusColor.opacity(0.15))
-                            .foregroundStyle(statusColor)
-                            .clipShape(Capsule())
-                    }
-                    
-                    if let thesis = researchQuestion.thesisStatement, !thesis.isEmpty {
-                        Text(thesis)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    
-                    if let lastReview = researchQuestion.lastReviewedAt {
-                        Text("Last reviewed: \(lastReview.formatted(date: .abbreviated, time: .shortened))")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    } else {
-                        Text("Never reviewed")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .padding(8)
-            }
             
             // Review process explanation
             VStack(alignment: .leading, spacing: 12) {

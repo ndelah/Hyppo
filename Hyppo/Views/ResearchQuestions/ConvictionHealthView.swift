@@ -269,6 +269,16 @@ struct ConvictionHealthView: View {
                 evidenceLegendItem(count: summary.totalSupporting, label: "Supporting", color: .green)
                 evidenceLegendItem(count: summary.totalNeutral, label: "Neutral", color: .gray)
                 evidenceLegendItem(count: summary.totalContradicting, label: "Contradicting", color: .red)
+                
+                // Blind spots indicator (only show if there are blind spots)
+                if summary.blindSpotCount > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "eye.slash.fill")
+                            .foregroundStyle(.orange)
+                        Text("\(summary.blindSpotCount) blind spot\(summary.blindSpotCount == 1 ? "" : "s")")
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .font(.caption2)
         }
@@ -428,50 +438,7 @@ struct ConvictionHealthView: View {
     // MARK: - Compact Summary Section
     
     private var compactSummarySection: some View {
-        HStack(spacing: 20) {
-            // Evidence counts
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(.green)
-                    Text("\(summary.totalSupporting)")
-                        .fontWeight(.semibold)
-                    Text("supporting")
-                        .foregroundStyle(.secondary)
-                }
-                
-                HStack(spacing: 8) {
-                    Image(systemName: "minus.circle.fill")
-                        .foregroundStyle(.red)
-                    Text("\(summary.totalContradicting)")
-                        .fontWeight(.semibold)
-                    Text("contradicting")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .font(.caption)
-            
-            Divider()
-                .frame(height: 40)
-            
-            // Blind spots indicator
-            VStack(alignment: .leading, spacing: 4) {
-                if summary.blindSpotCount > 0 {
-                    HStack(spacing: 4) {
-                        Image(systemName: "eye.slash.fill")
-                            .foregroundStyle(.orange)
-                        Text("\(summary.blindSpotCount) blind spot\(summary.blindSpotCount == 1 ? "" : "s")")
-                    }
-                } else {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                        Text("Full coverage")
-                    }
-                }
-            }
-            .font(.caption)
-        }
+        EmptyView()
     }
     
     // MARK: - Compact Alerts Section
