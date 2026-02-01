@@ -57,13 +57,8 @@ struct ResearchQuestionDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // Research question header
+                // Research question header (includes inline review reminder badge)
                 questionHeader
-                
-                Divider()
-                
-                // Review reminder section
-                ReviewReminderView(researchQuestion: researchQuestion)
                 
                 Divider()
                 
@@ -223,6 +218,9 @@ struct ResearchQuestionDetailView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                
+                // Review reminder badge (inline)
+                ReviewReminderBadge(researchQuestion: researchQuestion)
                 
                 Label("v\(researchQuestion.versionNumber)", systemImage: "number")
                     .font(.caption)

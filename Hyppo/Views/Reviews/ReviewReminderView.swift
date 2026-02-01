@@ -390,7 +390,7 @@ struct CadenceConfigSheet: View {
     }
 }
 
-// MARK: - Due Badge View
+// MARK: - Due Badge View (Legacy)
 
 /// Small badge indicating a research question review is due
 struct ReviewDueBadge: View {
@@ -421,9 +421,372 @@ struct ReviewDueBadge: View {
     }
 }
 
+// MARK: - Review Reminder Badge (Inline)
+
+/**
+ Compact inline badge for displaying review reminder status.
+ 
+ Shows a small pill/badge with status text (e.g., "Review in 5d", "Due today").
+ Clicking opens a popover with full reminder controls including enable/disable toggle,
+ cadence selector, and action buttons when due.
+ */
+struct ReviewReminderBadge: View {
+    // MARK: - Environment
+    
+    @Environment(\.modelContext) private var modelContext
+    
+    // MARK: - Properties
+    
+    @Bindable var researchQuestion: ResearchQuestion
+    
+    // MARK: - State
+    
+    @State private var showingPopover = false
+    @State private var showingCadenceSheet = false
+    @State private var showingReviewWizard = false
+    @StateObject private var notificationService = NotificationService.shared
+    
+    // MARK: - Computed Properties
+    
+    /// The badge display text based on reminder state
+    private var badgeText: String {
+        guard let reminder = researchQuestion.reviewReminder else {
+            return "Set reminder"
+        }
+        
+        if !reminder.isEnabled {
+            return "Reminder off"
+        }
+        
+        if reminder.isSnoozed {
+            return "Snoozed"
+        }
+        
+        guard let days = reminder.daysUntilDue else {
+            return reminder.cadence.displayName
+        }
+        
+        if days < -1 {
+            return "Overdue \(abs(days))d"
+        } else if days == -1 {
+            return "Overdue 1d"
+        } else if days == 0 {
+            return "Due today"
+        } else if days == 1 {
+            return "Review in 1d"
+        } else {
+            return "Review in \(days)d"
+        }
+    }
+    
+    /// Badge color based on reminder state
+    private var badgeColor: Color {
+        guard let reminder = researchQuestion.reviewReminder else {
+            return .gray
+        }
+        
+        if !reminder.isEnabled {
+            return .gray
+        }
+        
+        if reminder.isSnoozed {
+            return .orange
+        }
+        
+        guard let days = reminder.daysUntilDue else {
+            return .green
+        }
+        
+        if days < 0 {
+            return .red // Overdue
+        } else if days == 0 {
+            return .yellow // Due today
+        } else {
+            return .green // Upcoming
+        }
+    }
+    
+    /// Icon name based on reminder state
+    private var iconName: String {
+        guard let reminder = researchQuestion.reviewReminder else {
+            return "bell"
+        }
+        
+        if !reminder.isEnabled {
+            return "bell.slash"
+        }
+        
+        if reminder.isSnoozed {
+            return "moon.zzz.fill"
+        }
+        
+        if reminder.isDue {
+            return "bell.badge.fill"
+        }
+        
+        return "bell"
+    }
+    
+    /// Whether the reminder is due or overdue (for prominent styling)
+    private var isDueOrOverdue: Bool {
+        guard let reminder = researchQuestion.reviewReminder else { return false }
+        return reminder.isEnabled && reminder.isDue
+    }
+    
+    // MARK: - Body
+    
+    var body: some View {
+        Button {
+            showingPopover = true
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: iconName)
+                    .font(.caption2)
+                Text(badgeText)
+                    .font(.caption2)
+                    .fontWeight(isDueOrOverdue ? .semibold : .medium)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .medium))
+            }
+            .padding(.horizontal, isDueOrOverdue ? 8 : 6)
+            .padding(.vertical, isDueOrOverdue ? 4 : 2)
+            .background(badgeColor.opacity(isDueOrOverdue ? 0.2 : 0.15))
+            .foregroundStyle(badgeColor)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .strokeBorder(badgeColor.opacity(isDueOrOverdue ? 0.5 : 0), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showingPopover, arrowEdge: .bottom) {
+            reminderPopoverContent
+        }
+        .sheet(isPresented: $showingCadenceSheet) {
+            CadenceConfigSheet(researchQuestion: researchQuestion)
+        }
+        .sheet(isPresented: $showingReviewWizard) {
+            ReviewWizardView(researchQuestion: researchQuestion) {
+                if let r = researchQuestion.reviewReminder {
+                    notificationService.rescheduleNotification(for: r, researchQuestion: researchQuestion)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Popover Content
+    
+    @ViewBuilder
+    private var reminderPopoverContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header with toggle
+            HStack {
+                Label("Review Reminder", systemImage: "bell")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                Toggle("", isOn: reminderEnabledBinding)
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+            }
+            
+            if let reminder = researchQuestion.reviewReminder, reminder.isEnabled {
+                Divider()
+                
+                // Status info
+                HStack(spacing: 6) {
+                    Image(systemName: iconName)
+                        .font(.body)
+                        .foregroundStyle(badgeColor)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(reminder.statusDescription)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        if let dueDate = reminder.nextReviewDueAt {
+                            Text("Next: \(dueDate.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                
+                // Cadence row
+                HStack {
+                    Label(reminder.cadence.displayName, systemImage: reminder.cadence.iconName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    Spacer()
+                    
+                    Button("Change") {
+                        showingPopover = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            showingCadenceSheet = true
+                        }
+                    }
+                    .font(.caption)
+                    .buttonStyle(.borderless)
+                }
+                
+                // Action buttons when due
+                if reminder.isDue {
+                    Divider()
+                    
+                    VStack(spacing: 8) {
+                        // Start review wizard button
+                        Button {
+                            showingPopover = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                showingReviewWizard = true
+                            }
+                        } label: {
+                            Label("Start Review", systemImage: "wand.and.stars")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        
+                        HStack(spacing: 8) {
+                            // Quick complete
+                            Button {
+                                quickCompleteReview(reminder)
+                                showingPopover = false
+                            } label: {
+                                Label("Quick Complete", systemImage: "checkmark.circle")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            
+                            // Snooze menu
+                            Menu {
+                                Button("1 day") { snooze(reminder, days: 1) }
+                                Button("3 days") { snooze(reminder, days: 3) }
+                                Button("1 week") { snooze(reminder, days: 7) }
+                            } label: {
+                                Label("Snooze", systemImage: "moon.zzz")
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+                    }
+                }
+            } else if researchQuestion.reviewReminder == nil {
+                Divider()
+                
+                Text("No reminder configured")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                Button("Set Up Reminder") {
+                    enableReminder()
+                    showingPopover = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        showingCadenceSheet = true
+                    }
+                }
+                .font(.caption)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            } else {
+                Divider()
+                
+                Text("Reminder disabled")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(12)
+        .frame(width: 260)
+    }
+    
+    // MARK: - Bindings
+    
+    private var reminderEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { researchQuestion.reviewReminder?.isEnabled ?? false },
+            set: { newValue in
+                if newValue {
+                    enableReminder()
+                } else {
+                    disableReminder()
+                }
+            }
+        )
+    }
+    
+    // MARK: - Actions
+    
+    private func enableReminder() {
+        if researchQuestion.reviewReminder == nil {
+            let reminder = ReviewReminder(cadence: .weekly, isEnabled: true)
+            modelContext.insert(reminder)
+            researchQuestion.reviewReminder = reminder
+            
+            notificationService.requestAuthorization { granted in
+                if granted {
+                    notificationService.scheduleNotification(for: reminder, researchQuestion: researchQuestion)
+                }
+            }
+        } else {
+            researchQuestion.reviewReminder?.setEnabled(true)
+            if let reminder = researchQuestion.reviewReminder {
+                notificationService.scheduleNotification(for: reminder, researchQuestion: researchQuestion)
+            }
+        }
+    }
+    
+    private func disableReminder() {
+        if let reminder = researchQuestion.reviewReminder {
+            reminder.setEnabled(false)
+            notificationService.cancelNotification(for: reminder)
+        }
+    }
+    
+    private func quickCompleteReview(_ reminder: ReviewReminder) {
+        reminder.completeReview()
+        notificationService.rescheduleNotification(for: reminder, researchQuestion: researchQuestion)
+        
+        let logEntry = LogEntry.createReviewLog(
+            outcome: ReviewOutcome.reinforce,
+            summary: "Quick review completed - thesis still valid",
+            confidence: researchQuestion.confidenceCurrent
+        )
+        modelContext.insert(logEntry)
+        logEntry.researchQuestion = researchQuestion
+        
+        researchQuestion.lastReviewedAt = Date()
+    }
+    
+    private func snooze(_ reminder: ReviewReminder, days: Int) {
+        reminder.snooze(days: days)
+        notificationService.rescheduleNotification(for: reminder, researchQuestion: researchQuestion)
+    }
+}
+
 // MARK: - Preview
 
-#Preview {
+#Preview("Inline Badge") {
+    let question = ResearchQuestion(
+        questionText: "Can AAPL sustain services revenue growth?",
+        thesisStatement: "Apple's services segment will grow 15%+ annually"
+    )
+    
+    HStack(spacing: 16) {
+        ReviewReminderBadge(researchQuestion: question)
+        Text("Other metadata...")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+    .padding()
+    .modelContainer(for: [ResearchQuestion.self, ReviewReminder.self, LogEntry.self, Driver.self, KillCriteria.self], inMemory: true)
+}
+
+#Preview("Full Card (Legacy)") {
     let question = ResearchQuestion(
         questionText: "Can AAPL sustain services revenue growth?",
         thesisStatement: "Apple's services segment will grow 15%+ annually"
