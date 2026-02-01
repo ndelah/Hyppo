@@ -253,13 +253,13 @@ struct ResearchQuestionDetailView: View {
                     isExpanded: $isKeyDriversExpanded,
                     itemCount: researchQuestion.drivers?.count ?? 0
                 ) {
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .leading, spacing: 6) {
                         ForEach(researchQuestion.topLevelDrivers) { driver in
-                            BulletPoint(text: driver.title)
+                            DriverStatusRow(driver: driver)
                             if let subs = driver.subDrivers, !subs.isEmpty {
                                 ForEach(subs) { sub in
-                                    BulletPoint(text: "→ \(sub.title)", color: .secondary)
-                                        .padding(.leading, 16)
+                                    DriverStatusRow(driver: sub, isSubDriver: true)
+                                        .padding(.leading, 20)
                                 }
                             }
                         }
@@ -578,6 +578,58 @@ private struct BulletPoint: View {
             
             Text(text)
                 .font(.subheadline)
+        }
+    }
+}
+
+// MARK: - Driver Status Row
+
+/// Displays a driver with its validation status indicator
+private struct DriverStatusRow: View {
+    let driver: Driver
+    var isSubDriver: Bool = false
+    
+    /// Color for the driver's current status
+    private var statusColor: Color {
+        switch driver.status {
+        case .confirmed: return .green
+        case .discarded: return .red
+        case .needsRevision: return .orange
+        case .pending: return .gray
+        }
+    }
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            // Status indicator icon
+            Image(systemName: driver.status.iconName)
+                .font(.caption)
+                .foregroundStyle(statusColor)
+                .frame(width: 16)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                // Driver title with sub-driver indicator
+                HStack(spacing: 4) {
+                    if isSubDriver {
+                        Text("→")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    Text(driver.title)
+                        .font(.subheadline)
+                        .strikethrough(driver.status == .discarded, color: .red)
+                        .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
+                }
+                
+                // Status label (only show for non-pending)
+                if driver.status != .pending {
+                    Text(driver.status.displayName)
+                        .font(.caption2)
+                        .foregroundStyle(statusColor)
+                }
+            }
+            
+            Spacer()
         }
     }
 }

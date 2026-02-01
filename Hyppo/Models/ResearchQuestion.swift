@@ -276,6 +276,50 @@ final class ResearchQuestion {
         return parts.joined(separator: " • ")
     }
     
+    // MARK: - Driver Resolution Status
+    
+    /// Returns true if all drivers have been resolved (not pending)
+    var allDriversResolved: Bool {
+        guard let drivers = drivers, !drivers.isEmpty else { return false }
+        return drivers.allSatisfy { $0.status != .pending }
+    }
+    
+    /// Returns the count of confirmed drivers
+    var confirmedDriversCount: Int {
+        drivers?.filter { $0.status == .confirmed }.count ?? 0
+    }
+    
+    /// Returns the count of discarded drivers
+    var discardedDriversCount: Int {
+        drivers?.filter { $0.status == .discarded }.count ?? 0
+    }
+    
+    /// Returns the count of drivers needing revision
+    var revisionNeededDriversCount: Int {
+        drivers?.filter { $0.status == .needsRevision }.count ?? 0
+    }
+    
+    /// Returns the count of pending (untested) drivers
+    var pendingDriversCount: Int {
+        drivers?.filter { $0.status == .pending }.count ?? 0
+    }
+    
+    /// Returns a summary of driver resolution for display
+    var driverResolutionSummary: String {
+        let total = drivers?.count ?? 0
+        guard total > 0 else { return "No assumptions" }
+        
+        let confirmed = confirmedDriversCount
+        let discarded = discardedDriversCount
+        
+        if allDriversResolved {
+            return "\(confirmed) confirmed, \(discarded) discarded"
+        } else {
+            let pending = pendingDriversCount
+            return "\(pending) of \(total) pending"
+        }
+    }
+    
     // MARK: - Methods
     
     /**

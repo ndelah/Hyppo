@@ -223,6 +223,58 @@ enum ReviewOutcome: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - Driver Status
+
+/**
+ Represents the validation status of a key driver in the investment thesis.
+ 
+ Follows McKinsey's hypothesis-driven approach where drivers are tested
+ and either confirmed or discarded as evidence is gathered.
+ */
+enum DriverStatus: String, Codable, CaseIterable, Identifiable {
+    case pending = "Pending"
+    case confirmed = "Confirmed"
+    case discarded = "Discarded"
+    case needsRevision = "NeedsRevision"
+    
+    var id: String { rawValue }
+    
+    /// Display label for the status
+    var displayName: String {
+        switch self {
+        case .pending: return "Pending"
+        case .confirmed: return "Confirmed"
+        case .discarded: return "Discarded"
+        case .needsRevision: return "Needs Revision"
+        }
+    }
+    
+    /// Icon name for visual representation
+    var iconName: String {
+        switch self {
+        case .pending: return "circle.dashed"
+        case .confirmed: return "checkmark.circle.fill"
+        case .discarded: return "xmark.circle.fill"
+        case .needsRevision: return "exclamationmark.circle.fill"
+        }
+    }
+    
+    /// Color identifier for UI theming
+    var colorName: String {
+        switch self {
+        case .pending: return "gray"
+        case .confirmed: return "green"
+        case .discarded: return "red"
+        case .needsRevision: return "orange"
+        }
+    }
+    
+    /// Whether this status represents a resolved (non-pending) state
+    var isResolved: Bool {
+        self != .pending
+    }
+}
+
 // MARK: - Confidence
 
 /**

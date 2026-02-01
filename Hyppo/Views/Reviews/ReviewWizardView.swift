@@ -49,16 +49,35 @@ func reviewOutcomeResearchQuestionStatus(_ outcome: ReviewOutcome) -> ResearchQu
 
 // MARK: - Driver Assessment
 
-/// Tracks assessment of each key driver
+/// Tracks assessment of each key driver during review
 struct DriverAssessment: Identifiable {
     let id: UUID
     let title: String
-    var isStillValid: Bool = true
+    let currentStatus: DriverStatus
+    var newStatus: DriverStatus
     var notes: String = ""
     
     init(driver: Driver) {
         self.id = driver.driverId
         self.title = driver.title
+        self.currentStatus = driver.status
+        // Default to current status, or pending if not yet resolved
+        self.newStatus = driver.status
+    }
+    
+    /// Whether the driver is being marked as confirmed
+    var isConfirmed: Bool {
+        newStatus == .confirmed
+    }
+    
+    /// Whether the driver is being marked as discarded
+    var isDiscarded: Bool {
+        newStatus == .discarded
+    }
+    
+    /// Whether the status changed from the original
+    var statusChanged: Bool {
+        newStatus != currentStatus
     }
 }
 
@@ -83,6 +102,10 @@ struct ReviewWizardView: View {
     @State private var newConfidence: Int = 3
     @State private var overallNotes: String = ""
     @State private var showingConfirmation = false
+    
+    // Conclusion state (shown when all drivers resolved)
+    @State private var conclusionText: String = ""
+    @State private var shouldArchiveAfterConclusion = false
     
     // MARK: - Wizard Steps
     
@@ -133,7 +156,7 @@ struct ReviewWizardView: View {
             // Navigation buttons
             navigationBar
         }
-        .frame(width: 600, height: 550)
+        .frame(width: 600, height: 700)
         .onAppear {
             initializeAssessments()
         }
@@ -314,7 +337,7 @@ struct ReviewWizardView: View {
     
     private var driversStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("For each assumption, assess whether it remains valid:")
+            Text("For each assumption, assess its current status:")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             
@@ -329,13 +352,39 @@ struct ReviewWizardView: View {
                 }
                 
                 // Summary
-                let validCount = driverAssessments.filter { $0.isStillValid }.count
-                HStack {
-                    Spacer()
-                    Text("\(validCount) of \(driverAssessments.count) assumptions still valid")
-                        .font(.caption)
-                        .foregroundStyle(validCount == driverAssessments.count ? .green : .orange)
-                }
+                driverAssessmentSummary
+            }
+        }
+    }
+    
+    /// Summary of driver assessments
+    private var driverAssessmentSummary: some View {
+        let confirmedCount = driverAssessments.filter { $0.newStatus == .confirmed }.count
+        let discardedCount = driverAssessments.filter { $0.newStatus == .discarded }.count
+        let revisionCount = driverAssessments.filter { $0.newStatus == .needsRevision }.count
+        let pendingCount = driverAssessments.filter { $0.newStatus == .pending }.count
+        
+        return HStack(spacing: 16) {
+            Spacer()
+            if confirmedCount > 0 {
+                Label("\(confirmedCount) confirmed", systemImage: "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+            }
+            if discardedCount > 0 {
+                Label("\(discardedCount) discarded", systemImage: "xmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+            if revisionCount > 0 {
+                Label("\(revisionCount) needs revision", systemImage: "exclamationmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+            if pendingCount > 0 {
+                Label("\(pendingCount) pending", systemImage: "circle.dashed")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -462,15 +511,14 @@ struct ReviewWizardView: View {
                     .font(.headline)
                 
                 // Drivers summary
-                let invalidDrivers = driverAssessments.filter { !$0.isStillValid }
+                let confirmedCount = driverAssessments.filter { $0.newStatus == .confirmed }.count
+                let discardedCount = driverAssessments.filter { $0.newStatus == .discarded }.count
                 summaryRow(
                     label: "Assumptions",
                     value: driverAssessments.isEmpty
                         ? "No assumptions defined"
-                        : (invalidDrivers.isEmpty
-                            ? "All \(driverAssessments.count) assumptions valid"
-                            : "\(invalidDrivers.count) of \(driverAssessments.count) no longer valid"),
-                    isWarning: !invalidDrivers.isEmpty
+                        : "\(confirmedCount) confirmed, \(discardedCount) discarded",
+                    isWarning: discardedCount > 0
                 )
                 
                 // Confidence
@@ -490,6 +538,11 @@ struct ReviewWizardView: View {
                 }
             }
             
+            // Research Completion Section (shown when all drivers resolved)
+            if willAllDriversBeResolved {
+                researchCompletionSection
+            }
+            
             // Generated log preview
             VStack(alignment: .leading, spacing: 8) {
                 Text("Log Entry Preview")
@@ -504,6 +557,70 @@ struct ReviewWizardView: View {
                     .background(Color(nsColor: .textBackgroundColor))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
+        }
+    }
+    
+    // MARK: - Research Completion Section
+    
+    /// Section shown when all drivers have been resolved
+    private var researchCompletionSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Completion banner
+            HStack(spacing: 12) {
+                Image(systemName: "flag.checkered")
+                    .font(.title2)
+                    .foregroundStyle(.blue)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Research Complete")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Text("All assumptions have been tested. Consider forming a conclusion.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+            }
+            .padding()
+            .background(Color.blue.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            
+            // Conclusion input
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Conclusion (Optional)")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                TextEditor(text: $conclusionText)
+                    .font(.body)
+                    .frame(height: 80)
+                    .padding(8)
+                    .background(Color(nsColor: .textBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                    )
+                
+                Text("Summarize your findings and investment decision.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            
+            // Archive option
+            Toggle(isOn: $shouldArchiveAfterConclusion) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Archive Research Question")
+                        .font(.subheadline)
+                    Text("Mark this research as complete and archive it")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
+            
+            Divider()
         }
     }
     
@@ -565,13 +682,14 @@ struct ReviewWizardView: View {
     }
     
     private var suggestedOutcome: ReviewOutcome? {
-        let invalidDriverCount = driverAssessments.filter { !$0.isStillValid }.count
+        let discardedCount = driverAssessments.filter { $0.newStatus == .discarded }.count
+        let revisionCount = driverAssessments.filter { $0.newStatus == .needsRevision }.count
         let totalDrivers = driverAssessments.count
         
-        // If more than half of drivers are invalid, suggest invalidation
-        if totalDrivers > 0 && invalidDriverCount > totalDrivers / 2 {
+        // If more than half of drivers are discarded, suggest invalidation
+        if totalDrivers > 0 && discardedCount > totalDrivers / 2 {
             return .invalidate
-        } else if invalidDriverCount > 0 {
+        } else if discardedCount > 0 || revisionCount > 0 {
             return .revise
         } else {
             return .reinforce
@@ -588,6 +706,12 @@ struct ReviewWizardView: View {
         }
     }
     
+    /// Returns true if all drivers will be resolved (non-pending) after this review
+    private var willAllDriversBeResolved: Bool {
+        guard !driverAssessments.isEmpty else { return false }
+        return driverAssessments.allSatisfy { $0.newStatus != .pending }
+    }
+    
     private func generateLogBody() -> String {
         var body = "## Review Outcome: \(selectedOutcome.displayName)\n\n"
         
@@ -595,8 +719,14 @@ struct ReviewWizardView: View {
         if !driverAssessments.isEmpty {
             body += "### Assumptions Assessment\n"
             for assessment in driverAssessments {
-                let status = assessment.isStillValid ? "✅" : "❌"
-                body += "- \(status) \(assessment.title)\n"
+                let statusIcon: String
+                switch assessment.newStatus {
+                case .confirmed: statusIcon = "✅"
+                case .discarded: statusIcon = "❌"
+                case .needsRevision: statusIcon = "⚠️"
+                case .pending: statusIcon = "⏳"
+                }
+                body += "- \(statusIcon) \(assessment.title) (\(assessment.newStatus.displayName))\n"
                 if !assessment.notes.isEmpty {
                     body += "  - Note: \(assessment.notes)\n"
                 }
@@ -634,13 +764,23 @@ struct ReviewWizardView: View {
         logEntry.researchQuestion = researchQuestion
         modelContext.insert(logEntry)
         
+        // Update driver statuses based on assessments
+        updateDriverStatuses()
+        
         // Update research question
         researchQuestion.confidenceCurrent = newConfidence
         researchQuestion.lastReviewedAt = Date()
         
-        // Update status if invalidating
+        // Handle conclusion if provided
+        if !conclusionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            researchQuestion.conclusion = conclusionText
+        }
+        
+        // Update status based on outcome or archive choice
         if selectedOutcome == .invalidate {
             _ = researchQuestion.updateStatus(.invalidated)
+        } else if shouldArchiveAfterConclusion && willAllDriversBeResolved {
+            _ = researchQuestion.updateStatus(.archived)
         }
         
         // Update review reminder if exists
@@ -651,6 +791,17 @@ struct ReviewWizardView: View {
         onComplete()
         dismiss()
     }
+    
+    /// Updates driver statuses based on the assessments made during review
+    private func updateDriverStatuses() {
+        guard let drivers = researchQuestion.drivers else { return }
+        
+        for assessment in driverAssessments {
+            if let driver = drivers.first(where: { $0.driverId == assessment.id }) {
+                driver.status = assessment.newStatus
+            }
+        }
+    }
 }
 
 // MARK: - Driver Assessment Card
@@ -659,22 +810,36 @@ private struct DriverAssessmentCard: View {
     @Binding var assessment: DriverAssessment
     @State private var isExpanded = false
     
+    /// Color for the current status
+    private var statusColor: Color {
+        switch assessment.newStatus {
+        case .confirmed: return .green
+        case .discarded: return .red
+        case .needsRevision: return .orange
+        case .pending: return .gray
+        }
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header row with title and expand button
             HStack {
-                Button {
-                    assessment.isStillValid.toggle()
-                } label: {
-                    Image(systemName: assessment.isStillValid ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(assessment.isStillValid ? .green : .red)
-                }
-                .buttonStyle(.plain)
+                Image(systemName: assessment.newStatus.iconName)
+                    .font(.title2)
+                    .foregroundStyle(statusColor)
                 
                 Text(assessment.title)
                     .font(.subheadline)
+                    .fontWeight(.medium)
                 
                 Spacer()
+                
+                // Show previous status if it was already resolved
+                if assessment.currentStatus != .pending {
+                    Text("was: \(assessment.currentStatus.displayName)")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
                 
                 Button {
                     withAnimation { isExpanded.toggle() }
@@ -686,6 +851,18 @@ private struct DriverAssessmentCard: View {
                 .buttonStyle(.plain)
             }
             
+            // Status picker buttons
+            HStack(spacing: 8) {
+                ForEach([DriverStatus.confirmed, .needsRevision, .discarded, .pending], id: \.self) { status in
+                    StatusButton(
+                        status: status,
+                        isSelected: assessment.newStatus == status,
+                        action: { assessment.newStatus = status }
+                    )
+                }
+            }
+            
+            // Expandable notes
             if isExpanded {
                 TextField("Add notes...", text: $assessment.notes, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
@@ -693,8 +870,49 @@ private struct DriverAssessmentCard: View {
             }
         }
         .padding()
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(statusColor.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(statusColor.opacity(0.3), lineWidth: 1)
+        )
+    }
+}
+
+/// Button for selecting a driver status
+private struct StatusButton: View {
+    let status: DriverStatus
+    let isSelected: Bool
+    let action: () -> Void
+    
+    private var statusColor: Color {
+        switch status {
+        case .confirmed: return .green
+        case .discarded: return .red
+        case .needsRevision: return .orange
+        case .pending: return .gray
+        }
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: status.iconName)
+                    .font(.caption)
+                Text(status.displayName)
+                    .font(.caption2)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(isSelected ? statusColor : Color(nsColor: .controlBackgroundColor))
+            .foregroundStyle(isSelected ? .white : statusColor)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(statusColor.opacity(isSelected ? 0 : 0.5), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 

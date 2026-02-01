@@ -24,6 +24,9 @@ final class Driver {
     /// Ordering among siblings
     var position: Int
     
+    /// Raw status value for persistence
+    var statusRaw: String
+    
     // MARK: - Relationships
     
     /// Parent research question
@@ -57,6 +60,7 @@ final class Driver {
         self.driverDescription = driverDescription?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.position = position
         self.parentDriver = parentDriver
+        self.statusRaw = DriverStatus.pending.rawValue
         self.createdAt = Date()
         self.updatedAt = Date()
     }
@@ -71,6 +75,20 @@ final class Driver {
     /// Returns true if this is a top-level driver (no parent)
     var isTopLevel: Bool {
         parentDriver == nil
+    }
+    
+    /// Status as enum (confirmed, discarded, needs revision, or pending)
+    var status: DriverStatus {
+        get { DriverStatus(rawValue: statusRaw) ?? .pending }
+        set {
+            statusRaw = newValue.rawValue
+            updatedAt = Date()
+        }
+    }
+    
+    /// Returns true if the driver has been resolved (not pending)
+    var isResolved: Bool {
+        status.isResolved
     }
     
     /// Count of evidence items directly attached to this driver
