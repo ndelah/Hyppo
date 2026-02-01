@@ -4,8 +4,7 @@
  
  Features:
  - Overall conviction meter with health score
- - Per-driver evidence breakdown table
- - Dedicated Blind Spot alerts section with actionable items
+ - Per-driver evidence breakdown table with status indicators (including blind spots)
  - Recent contradicting evidence highlights
  - Compact mode for embedding in review wizard
  */
@@ -176,11 +175,6 @@ struct ConvictionHealthView: View {
             headerSection
             
             if !isCompact {
-                // Blind Spots Section (prominent placement)
-                if summary.blindSpotCount > 0 {
-                    blindSpotsSection
-                }
-                
                 // Detailed driver breakdown
                 driverBreakdownSection
                 
@@ -288,86 +282,6 @@ struct ConvictionHealthView: View {
             Text("\(count) \(label)")
                 .foregroundStyle(.secondary)
         }
-    }
-    
-    // MARK: - Blind Spots Section (Dedicated)
-    
-    private var blindSpotsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Section header
-            HStack(spacing: 8) {
-                Image(systemName: "eye.slash.fill")
-                    .foregroundStyle(.orange)
-                Text("Blind Spots (\(summary.blindSpotCount))")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                
-                Spacer()
-                
-                Text("\(Int(summary.blindSpotPercentage))% of assumptions")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            
-            // Blind spot list
-            VStack(spacing: 8) {
-                ForEach(summary.driversWithBlindSpots) { driver in
-                    blindSpotRow(driver)
-                }
-            }
-            
-            // Action suggestion
-            HStack(spacing: 6) {
-                Image(systemName: "lightbulb.fill")
-                    .foregroundStyle(.yellow)
-                Text("Tip: Gather evidence for these assumptions to validate your thesis.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(10)
-            .background(Color.yellow.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-        }
-        .padding(12)
-        .background(Color.orange.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.orange.opacity(0.2), lineWidth: 1)
-        )
-    }
-    
-    private func blindSpotRow(_ driver: Driver) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.caption)
-                .foregroundStyle(.orange)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(driver.title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                
-                if let validationQ = driver.validationQuestion, !validationQ.isEmpty {
-                    Text("Q: \(validationQ)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-            
-            Spacer()
-            
-            // Sub-driver count
-            if let subs = driver.subDrivers, !subs.isEmpty {
-                Text("\(subs.count) sub")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
-        }
-        .padding(10)
-        .background(Color(nsColor: .windowBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
     
     // MARK: - Driver Breakdown Section
