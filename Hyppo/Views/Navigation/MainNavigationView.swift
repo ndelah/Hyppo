@@ -89,7 +89,7 @@ struct MainNavigationView: View {
                     }
                 }
                 .sheet(isPresented: $showingAddQuestionFromDetail) {
-                    ResearchQuestionFormView(mode: .add, asset: asset) { newQuestion in
+                    ResearchWizardView(asset: asset) { newQuestion in
                         modelContext.insert(newQuestion)
                         newQuestion.asset = asset
                         selectedResearchQuestion = newQuestion

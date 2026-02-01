@@ -1,8 +1,11 @@
 /**
- ResearchQuestionFormView provides a form for creating or editing a research question.
+ ResearchQuestionFormView provides a form for editing a research question.
  
- Includes thesis statement, key drivers, invalidation rules, scenarios,
- and optional fields like catalysts, risks, and pre-mortem.
+ Note: For creating new research questions, use ResearchWizardView instead.
+ This form is now primarily used for editing existing questions.
+ 
+ Includes thesis statement, key drivers, scenarios, and optional fields
+ like catalysts, risks, and pre-mortem.
  */
 
 import SwiftUI
@@ -15,8 +18,8 @@ enum ResearchQuestionFormMode {
     
     var title: String {
         switch self {
-        case .add: return "Add Research Question"
-        case .edit: return "Edit Research Question"
+        case .add: return "Add Research"
+        case .edit: return "Edit Research"
         }
     }
     
@@ -43,9 +46,10 @@ struct ResearchQuestionFormView: View {
     
     // MARK: - State
     
-    @State private var questionText: String = ""
-    @State private var context: String = ""
-    @State private var thesisStatement: String = ""
+    /// Investment Thesis - the core belief being tested (maps to questionText for model compatibility)
+    @State private var investmentThesis: String = ""
+    /// Why This Matters - background context for the research
+    @State private var whyThisMatters: String = ""
     @State private var drivers: [DriverDTO] = []
     @State private var scenarios: [SimpleScenario] = []
     @State private var catalysts: [String] = []
@@ -54,7 +58,6 @@ struct ResearchQuestionFormView: View {
     @State private var confidence: Int? = nil
     @State private var priority: Int? = nil
     @State private var validationErrors: [String] = []
-    @State private var showingWizard: Bool = false
     
     // MARK: - Initialization
     
@@ -65,9 +68,9 @@ struct ResearchQuestionFormView: View {
         
         // Pre-populate for edit mode
         if case .edit(let question) = mode {
-            _questionText = State(initialValue: question.questionText)
-            _context = State(initialValue: question.context ?? "")
-            _thesisStatement = State(initialValue: question.thesisStatement ?? "")
+            // Use thesisStatement if available, otherwise fall back to questionText for backwards compat
+            _investmentThesis = State(initialValue: question.thesisStatement ?? question.questionText)
+            _whyThisMatters = State(initialValue: question.context ?? "")
             _scenarios = State(initialValue: question.scenarios)
             
             let dtos = (question.drivers ?? []).filter { $0.parentDriver == nil }.map { d in
@@ -99,7 +102,7 @@ struct ResearchQuestionFormView: View {
     // MARK: - Computed Properties
     
     private var isValid: Bool {
-        !questionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !investmentThesis.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
     // MARK: - Body
@@ -113,12 +116,12 @@ struct ResearchQuestionFormView: View {
             
             // Form content
             ScrollView(.vertical, showsIndicators: true) {
-                VStack(alignment: .leading, spacing: 16) {
-                    // Core question section
-                    coreQuestionSection
+                VStack(alignment: .leading, spacing: 20) {
+                    // Investment Thesis section (primary - the title)
+                    investmentThesisSection
                     
-                    // Thesis statement section
-                    thesisStatementSection
+                    // Why This Matters section (context)
+                    whyThisMattersSection
                     
                     // Key drivers section
                     VStack(alignment: .leading, spacing: 8) {
@@ -154,44 +157,33 @@ struct ResearchQuestionFormView: View {
                 .font(.headline)
             
             Spacer()
-            
-            // Show "Start with Wizard" button only for add mode when asset is available
-            if case .add = mode, let asset = asset {
-                Button {
-                    showingWizard = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "wand.and.stars")
-                        Text("Start with Wizard")
-                    }
-                    .font(.caption)
-                }
-                .buttonStyle(.bordered)
-                .help("Use the guided wizard for structured research creation")
-                .sheet(isPresented: $showingWizard) {
-                    ResearchWizardView(asset: asset) { newQuestion in
-                        onSave(newQuestion)
-                        dismiss()
-                    }
-                }
-            }
         }
         .padding()
     }
     
-    private var coreQuestionSection: some View {
+    private var investmentThesisSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Research Question")
-                .font(.headline)
+            HStack {
+                Text("Investment Thesis")
+                    .font(.headline)
+                Text("*")
+                    .foregroundStyle(.red)
+            }
             
-            TextField("e.g., Can AAPL sustain services revenue growth?", text: $questionText, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(2...4)
-            
-            TextField("Context (optional): Why does this question matter?", text: $context, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(2...4)
+            Text("What must be true for this investment to work?")
+                .font(.caption)
                 .foregroundStyle(.secondary)
+            
+            TextEditor(text: $investmentThesis)
+                .font(.body)
+                .frame(minHeight: 80)
+                .padding(4)
+                .background(Color(nsColor: .textBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                )
             
             HStack(spacing: 8) {
                 Text("Priority")
@@ -211,18 +203,18 @@ struct ResearchQuestionFormView: View {
         }
     }
     
-    private var thesisStatementSection: some View {
+    private var whyThisMattersSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Thesis Statement")
+            Text("Why This Matters")
                 .font(.headline)
             
-            Text("What must be true for this investment to work?")
+            Text("What makes this worth investigating? What's the background?")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
-            TextEditor(text: $thesisStatement)
+            TextEditor(text: $whyThisMatters)
                 .font(.body)
-                .frame(minHeight: 80)
+                .frame(minHeight: 60)
                 .padding(4)
                 .background(Color(nsColor: .textBackgroundColor))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
@@ -397,21 +389,22 @@ struct ResearchQuestionFormView: View {
         // Validate
         validationErrors.removeAll()
         
-        let trimmedQuestion = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedThesis = investmentThesis.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedContext = whyThisMatters.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        if trimmedQuestion.isEmpty {
-            validationErrors.append("Question text is required")
+        if trimmedThesis.isEmpty {
+            validationErrors.append("Investment thesis is required")
             return
         }
         
-        let trimmedThesis = thesisStatement.trimmingCharacters(in: .whitespacesAndNewlines)
-        
         // Create or update
+        // Note: thesis maps to both questionText (for backwards compat/title) and thesisStatement
         switch mode {
         case .add:
             let question = ResearchQuestion(
-                questionText: trimmedQuestion,
-                thesisStatement: trimmedThesis.isEmpty ? nil : trimmedThesis,
+                questionText: trimmedThesis,
+                context: trimmedContext.isEmpty ? nil : trimmedContext,
+                thesisStatement: trimmedThesis,
                 confidence: confidence,
                 priority: priority
             )
@@ -420,9 +413,9 @@ struct ResearchQuestionFormView: View {
             
         case .edit(let question):
             question.update(
-                questionText: trimmedQuestion,
-                context: nil,
-                thesisStatement: trimmedThesis.isEmpty ? nil : trimmedThesis,
+                questionText: trimmedThesis,
+                context: trimmedContext.isEmpty ? nil : trimmedContext,
+                thesisStatement: trimmedThesis,
                 confidence: confidence,
                 priority: priority
             )
@@ -556,9 +549,9 @@ struct EditableListSection: View {
 
 #Preview("Edit Mode") {
     let question = ResearchQuestion(
-        questionText: "Can AAPL sustain services revenue growth?",
-        context: "Services now represent 20% of revenue",
-        thesisStatement: "Apple's services segment will grow 15%+ annually",
+        questionText: "Apple's services segment will compound at 15%+ annually through 2028",
+        context: "Services now represent 20% of revenue with higher margins than hardware",
+        thesisStatement: "Apple's services segment will compound at 15%+ annually through 2028",
         priority: 4
     )
     ResearchQuestionFormView(mode: .edit(question)) { _ in }

@@ -1,9 +1,9 @@
 /**
- ResearchWizardView provides a guided 2-step wizard for creating research questions
+ ResearchWizardView provides a guided 2-step wizard for creating research
  following the McKinsey Mind framework.
  
  Steps:
- 1. Frame the Problem - Define question, hypothesis, and core assumptions (2+ required)
+ 1. Frame the Problem - Define investment thesis, context, and key assumptions
  2. Review & Save - Confirm the structured research plan before saving
  */
 
@@ -29,14 +29,20 @@ struct ResearchWizardView: View {
     @State private var validationMessage = ""
     
     // Step 1: Frame the Problem
-    @State private var questionText: String = ""
-    @State private var thesisStatement: String = ""
+    /// Investment Thesis - the core belief being tested (maps to questionText for model compatibility)
+    @State private var investmentThesis: String = ""
+    /// Why This Matters - background context for the research
+    @State private var whyThisMatters: String = ""
     @State private var drivers: [DriverDTO] = [
-        DriverDTO(title: ""),
         DriverDTO(title: "")
     ]
     
     @State private var selectedDriverId: UUID?
+    
+    /// Confidence level for the research question (1-5 scale)
+    @State private var confidence: Int? = nil
+    /// Priority level for the research question (1-5 scale)
+    @State private var priority: Int? = nil
     
     // MARK: - Initialization
     
@@ -47,8 +53,11 @@ struct ResearchWizardView: View {
         
         // Pre-populate if editing
         if let question = existingQuestion {
-            _questionText = State(initialValue: question.questionText)
-            _thesisStatement = State(initialValue: question.thesisStatement ?? "")
+            // Use thesisStatement if available, otherwise fall back to questionText for backwards compat
+            _investmentThesis = State(initialValue: question.thesisStatement ?? question.questionText)
+            _whyThisMatters = State(initialValue: question.context ?? "")
+            _confidence = State(initialValue: question.confidenceCurrent)
+            _priority = State(initialValue: question.priority)
             
             let dtos = (question.drivers ?? []).filter { $0.parentDriver == nil }.map { d in
                 DriverDTO(
@@ -69,7 +78,7 @@ struct ResearchWizardView: View {
                     }
                 )
             }
-            if dtos.count >= 2 {
+            if !dtos.isEmpty {
                 _drivers = State(initialValue: dtos)
             }
         }
@@ -78,9 +87,8 @@ struct ResearchWizardView: View {
     // MARK: - Computed Properties
     
     private var isStep1Valid: Bool {
-        let trimmedQuestion = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let validDrivers = drivers.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        return !trimmedQuestion.isEmpty && validDrivers.count >= 2
+        let trimmedThesis = investmentThesis.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmedThesis.isEmpty
     }
     
     private var validDriversForDesign: [DriverDTO] {
@@ -113,7 +121,7 @@ struct ResearchWizardView: View {
             // Footer
             footerView
         }
-        .frame(width: 750, height: 650)
+        .frame(width: 750, height: 800)
         .alert("Validation Required", isPresented: $showValidationError) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -199,36 +207,43 @@ struct ResearchWizardView: View {
                         .fontWeight(.bold)
                 }
                 
-                Text("Define the core research question, your hypothesis, and the key assumptions that must be true.")
+                Text("Define your investment thesis, why it matters, and the key assumptions that must be true.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
             
-            // Research Question
+            // Investment Thesis
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Research Question")
+                    Text("Investment Thesis")
                         .font(.headline)
                     Text("*")
                         .foregroundStyle(.red)
                 }
                 
-                TextField("e.g., Can NVIDIA maintain 80%+ data center GPU market share through 2027?", text: $questionText, axis: .vertical)
-                    .textFieldStyle(.roundedBorder)
-                    .lineLimit(2...4)
-            }
-            
-            // Thesis Statement
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Hypothesis (Thesis Statement)")
-                    .font(.headline)
-                
                 Text("What must be true for this investment to work?")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
-                TextEditor(text: $thesisStatement)
+                TextEditor(text: $investmentThesis)
                     .frame(minHeight: 80, maxHeight: 120)
+                    .padding(8)
+                    .background(Color(nsColor: .textBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(nsColor: .separatorColor)))
+            }
+            
+            // Why This Matters
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Why This Matters")
+                    .font(.headline)
+                
+                Text("What makes this worth investigating? What's the background?")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                TextEditor(text: $whyThisMatters)
+                    .frame(minHeight: 60, maxHeight: 100)
                     .padding(8)
                     .background(Color(nsColor: .textBackgroundColor))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -237,41 +252,76 @@ struct ResearchWizardView: View {
             
             // Key Assumptions (Drivers)
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Key Assumptions")
-                        .font(.headline)
-                    Text("*")
-                        .foregroundStyle(.red)
-                    Text("(minimum 2)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text("Key Assumptions")
+                    .font(.headline)
                 
                 DriverOutlineView(
                     drivers: $drivers,
-                    prompt: "What assumptions must be true for this hypothesis to hold?"
+                    prompt: "What assumptions must be true for this thesis to hold?"
                 )
                 
-                // Validation hint
+                // Status hint
                 let validCount = validDriversForDesign.count
-                if validCount < 2 {
-                    HStack(spacing: 6) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
-                        Text("Add at least \(2 - validCount) more assumption\(validCount == 1 ? "" : "s") to proceed.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.top, 4)
-                } else {
+                if validCount > 0 {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
-                        Text("\(validCount) assumptions defined")
+                        Text("\(validCount) assumption\(validCount == 1 ? "" : "s") defined")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     .padding(.top, 4)
+                }
+            }
+            
+            // Confidence & Priority
+            HStack(spacing: 24) {
+                // Confidence Level
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Confidence Level")
+                        .font(.headline)
+                    
+                    HStack(spacing: 8) {
+                        ForEach(ConfidenceLevel.allCases, id: \.rawValue) { level in
+                            Button {
+                                if confidence == level.rawValue {
+                                    confidence = nil
+                                } else {
+                                    confidence = level.rawValue
+                                }
+                            } label: {
+                                VStack(spacing: 4) {
+                                    Image(systemName: (confidence ?? 0) >= level.rawValue ? "star.fill" : "star")
+                                        .font(.body)
+                                    Text(level.displayName)
+                                        .font(.caption2)
+                                }
+                                .frame(width: 60, height: 44)
+                                .background(confidence == level.rawValue ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                                .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? .orange : .primary))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                // Priority
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Priority")
+                        .font(.headline)
+                    
+                    Picker("Priority", selection: $priority) {
+                        Text("None").tag(nil as Int?)
+                        ForEach(1...5, id: \.self) { level in
+                            Text("\(level)/5").tag(level as Int?)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(width: 220)
                 }
             }
         }
@@ -299,16 +349,16 @@ struct ResearchWizardView: View {
             
             // Summary Card
             VStack(alignment: .leading, spacing: 20) {
-                // Question & Thesis
+                // Thesis & Context
                 VStack(alignment: .leading, spacing: 12) {
-                    reviewSection(icon: "questionmark.circle.fill", title: "Research Question", color: .blue) {
-                        Text(questionText)
+                    reviewSection(icon: "lightbulb.fill", title: "Investment Thesis", color: .blue) {
+                        Text(investmentThesis)
                             .font(.subheadline)
                     }
                     
-                    if !thesisStatement.isEmpty {
-                        reviewSection(icon: "lightbulb.fill", title: "Hypothesis", color: .yellow) {
-                            Text(thesisStatement)
+                    if !whyThisMatters.isEmpty {
+                        reviewSection(icon: "info.circle.fill", title: "Why This Matters", color: .secondary) {
+                            Text(whyThisMatters)
                                 .font(.subheadline)
                         }
                     }
@@ -317,44 +367,65 @@ struct ResearchWizardView: View {
                 Divider()
                 
                 // Assumptions
-                reviewSection(icon: "target", title: "Key Assumptions (\(validDriversForDesign.count))", color: .green) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(Array(validDriversForDesign.enumerated()), id: \.element.id) { index, driver in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("\(index + 1). \(driver.title)")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                
-                                if !driver.validationQuestion.isEmpty {
-                                    HStack(alignment: .top, spacing: 4) {
-                                        Text("Q:")
+                if !validDriversForDesign.isEmpty {
+                    reviewSection(icon: "target", title: "Key Assumptions (\(validDriversForDesign.count))", color: .green) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(Array(validDriversForDesign.enumerated()), id: \.element.id) { index, driver in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("\(index + 1). \(driver.title)")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                    
+                                    if !driver.validationQuestion.isEmpty {
+                                        HStack(alignment: .top, spacing: 4) {
+                                            Text("Q:")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                            Text(driver.validationQuestion)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                    
+                                    if !driver.proofThreshold.isEmpty {
+                                        HStack(alignment: .top, spacing: 4) {
+                                            Text("Threshold:")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                            Text(driver.proofThreshold)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                    
+                                    // Sub-drivers
+                                    ForEach(driver.subDrivers.filter { !$0.title.isEmpty }) { sub in
+                                        Text("  → \(sub.title)")
                                             .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                        Text(driver.validationQuestion)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(.tertiary)
                                     }
                                 }
-                                
-                                if !driver.proofThreshold.isEmpty {
-                                    HStack(alignment: .top, spacing: 4) {
-                                        Text("Threshold:")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                        Text(driver.proofThreshold)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                                
-                                // Sub-drivers
-                                ForEach(driver.subDrivers.filter { !$0.title.isEmpty }) { sub in
-                                    Text("  → \(sub.title)")
-                                        .font(.caption)
-                                        .foregroundStyle(.tertiary)
-                                }
+                                .padding(.vertical, 4)
                             }
-                            .padding(.vertical, 4)
+                        }
+                    }
+                    
+                    Divider()
+                }
+                
+                // Confidence & Priority
+                HStack(spacing: 24) {
+                    if let conf = confidence, let level = ConfidenceLevel(rawValue: conf) {
+                        reviewSection(icon: "star.fill", title: "Confidence", color: .orange) {
+                            Text(level.displayName)
+                                .font(.subheadline)
+                        }
+                    }
+                    
+                    if let pri = priority {
+                        reviewSection(icon: "flag.fill", title: "Priority", color: .purple) {
+                            Text("\(pri)/5")
+                                .font(.subheadline)
                         }
                     }
                 }
@@ -390,8 +461,9 @@ struct ResearchWizardView: View {
                 .fontWeight(.medium)
             
             HStack(spacing: 12) {
-                checklistItem(passed: !questionText.isEmpty, text: "Research question defined")
-                checklistItem(passed: validDriversForDesign.count >= 2, text: "2+ assumptions")
+                checklistItem(passed: !investmentThesis.isEmpty, text: "Investment thesis defined")
+                checklistItem(passed: !validDriversForDesign.isEmpty, text: "Assumptions added")
+                checklistItem(passed: confidence != nil, text: "Confidence set")
             }
         }
         .padding()
@@ -468,13 +540,8 @@ struct ResearchWizardView: View {
     private func validateCurrentStep() -> Bool {
         switch currentStep {
         case 1:
-            if questionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                validationMessage = "Please enter a research question."
-                showValidationError = true
-                return false
-            }
-            if validDriversForDesign.count < 2 {
-                validationMessage = "Please define at least 2 key assumptions."
+            if investmentThesis.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                validationMessage = "Please enter your investment thesis."
                 showValidationError = true
                 return false
             }
@@ -489,15 +556,18 @@ struct ResearchWizardView: View {
     
     private func save() {
         let rq: ResearchQuestion
+        let trimmedThesis = investmentThesis.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedContext = whyThisMatters.trimmingCharacters(in: .whitespacesAndNewlines)
         
         if let existing = existingQuestion {
             // Update existing
+            // Note: thesis maps to both questionText (for backwards compat/title) and thesisStatement
             existing.update(
-                questionText: questionText,
-                context: nil,
-                thesisStatement: thesisStatement.isEmpty ? nil : thesisStatement,
-                confidence: nil,
-                priority: nil
+                questionText: trimmedThesis,
+                context: trimmedContext.isEmpty ? nil : trimmedContext,
+                thesisStatement: trimmedThesis,
+                confidence: confidence,
+                priority: priority
             )
             
             // Clear existing drivers
@@ -506,9 +576,13 @@ struct ResearchWizardView: View {
             rq = existing
         } else {
             // Create new
+            // Note: thesis maps to both questionText (for backwards compat/title) and thesisStatement
             rq = ResearchQuestion(
-                questionText: questionText,
-                thesisStatement: thesisStatement.isEmpty ? nil : thesisStatement
+                questionText: trimmedThesis,
+                context: trimmedContext.isEmpty ? nil : trimmedContext,
+                thesisStatement: trimmedThesis,
+                confidence: confidence,
+                priority: priority
             )
             rq.asset = asset
         }
