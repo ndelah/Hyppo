@@ -41,8 +41,6 @@ struct ResearchWizardView: View {
     
     /// Confidence level for the research question (1-5 scale)
     @State private var confidence: Int? = nil
-    /// Priority level for the research question (1-5 scale)
-    @State private var priority: Int? = nil
     
     // MARK: - Initialization
     
@@ -57,7 +55,6 @@ struct ResearchWizardView: View {
             _investmentThesis = State(initialValue: question.thesisStatement ?? question.questionText)
             _whyThisMatters = State(initialValue: question.context ?? "")
             _confidence = State(initialValue: question.confidenceCurrent)
-            _priority = State(initialValue: question.priority)
             
             let dtos = (question.drivers ?? []).filter { $0.parentDriver == nil }.map { d in
                 DriverDTO(
@@ -274,54 +271,33 @@ struct ResearchWizardView: View {
                 }
             }
             
-            // Confidence & Priority
-            HStack(spacing: 24) {
-                // Confidence Level
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Confidence Level")
-                        .font(.headline)
-                    
-                    HStack(spacing: 8) {
-                        ForEach(ConfidenceLevel.allCases, id: \.rawValue) { level in
-                            Button {
-                                if confidence == level.rawValue {
-                                    confidence = nil
-                                } else {
-                                    confidence = level.rawValue
-                                }
-                            } label: {
-                                VStack(spacing: 4) {
-                                    Image(systemName: (confidence ?? 0) >= level.rawValue ? "star.fill" : "star")
-                                        .font(.body)
-                                    Text(level.displayName)
-                                        .font(.caption2)
-                                }
-                                .frame(width: 60, height: 44)
-                                .background(confidence == level.rawValue ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
-                                .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? .orange : .primary))
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+            // Confidence Level
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Confidence Level")
+                    .font(.headline)
+                
+                HStack(spacing: 8) {
+                    ForEach(ConfidenceLevel.allCases, id: \.rawValue) { level in
+                        Button {
+                            if confidence == level.rawValue {
+                                confidence = nil
+                            } else {
+                                confidence = level.rawValue
                             }
-                            .buttonStyle(.plain)
+                        } label: {
+                            VStack(spacing: 4) {
+                                Image(systemName: (confidence ?? 0) >= level.rawValue ? "star.fill" : "star")
+                                    .font(.body)
+                                Text(level.displayName)
+                                    .font(.caption2)
+                            }
+                            .frame(width: 60, height: 44)
+                            .background(confidence == level.rawValue ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                            .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? .orange : .primary))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
+                        .buttonStyle(.plain)
                     }
-                }
-                
-                Spacer()
-                
-                // Priority
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Priority")
-                        .font(.headline)
-                    
-                    Picker("Priority", selection: $priority) {
-                        Text("None").tag(nil as Int?)
-                        ForEach(1...5, id: \.self) { level in
-                            Text("\(level)/5").tag(level as Int?)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .frame(width: 220)
                 }
             }
         }
@@ -413,20 +389,11 @@ struct ResearchWizardView: View {
                     Divider()
                 }
                 
-                // Confidence & Priority
-                HStack(spacing: 24) {
-                    if let conf = confidence, let level = ConfidenceLevel(rawValue: conf) {
-                        reviewSection(icon: "star.fill", title: "Confidence", color: .orange) {
-                            Text(level.displayName)
-                                .font(.subheadline)
-                        }
-                    }
-                    
-                    if let pri = priority {
-                        reviewSection(icon: "flag.fill", title: "Priority", color: .purple) {
-                            Text("\(pri)/5")
-                                .font(.subheadline)
-                        }
+                // Confidence
+                if let conf = confidence, let level = ConfidenceLevel(rawValue: conf) {
+                    reviewSection(icon: "star.fill", title: "Confidence", color: .orange) {
+                        Text(level.displayName)
+                            .font(.subheadline)
                     }
                 }
                 
@@ -566,8 +533,7 @@ struct ResearchWizardView: View {
                 questionText: trimmedThesis,
                 context: trimmedContext.isEmpty ? nil : trimmedContext,
                 thesisStatement: trimmedThesis,
-                confidence: confidence,
-                priority: priority
+                confidence: confidence
             )
             
             // Clear existing drivers
@@ -581,8 +547,7 @@ struct ResearchWizardView: View {
                 questionText: trimmedThesis,
                 context: trimmedContext.isEmpty ? nil : trimmedContext,
                 thesisStatement: trimmedThesis,
-                confidence: confidence,
-                priority: priority
+                confidence: confidence
             )
             rq.asset = asset
         }

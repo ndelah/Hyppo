@@ -5,7 +5,6 @@
 - **Research Question**: Will the transition to High-NA EUV lithography secure ASML's dominance and 20%+ earnings CAGR through 2030?
 - **Context**: ASML is the sole provider of EUV (Extreme Ultraviolet) lithography machines. The next generation, High-NA (High Numerical Aperture), is significantly more expensive ($350M+ per unit) and complex. Success depends on TSMC, Intel, and Samsung finding it economically viable for 2nm nodes and beyond.
 - **Thesis Statement**: ASML's High-NA EUV is the only viable path for Moore's Law progression. Despite high costs, the yield improvements and reduction in multi-patterning steps will make it the "standard" for leading-edge logic and DRAM, maintaining ASML's 100% market share in the most profitable segment of the WFE (Wafer Fab Equipment) market.
-- **Priority**: 5/5
 - **Confidence Level**: High (4/5)
 - **Status**: Active
 

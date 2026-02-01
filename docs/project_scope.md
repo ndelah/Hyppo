@@ -141,8 +141,8 @@ Asset (1) ───────────────────────�
 
 **Fields required (UI + backend)**
 - **ResearchQuestion**
-  - UI: questionText (required), context (optional), thesisStatement (required), priority (optional 1–5), status (default Open).
-  - Backend: questionId, assetId, questionText, context, thesisStatement, statusRaw, conclusion, priority, createdAt, updatedAt.
+  - UI: questionText (required), context (optional), thesisStatement (required), status (default Open).
+  - Backend: questionId, assetId, questionText, context, thesisStatement, statusRaw, conclusion, createdAt, updatedAt.
 - **Driver**
   - UI: text (required), context (optional), validationQuestions (optional list), dataSources (optional list), thresholds (optional list).
   - Backend: driverId, researchQuestionId, parentDriverId (for sub-drivers), text, context, validationQuestionsData, dataSourcesData, thresholdsData, createdAt, updatedAt.

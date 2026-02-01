@@ -126,9 +126,6 @@ final class ResearchQuestion {
     /// Raw status value for persistence
     var statusRaw: String
     
-    /// Priority level (1-5)
-    var priority: Int?
-    
     /// Version number for tracking updates
     var versionNumber: Int
     
@@ -209,14 +206,12 @@ final class ResearchQuestion {
        - keyRisks: Optional list of key risks
        - scenarios: Optional list of simple scenarios (bull/base/bear outcomes)
        - confidence: Optional confidence level (1-5)
-       - priority: Optional priority level (1-5)
      */
     init(
         questionText: String,
         context: String? = nil,
         thesisStatement: String? = nil,
-        confidence: Int? = nil,
-        priority: Int? = nil
+        confidence: Int? = nil
     ) {
         self.questionId = UUID()
         self.questionText = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -224,7 +219,6 @@ final class ResearchQuestion {
         self.thesisStatement = thesisStatement?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.confidenceCurrent = confidence
         self.statusRaw = ResearchQuestionStatus.active.rawValue
-        self.priority = priority
         self.versionNumber = 1
         self.createdAt = Date()
         self.updatedAt = Date()
@@ -297,20 +291,17 @@ final class ResearchQuestion {
        - keyRisks: Updated key risks
        - scenarios: Updated scenarios
        - confidence: Updated confidence level
-       - priority: Updated priority level
      */
     func update(
         questionText: String,
         context: String?,
         thesisStatement: String?,
-        confidence: Int?,
-        priority: Int?
+        confidence: Int?
     ) {
         self.questionText = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
         self.context = context?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.thesisStatement = thesisStatement?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.confidenceCurrent = confidence
-        self.priority = priority
         self.versionNumber += 1
         self.updatedAt = Date()
         self.lastUpdatedAt = Date()
@@ -411,10 +402,6 @@ extension ResearchQuestion {
         
         if questionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             errors.append("Question text is required")
-        }
-        
-        if let priority = priority, (priority < 1 || priority > 5) {
-            errors.append("Priority must be between 1 and 5")
         }
         
         if let confidence = confidenceCurrent, (confidence < 1 || confidence > 5) {

@@ -56,7 +56,6 @@ struct ResearchQuestionFormView: View {
     @State private var keyRisks: [String] = []
     @State private var preMortemText: String = ""
     @State private var confidence: Int? = nil
-    @State private var priority: Int? = nil
     @State private var validationErrors: [String] = []
     
     // MARK: - Initialization
@@ -95,7 +94,6 @@ struct ResearchQuestionFormView: View {
             _drivers = State(initialValue: dtos)
             
             _confidence = State(initialValue: question.confidenceCurrent)
-            _priority = State(initialValue: question.priority)
         }
     }
     
@@ -184,22 +182,6 @@ struct ResearchQuestionFormView: View {
                     RoundedRectangle(cornerRadius: 6)
                         .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                 )
-            
-            HStack(spacing: 8) {
-                Text("Priority")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                Picker("Priority", selection: $priority) {
-                    Text("None").tag(nil as Int?)
-                    ForEach(1...5, id: \.self) { level in
-                        Text("\(level)/5").tag(level as Int?)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 260)
-            }
         }
     }
     
@@ -405,8 +387,7 @@ struct ResearchQuestionFormView: View {
                 questionText: trimmedThesis,
                 context: trimmedContext.isEmpty ? nil : trimmedContext,
                 thesisStatement: trimmedThesis,
-                confidence: confidence,
-                priority: priority
+                confidence: confidence
             )
             saveDrivers(to: question)
             onSave(question)
@@ -416,8 +397,7 @@ struct ResearchQuestionFormView: View {
                 questionText: trimmedThesis,
                 context: trimmedContext.isEmpty ? nil : trimmedContext,
                 thesisStatement: trimmedThesis,
-                confidence: confidence,
-                priority: priority
+                confidence: confidence
             )
             
             // Clear existing and re-save
@@ -551,8 +531,7 @@ struct EditableListSection: View {
     let question = ResearchQuestion(
         questionText: "Apple's services segment will compound at 15%+ annually through 2028",
         context: "Services now represent 20% of revenue with higher margins than hardware",
-        thesisStatement: "Apple's services segment will compound at 15%+ annually through 2028",
-        priority: 4
+        thesisStatement: "Apple's services segment will compound at 15%+ annually through 2028"
     )
     ResearchQuestionFormView(mode: .edit(question)) { _ in }
 }

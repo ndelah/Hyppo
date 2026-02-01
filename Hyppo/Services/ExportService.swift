@@ -43,7 +43,6 @@ struct ResearchQuestionExport: Codable {
     let confidence: Int?
     let status: String
     let conclusion: String?
-    let priority: Int?
     let versionNumber: Int
     let createdAt: Date
     let updatedAt: Date
@@ -210,7 +209,6 @@ final class ExportService {
                     confidence: question.confidenceCurrent,
                     status: question.statusRaw,
                     conclusion: question.conclusion,
-                    priority: question.priority,
                     versionNumber: question.versionNumber,
                     createdAt: question.createdAt,
                     updatedAt: question.updatedAt,
@@ -329,8 +327,7 @@ final class ExportService {
                     questionText: questionExport.questionText,
                     context: questionExport.context,
                     thesisStatement: questionExport.thesisStatement,
-                    confidence: questionExport.confidence,
-                    priority: questionExport.priority
+                    confidence: questionExport.confidence
                 )
                 researchQuestion.scenarios = importedScenarios
                 researchQuestion.statusRaw = questionExport.status
@@ -452,9 +449,6 @@ final class ExportService {
         md += "**Status:** \(researchQuestion.status.displayName)\n"
         if let confidence = researchQuestion.confidence {
             md += "**Confidence:** \(confidence.rawValue)/5 (\(confidence.displayName))\n"
-        }
-        if let priority = researchQuestion.priority {
-            md += "**Priority:** \(priority)/5\n"
         }
         md += "**Version:** \(researchQuestion.versionNumber)\n"
         md += "**Created:** \(dateFormatter.string(from: researchQuestion.createdAt))\n"

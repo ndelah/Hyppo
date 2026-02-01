@@ -212,12 +212,6 @@ struct ResearchQuestionDetailView: View {
                         .foregroundStyle(.secondary)
                 }
                 
-                if let priority = researchQuestion.priority {
-                    Label("Priority \(priority)/5", systemImage: "flag")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
                 // Review reminder badge (inline)
                 ReviewReminderBadge(researchQuestion: researchQuestion)
                 
@@ -994,8 +988,7 @@ struct ResearchQuestionDetailView_Previews: PreviewProvider {
             questionText: "Can AAPL sustain services revenue growth?",
             context: "Services now represent 20% of revenue",
             thesisStatement: "Apple's services segment will continue to grow at 15%+ annually as the installed base expands.",
-            confidence: 4,
-            priority: 4
+            confidence: 4
         )
         
         return ResearchQuestionDetailView(researchQuestion: question)

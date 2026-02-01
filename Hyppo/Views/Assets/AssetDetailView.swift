@@ -301,17 +301,6 @@ struct ResearchQuestionRowView: View {
             
             // Metadata row
             HStack(spacing: 12) {
-                // Priority
-                if let priority = question.priority {
-                    HStack(spacing: 4) {
-                        Image(systemName: "star.fill")
-                            .font(.caption)
-                        Text("\(priority)/5")
-                            .font(.caption)
-                    }
-                    .foregroundStyle(.secondary)
-                }
-                
                 // Scenarios count
                 HStack(spacing: 4) {
                     Image(systemName: "arrow.up.arrow.down.circle")
