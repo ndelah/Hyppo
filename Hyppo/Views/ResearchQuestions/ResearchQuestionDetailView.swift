@@ -43,6 +43,7 @@ struct ResearchQuestionDetailView: View {
     @State private var isCatalystsExpanded = true
     @State private var isKeyRisksExpanded = true
     @State private var isPreMortemExpanded = true
+    @State private var isConclusionExpanded = true
     
     // Export state
     @State private var showingMarkdownExport = false
@@ -283,6 +284,33 @@ struct ResearchQuestionDetailView: View {
                 }
             }
             
+            // Conclusion (shown when research is complete)
+            if let conclusion = researchQuestion.conclusion, !conclusion.isEmpty {
+                CollapsibleSection(
+                    title: "Conclusion",
+                    iconName: "flag.checkered",
+                    isExpanded: $isConclusionExpanded,
+                    itemCount: nil
+                ) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(conclusion)
+                            .font(.subheadline)
+                        
+                        // Show driver resolution summary
+                        if researchQuestion.allDriversResolved {
+                            HStack(spacing: 12) {
+                                Label("\(researchQuestion.confirmedDriversCount) confirmed", systemImage: "checkmark.seal.fill")
+                                    .foregroundStyle(.green)
+                                Label("\(researchQuestion.discardedDriversCount) discarded", systemImage: "xmark.seal.fill")
+                                    .foregroundStyle(.red)
+                            }
+                            .font(.caption)
+                            .padding(.top, 4)
+                        }
+                    }
+                }
+            }
+            
             // Conviction Health Dashboard
             if !(researchQuestion.drivers?.isEmpty ?? true) {
                 CollapsibleSection(
@@ -321,11 +349,12 @@ struct ResearchQuestionDetailView: View {
             isCatalystsExpanded = shouldExpand
             isKeyRisksExpanded = shouldExpand
             isPreMortemExpanded = shouldExpand
+            isConclusionExpanded = shouldExpand
         }
     }
     
     private var allSectionsExpanded: Bool {
-        isThesisStatementExpanded && isKeyDriversExpanded && isScenariosExpanded && isCatalystsExpanded && isKeyRisksExpanded && isPreMortemExpanded
+        isThesisStatementExpanded && isKeyDriversExpanded && isScenariosExpanded && isCatalystsExpanded && isKeyRisksExpanded && isPreMortemExpanded && isConclusionExpanded
     }
     
     private func toggleAllSections() {
@@ -336,6 +365,7 @@ struct ResearchQuestionDetailView: View {
         isCatalystsExpanded = newState
         isKeyRisksExpanded = newState
         isPreMortemExpanded = newState
+        isConclusionExpanded = newState
     }
     
     /// Filtered log entries based on user preferences

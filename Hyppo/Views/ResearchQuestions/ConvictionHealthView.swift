@@ -307,15 +307,19 @@ struct ConvictionHealthView: View {
                 Text("Evidence")
                     .font(.caption)
                     .fontWeight(.bold)
-                    .frame(width: 60)
+                    .frame(width: 50)
                 Text("Balance")
                     .font(.caption)
                     .fontWeight(.bold)
-                    .frame(width: 60)
-                Text("Status")
+                    .frame(width: 50)
+                Text("Data")
                     .font(.caption)
                     .fontWeight(.bold)
-                    .frame(width: 100)
+                    .frame(width: 80)
+                Text("Validation")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .frame(width: 90)
             }
             .foregroundStyle(.secondary)
             .padding(.horizontal, 8)
@@ -332,24 +336,32 @@ struct ConvictionHealthView: View {
     private func healthRow(_ driver: Driver) -> some View {
         VStack(spacing: 8) {
             HStack {
+                // Driver title with strikethrough if discarded
                 Text(driver.title)
                     .font(.subheadline)
                     .fontWeight(.medium)
+                    .strikethrough(driver.status == .discarded, color: .red)
+                    .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
                 Text("\(driver.directEvidenceCount)")
                     .font(.caption)
-                    .frame(width: 60)
+                    .frame(width: 50)
                 
                 let balance = driver.totalEvidenceBalance
                 Text(balance > 0 ? "+\(balance)" : "\(balance)")
                     .font(.caption)
                     .fontWeight(.bold)
                     .foregroundStyle(balance > 0 ? .green : (balance < 0 ? .red : .secondary))
-                    .frame(width: 60)
+                    .frame(width: 50)
                 
-                statusBadge(for: driver)
-                    .frame(width: 100)
+                // Evidence-based status (Data column)
+                evidenceStatusBadge(for: driver)
+                    .frame(width: 80)
+                
+                // Validation status from review
+                validationBadge(for: driver)
+                    .frame(width: 90)
             }
             .padding(.horizontal, 8)
             
@@ -359,22 +371,26 @@ struct ConvictionHealthView: View {
                     HStack {
                         Text("  → \(sub.title)")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .strikethrough(sub.status == .discarded, color: .red)
+                            .foregroundStyle(sub.status == .discarded ? .tertiary : .secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Text("\(sub.directEvidenceCount)")
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
-                            .frame(width: 60)
+                            .frame(width: 50)
                         
                         let balance = sub.totalEvidenceBalance
                         Text(balance > 0 ? "+\(balance)" : "\(balance)")
                             .font(.caption2)
                             .foregroundStyle(balance > 0 ? .green.opacity(0.8) : (balance < 0 ? .red.opacity(0.8) : .secondary))
-                            .frame(width: 60)
+                            .frame(width: 50)
                         
-                        statusBadge(for: sub, isSmall: true)
-                            .frame(width: 100)
+                        evidenceStatusBadge(for: sub, isSmall: true)
+                            .frame(width: 80)
+                        
+                        validationBadge(for: sub, isSmall: true)
+                            .frame(width: 90)
                     }
                     .padding(.horizontal, 8)
                 }
@@ -484,9 +500,10 @@ struct ConvictionHealthView: View {
         }
     }
     
-    // MARK: - Status Badge
+    // MARK: - Evidence Status Badge (Data-based)
     
-    private func statusBadge(for driver: Driver, isSmall: Bool = false) -> some View {
+    /// Badge showing evidence-based status (Supported/Challenged/Blind Spot/Neutral)
+    private func evidenceStatusBadge(for driver: Driver, isSmall: Bool = false) -> some View {
         let balance = driver.totalEvidenceBalance
         let hasBlindSpot = driver.hasBlindSpot
         
@@ -503,13 +520,33 @@ struct ConvictionHealthView: View {
         }
     }
     
+    // MARK: - Validation Status Badge (Review-based)
+    
+    /// Badge showing validation status from reviews (Confirmed/Discarded/Needs Revision/Pending)
+    private func validationBadge(for driver: Driver, isSmall: Bool = false) -> some View {
+        let status = driver.status
+        
+        return Group {
+            switch status {
+            case .confirmed:
+                badge("Confirmed", color: .green, icon: "checkmark.seal.fill", isSmall: isSmall)
+            case .discarded:
+                badge("Discarded", color: .red, icon: "xmark.seal.fill", isSmall: isSmall)
+            case .needsRevision:
+                badge("Revision", color: .orange, icon: "exclamationmark.circle.fill", isSmall: isSmall)
+            case .pending:
+                badge("Pending", color: .gray, icon: "circle.dashed", isSmall: isSmall)
+            }
+        }
+    }
+    
     private func badge(_ text: String, color: Color, icon: String, isSmall: Bool) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 3) {
             Image(systemName: icon)
             Text(text)
         }
-        .font(isSmall ? .system(size: 9, weight: .bold) : .caption2.bold())
-        .padding(.horizontal, 6)
+        .font(isSmall ? .system(size: 8, weight: .bold) : .caption2.bold())
+        .padding(.horizontal, 5)
         .padding(.vertical, 2)
         .background(color.opacity(0.1))
         .foregroundStyle(color)

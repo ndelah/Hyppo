@@ -107,6 +107,10 @@ struct ReviewWizardView: View {
     @State private var conclusionText: String = ""
     @State private var shouldArchiveAfterConclusion = false
     
+    // Revision prompt state
+    @State private var showingRevisionPrompt = false
+    @State private var driversNeedingRevision: [DriverAssessment] = []
+    
     // MARK: - Wizard Steps
     
     enum WizardStep: Int, CaseIterable {
@@ -167,6 +171,17 @@ struct ReviewWizardView: View {
             }
         } message: {
             Text("This will create a review log entry and update the research question. Continue?")
+        }
+        .sheet(isPresented: $showingRevisionPrompt) {
+            RevisionPromptSheet(
+                driversNeedingRevision: driversNeedingRevision,
+                researchQuestion: researchQuestion,
+                onDismiss: {
+                    showingRevisionPrompt = false
+                    onComplete()
+                    dismiss()
+                }
+            )
         }
     }
     
@@ -393,19 +408,6 @@ struct ReviewWizardView: View {
     
     private var outcomeStep: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // Auto-suggestion based on assessments
-            if let suggestion = suggestedOutcome {
-                HStack {
-                    Image(systemName: "lightbulb.fill")
-                        .foregroundStyle(.yellow)
-                    Text("Based on your assessment, we suggest: **\(suggestion.displayName)**")
-                        .font(.subheadline)
-                }
-                .padding()
-                .background(Color.yellow.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            
             Text("Select Review Outcome")
                 .font(.subheadline)
                 .fontWeight(.semibold)
@@ -681,21 +683,6 @@ struct ReviewWizardView: View {
         newConfidence = researchQuestion.confidenceCurrent ?? 3
     }
     
-    private var suggestedOutcome: ReviewOutcome? {
-        let discardedCount = driverAssessments.filter { $0.newStatus == .discarded }.count
-        let revisionCount = driverAssessments.filter { $0.newStatus == .needsRevision }.count
-        let totalDrivers = driverAssessments.count
-        
-        // If more than half of drivers are discarded, suggest invalidation
-        if totalDrivers > 0 && discardedCount > totalDrivers / 2 {
-            return .invalidate
-        } else if discardedCount > 0 || revisionCount > 0 {
-            return .revise
-        } else {
-            return .reinforce
-        }
-    }
-    
     /// Color for the research question status
     private var statusColor: Color {
         switch researchQuestion.status {
@@ -788,8 +775,15 @@ struct ReviewWizardView: View {
             reminder.completeReview()
         }
         
-        onComplete()
-        dismiss()
+        // Check if any drivers need revision and prompt user
+        let revisionNeeded = driverAssessments.filter { $0.newStatus == .needsRevision }
+        if !revisionNeeded.isEmpty {
+            driversNeedingRevision = revisionNeeded
+            showingRevisionPrompt = true
+        } else {
+            onComplete()
+            dismiss()
+        }
     }
     
     /// Updates driver statuses based on the assessments made during review
@@ -905,11 +899,11 @@ private struct StatusButton: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background(isSelected ? statusColor : Color(nsColor: .controlBackgroundColor))
-            .foregroundStyle(isSelected ? .white : statusColor)
+            .foregroundStyle(isSelected ? .white : .secondary)
             .clipShape(Capsule())
             .overlay(
                 Capsule()
-                    .stroke(statusColor.opacity(isSelected ? 0 : 0.5), lineWidth: 1)
+                    .stroke(Color.secondary.opacity(isSelected ? 0 : 0.3), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -956,6 +950,143 @@ private struct OutcomeSelectionCard: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Revision Prompt Sheet
+
+/// Sheet displayed when drivers are marked as needing revision
+private struct RevisionPromptSheet: View {
+    let driversNeedingRevision: [DriverAssessment]
+    let researchQuestion: ResearchQuestion
+    let onDismiss: () -> Void
+    
+    @Environment(\.modelContext) private var modelContext
+    @State private var editedTitles: [UUID: String] = [:]
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            VStack(spacing: 8) {
+                Image(systemName: "exclamationmark.circle.fill")
+                    .font(.largeTitle)
+                    .foregroundStyle(.orange)
+                
+                Text("Revise Assumptions")
+                    .font(.title2.bold())
+                
+                Text("\(driversNeedingRevision.count) assumption\(driversNeedingRevision.count == 1 ? "" : "s") need revision based on your review.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(Color.orange.opacity(0.1))
+            
+            Divider()
+            
+            // Driver edit list
+            ScrollView {
+                VStack(spacing: 12) {
+                    ForEach(driversNeedingRevision) { assessment in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Current:")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                            
+                            Text(assessment.title)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .strikethrough()
+                            
+                            Text("Revised:")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .padding(.top, 4)
+                            
+                            TextField("Enter revised assumption...", text: binding(for: assessment.id, defaultValue: assessment.title))
+                                .textFieldStyle(.roundedBorder)
+                            
+                            if !assessment.notes.isEmpty {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "note.text")
+                                        .font(.caption2)
+                                    Text("Note: \(assessment.notes)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        .padding()
+                        .background(Color(nsColor: .controlBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+                .padding()
+            }
+            
+            Divider()
+            
+            // Action buttons
+            HStack {
+                Button("Skip for Now") {
+                    onDismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+                
+                Spacer()
+                
+                Button("Save Changes") {
+                    saveRevisions()
+                    onDismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .disabled(!hasChanges)
+            }
+            .padding()
+            .background(Color(nsColor: .controlBackgroundColor))
+        }
+        .frame(width: 500, height: 500)
+        .onAppear {
+            // Initialize with current titles
+            for assessment in driversNeedingRevision {
+                editedTitles[assessment.id] = assessment.title
+            }
+        }
+    }
+    
+    private func binding(for id: UUID, defaultValue: String) -> Binding<String> {
+        Binding(
+            get: { editedTitles[id] ?? defaultValue },
+            set: { editedTitles[id] = $0 }
+        )
+    }
+    
+    private var hasChanges: Bool {
+        for assessment in driversNeedingRevision {
+            if let edited = editedTitles[assessment.id],
+               edited != assessment.title,
+               !edited.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return true
+            }
+        }
+        return false
+    }
+    
+    private func saveRevisions() {
+        guard let drivers = researchQuestion.drivers else { return }
+        
+        for assessment in driversNeedingRevision {
+            if let edited = editedTitles[assessment.id],
+               edited != assessment.title,
+               !edited.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+               let driver = drivers.first(where: { $0.driverId == assessment.id }) {
+                driver.title = edited.trimmingCharacters(in: .whitespacesAndNewlines)
+                driver.updatedAt = Date()
+            }
+        }
     }
 }
 
