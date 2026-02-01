@@ -263,16 +263,17 @@ struct TagPickerView: View {
             HStack {
                 Menu {
                     ForEach(availableTags) { tag in
-                        Button {
-                            addTag(tag)
-                        } label: {
-                            Label {
-                                Text(tag.name)
-                            } icon: {
-                                Image(systemName: "circle.fill")
-                                    .foregroundStyle(colorFor(tag))
-                            }
+                    Button {
+                        addTag(tag)
+                    } label: {
+                        Label {
+                            Text(tag.name)
+                        } icon: {
+                            Image(systemName: "circle.fill")
+                                .symbolRenderingMode(.monochrome)
+                                .foregroundStyle(colorFor(tag))
                         }
+                    }
                     }
                     
                     if !availableTags.isEmpty {
