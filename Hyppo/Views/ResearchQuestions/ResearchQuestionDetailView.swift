@@ -135,6 +135,16 @@ struct ResearchQuestionDetailView: View {
             LogEntryFormView(mode: .add(researchQuestion: researchQuestion)) { newLogEntry in
                 modelContext.insert(newLogEntry)
                 newLogEntry.researchQuestion = researchQuestion
+                
+                // Explicitly update inverse relationship for immediate UI refresh
+                if researchQuestion.logEntries == nil {
+                    researchQuestion.logEntries = []
+                }
+                researchQuestion.logEntries?.append(newLogEntry)
+                researchQuestion.updatedAt = Date()
+                
+                // Save the context to ensure all relationships are persisted
+                try? modelContext.save()
             }
         }
         .sheet(isPresented: $showingEditQuestion) {
@@ -644,12 +654,30 @@ struct LogEntryCard: View {
                         .clipShape(Capsule())
                 }
                 
+                // Show sentiment badge if linked to driver
+                if let sentiment = logEntry.sentiment {
+                    sentimentBadge(sentiment)
+                }
+                
                 Spacer()
                 
                 // Date
                 Text(logEntry.occurredAt.formatted(date: .abbreviated, time: density == .compact ? .omitted : .shortened))
                     .font(.caption)
                     .foregroundStyle(.tertiary)
+            }
+            
+            // Driver linkage indicator (show in non-compact mode)
+            if density != .compact, let driver = logEntry.driver {
+                HStack(spacing: 4) {
+                    Image(systemName: "target")
+                        .font(.caption2)
+                        .foregroundStyle(.blue)
+                    Text(driver.title)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
             
             // Body preview (respect density line limits)
@@ -712,14 +740,16 @@ struct LogEntryCard: View {
                             .foregroundStyle(.tertiary)
                     }
                     
-                    // Add Evidence button
-                    Button {
-                        onAddEvidence()
-                    } label: {
-                        Label("Add Evidence", systemImage: "link.badge.plus")
-                            .font(.caption)
+                    // Add Evidence button (only show if not linked to driver)
+                    if logEntry.driver == nil {
+                        Button {
+                            onAddEvidence()
+                        } label: {
+                            Label("Add Evidence", systemImage: "link.badge.plus")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.borderless)
                     }
-                    .buttonStyle(.borderless)
                 }
             }
         }
@@ -728,8 +758,28 @@ struct LogEntryCard: View {
         .clipShape(RoundedRectangle(cornerRadius: density == .compact ? 8 : 10))
         .overlay(
             RoundedRectangle(cornerRadius: density == .compact ? 8 : 10)
-                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                .stroke(logEntry.driver != nil ? Color.blue.opacity(0.3) : Color(nsColor: .separatorColor), lineWidth: 1)
         )
+    }
+    
+    private func sentimentBadge(_ sentiment: EvidenceSentiment) -> some View {
+        HStack(spacing: 2) {
+            Image(systemName: sentiment.iconName)
+        }
+        .font(.caption2)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(sentimentColor(sentiment).opacity(0.15))
+        .foregroundStyle(sentimentColor(sentiment))
+        .clipShape(Capsule())
+    }
+    
+    private func sentimentColor(_ sentiment: EvidenceSentiment) -> Color {
+        switch sentiment {
+        case .supporting: return .green
+        case .contradicting: return .red
+        case .neutral: return .gray
+        }
     }
     
     /// Body preview text with density-appropriate truncation
@@ -785,6 +835,13 @@ struct LogEntryDetailSheet: View {
                             Text(logEntry.entryType.displayName)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                            
+                            Spacer()
+                            
+                            // Show sentiment badge if linked to driver
+                            if let sentiment = logEntry.sentiment {
+                                sentimentBadge(sentiment)
+                            }
                         }
                         
                         Text(logEntry.title)
@@ -794,6 +851,32 @@ struct LogEntryDetailSheet: View {
                         Text(logEntry.occurredAt.formatted(date: .complete, time: .shortened))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                        
+                        // Driver linkage indicator
+                        if let driver = logEntry.driver {
+                            HStack(spacing: 6) {
+                                Image(systemName: "target")
+                                    .foregroundStyle(.blue)
+                                Text("Linked to:")
+                                    .foregroundStyle(.secondary)
+                                Text(driver.title)
+                                    .fontWeight(.medium)
+                            }
+                            .font(.caption)
+                            .padding(.top, 4)
+                        }
+                        
+                        // Source URL if available
+                        if let url = logEntry.sourceUrl, !url.isEmpty {
+                            HStack(spacing: 6) {
+                                Image(systemName: "link")
+                                    .foregroundStyle(.blue)
+                                Text(url)
+                                    .foregroundStyle(.blue)
+                                    .lineLimit(1)
+                            }
+                            .font(.caption)
+                        }
                     }
                     
                     Divider()
@@ -833,10 +916,14 @@ struct LogEntryDetailSheet: View {
                         Label("Edit", systemImage: "pencil")
                     }
                     
-                    Button {
-                        showingAddEvidence = true
-                    } label: {
-                        Label("Add Evidence", systemImage: "link.badge.plus")
+                    // Only show Add Evidence button if not already linked to a driver
+                    // (since driver-linked logs auto-create evidence)
+                    if logEntry.driver == nil {
+                        Button {
+                            showingAddEvidence = true
+                        } label: {
+                            Label("Add Evidence", systemImage: "link.badge.plus")
+                        }
                     }
                 }
             }
@@ -861,6 +948,27 @@ struct LogEntryDetailSheet: View {
         case .risk: return .red
         case .catalyst: return .orange
         case .review: return .green
+        }
+    }
+    
+    private func sentimentBadge(_ sentiment: EvidenceSentiment) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: sentiment.iconName)
+            Text(sentiment.rawValue)
+        }
+        .font(.caption2.bold())
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(sentimentColor(sentiment).opacity(0.15))
+        .foregroundStyle(sentimentColor(sentiment))
+        .clipShape(Capsule())
+    }
+    
+    private func sentimentColor(_ sentiment: EvidenceSentiment) -> Color {
+        switch sentiment {
+        case .supporting: return .green
+        case .contradicting: return .red
+        case .neutral: return .gray
         }
     }
 }

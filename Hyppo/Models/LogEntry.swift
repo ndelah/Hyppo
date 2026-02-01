@@ -33,6 +33,15 @@ final class LogEntry {
     /// Whether this entry is pinned for quick access
     var isPinned: Bool
     
+    /// Sentiment of the log entry when linked to a Driver (Supporting/Contradicting/Neutral)
+    var sentimentRaw: String?
+    
+    /// Source type when linked to a Driver (Article, Filing, etc.)
+    var sourceTypeRaw: String?
+    
+    /// Optional URL for the source
+    var sourceUrl: String?
+    
     /// Timestamp when the event occurred (user-editable)
     var occurredAt: Date
     
@@ -45,7 +54,11 @@ final class LogEntry {
     // MARK: - Relationships
     
     /// Parent research question this log entry belongs to
+    @Relationship(inverse: \ResearchQuestion.logEntries)
     var researchQuestion: ResearchQuestion?
+    
+    /// Associated driver for McKinsey framework (optional)
+    var driver: Driver?
     
     /// Evidence items attached to this log entry
     @Relationship(deleteRule: .cascade) var evidenceItems: [Evidence]?
@@ -103,6 +116,33 @@ final class LogEntry {
         set {
             confidence = newValue?.rawValue
         }
+    }
+    
+    /// Sentiment as enum (for McKinsey framework)
+    var sentiment: EvidenceSentiment? {
+        get {
+            guard let raw = sentimentRaw else { return nil }
+            return EvidenceSentiment(rawValue: raw)
+        }
+        set {
+            sentimentRaw = newValue?.rawValue
+        }
+    }
+    
+    /// Source type as enum (for McKinsey framework)
+    var sourceType: SourceType? {
+        get {
+            guard let raw = sourceTypeRaw else { return nil }
+            return SourceType(rawValue: raw)
+        }
+        set {
+            sourceTypeRaw = newValue?.rawValue
+        }
+    }
+    
+    /// Returns true if this log entry is linked to a driver
+    var isLinkedToDriver: Bool {
+        driver != nil
     }
     
     /// Returns the count of evidence items
