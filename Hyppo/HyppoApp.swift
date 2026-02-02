@@ -125,7 +125,7 @@ struct HyppoApp: App {
     var body: some Scene {
         // Main application window
         WindowGroup {
-            MainNavigationView()
+            OdooStyleNavigationView()
                 .sheet(isPresented: $quickCaptureService.isHUDVisible) {
                     QuickCaptureHUD(service: quickCaptureService)
                         .modelContainer(sharedModelContainer)
