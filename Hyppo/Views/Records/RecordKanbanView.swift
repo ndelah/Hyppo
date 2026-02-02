@@ -11,9 +11,14 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 /// Kanban board view for research question records
 struct RecordKanbanView: View {
+    // MARK: - Environment
+    
+    @Environment(\.modelContext) private var modelContext
+    
     // MARK: - Properties
     
     let questions: [ResearchQuestion]
@@ -22,6 +27,7 @@ struct RecordKanbanView: View {
     // MARK: - State
     
     @State private var draggingQuestion: ResearchQuestion?
+    @State private var targetStatus: ResearchQuestionStatus?
     
     // MARK: - Body
     
@@ -42,39 +48,21 @@ struct RecordKanbanView: View {
         let columnQuestions = questions.filter { $0.status == status }
             .sorted { $0.updatedAt > $1.updatedAt }
         
+        let isDropTarget = targetStatus == status && draggingQuestion?.status != status
+        
         return VStack(alignment: .leading, spacing: 12) {
             // Column header
             columnHeader(status: status, count: columnQuestions.count)
             
-            // Column content with drop destination
+            // Column content with drop zone
             ScrollView(.vertical, showsIndicators: false) {
                 LazyVStack(spacing: 12) {
                     ForEach(columnQuestions) { question in
-                        RecordCardView(
-                            question: question,
-                            isSelected: false,
-                            isCompact: true
-                        )
-                        .draggable(question) {
-                            // Drag preview
-                            RecordCardView(
-                                question: question,
-                                isSelected: true,
-                                isCompact: true
-                            )
-                            .frame(width: 250)
-                            .opacity(0.8)
-                        }
-                        .onTapGesture {
-                            navigationPath.append(question)
-                        }
-                        .contextMenu {
-                            contextMenu(for: question)
-                        }
+                        kanbanCard(for: question)
                     }
                     
                     if columnQuestions.isEmpty {
-                        emptyColumnPlaceholder
+                        emptyColumnPlaceholder(isTargeted: isDropTarget)
                     }
                 }
                 .padding(.horizontal, 4)
@@ -82,18 +70,56 @@ struct RecordKanbanView: View {
             }
         }
         .frame(width: 280)
-        .background(columnBackground)
+        .background(isDropTarget ? statusColor(for: status).opacity(0.15) : columnBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .dropDestination(for: ResearchQuestion.self) { droppedQuestions, _ in
-            for question in droppedQuestions {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    question.status = status
-                }
-            }
-            return true
-        } isTargeted: { isTargeted in
-            // Could add visual feedback when targeted
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isDropTarget ? statusColor(for: status) : Color.clear, lineWidth: 2)
+        )
+        .animation(.easeInOut(duration: 0.2), value: isDropTarget)
+        .onDrop(of: [.text], delegate: KanbanDropDelegate(
+            targetStatus: status,
+            currentTargetStatus: $targetStatus,
+            draggingQuestion: $draggingQuestion,
+            onDrop: { handleDrop(to: status) }
+        ))
+    }
+    
+    // MARK: - Kanban Card
+    
+    private func kanbanCard(for question: ResearchQuestion) -> some View {
+        RecordCardView(
+            question: question,
+            isSelected: draggingQuestion == question,
+            isCompact: true
+        )
+        .opacity(draggingQuestion == question ? 0.5 : 1.0)
+        .onDrag {
+            self.draggingQuestion = question
+            return NSItemProvider(object: question.questionId.uuidString as NSString)
         }
+        .onTapGesture {
+            navigationPath.append(question)
+        }
+        .contextMenu {
+            contextMenu(for: question)
+        }
+    }
+    
+    // MARK: - Drop Handling
+    
+    private func handleDrop(to status: ResearchQuestionStatus) {
+        guard let question = draggingQuestion else { return }
+        
+        if question.status != status {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                question.status = status
+            }
+        }
+        
+        // Reset state
+        draggingQuestion = nil
+        targetStatus = nil
     }
     
     // MARK: - Column Header
@@ -127,25 +153,26 @@ struct RecordKanbanView: View {
     
     // MARK: - Empty State
     
-    private var emptyColumnPlaceholder: some View {
+    private func emptyColumnPlaceholder(isTargeted: Bool) -> some View {
         VStack(spacing: 8) {
-            Image(systemName: "tray")
+            Image(systemName: isTargeted ? "arrow.down.circle.fill" : "tray")
                 .font(.title2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(isTargeted ? Color.blue : Color.gray.opacity(0.5))
             
-            Text("Drop here")
+            Text(isTargeted ? "Drop here" : "No questions")
                 .font(.caption)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(isTargeted ? Color.blue : Color.gray.opacity(0.5))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 32)
-        .background(Color(nsColor: .separatorColor).opacity(0.1))
+        .background(isTargeted ? Color.blue.opacity(0.1) : Color(nsColor: .separatorColor).opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
-                .foregroundStyle(Color(nsColor: .separatorColor).opacity(0.3))
+                .stroke(style: StrokeStyle(lineWidth: 2, dash: isTargeted ? [] : [6, 4]))
+                .foregroundStyle(isTargeted ? Color.blue : Color(nsColor: .separatorColor).opacity(0.3))
         )
+        .animation(.easeInOut(duration: 0.2), value: isTargeted)
     }
     
     // MARK: - Context Menu
@@ -195,11 +222,33 @@ struct RecordKanbanView: View {
     }
 }
 
-// MARK: - ResearchQuestion Transferable Conformance
+// MARK: - Drop Delegate
 
-extension ResearchQuestion: Transferable {
-    static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .data)
+/// Custom drop delegate for kanban drag-and-drop
+private struct KanbanDropDelegate: DropDelegate {
+    let targetStatus: ResearchQuestionStatus
+    @Binding var currentTargetStatus: ResearchQuestionStatus?
+    @Binding var draggingQuestion: ResearchQuestion?
+    let onDrop: () -> Void
+    
+    func dropEntered(info: DropInfo) {
+        currentTargetStatus = targetStatus
+    }
+    
+    func dropExited(info: DropInfo) {
+        if currentTargetStatus == targetStatus {
+            currentTargetStatus = nil
+        }
+    }
+    
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+    
+    func performDrop(info: DropInfo) -> Bool {
+        onDrop()
+        currentTargetStatus = nil
+        return true
     }
 }
 

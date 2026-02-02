@@ -20,6 +20,9 @@ struct GlobalSearchView: View {
     @Binding var selectedAsset: Asset?
     @Binding var selectedResearchQuestion: ResearchQuestion?
     
+    /// Optional callback for NavigationStack-based navigation
+    var onSelectQuestion: ((ResearchQuestion) -> Void)?
+    
     // MARK: - Queries
     
     @Query(sort: \Asset.tickerNormalized) private var allAssets: [Asset]
@@ -561,18 +564,31 @@ struct GlobalSearchView: View {
     // MARK: - Actions
     
     private func handleResultTap(_ result: SearchResult) {
-        if let asset = result.entity as? Asset {
-            selectedAsset = asset
-            selectedResearchQuestion = nil
-        } else if let question = result.entity as? ResearchQuestion {
-            selectedAsset = question.asset
-            selectedResearchQuestion = question
-        } else if let logEntry = result.entity as? LogEntry {
-            selectedAsset = logEntry.researchQuestion?.asset
-            selectedResearchQuestion = logEntry.researchQuestion
-        } else if let evidence = result.entity as? Evidence {
-            selectedAsset = evidence.logEntry?.researchQuestion?.asset
-            selectedResearchQuestion = evidence.logEntry?.researchQuestion
+        // Use the new callback-based navigation if available
+        if let onSelectQuestion = onSelectQuestion {
+            if let question = result.entity as? ResearchQuestion {
+                onSelectQuestion(question)
+            } else if let logEntry = result.entity as? LogEntry, let question = logEntry.researchQuestion {
+                onSelectQuestion(question)
+            } else if let evidence = result.entity as? Evidence, let question = evidence.logEntry?.researchQuestion {
+                onSelectQuestion(question)
+            }
+            // Note: Assets are no longer the primary navigation target
+        } else {
+            // Legacy binding-based navigation
+            if let asset = result.entity as? Asset {
+                selectedAsset = asset
+                selectedResearchQuestion = nil
+            } else if let question = result.entity as? ResearchQuestion {
+                selectedAsset = question.asset
+                selectedResearchQuestion = question
+            } else if let logEntry = result.entity as? LogEntry {
+                selectedAsset = logEntry.researchQuestion?.asset
+                selectedResearchQuestion = logEntry.researchQuestion
+            } else if let evidence = result.entity as? Evidence {
+                selectedAsset = evidence.logEntry?.researchQuestion?.asset
+                selectedResearchQuestion = evidence.logEntry?.researchQuestion
+            }
         }
         
         dismiss()
