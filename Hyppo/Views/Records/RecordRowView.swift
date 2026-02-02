@@ -21,6 +21,10 @@ struct RecordRowView: View {
     
     var body: some View {
         HStack(spacing: 0) {
+            // Left margin spacer
+            Spacer()
+                .frame(width: 16)
+            
             ForEach(columns) { column in
                 let width = columnWidths?[column] ?? column.suggestedWidth
                 

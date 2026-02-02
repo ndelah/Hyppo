@@ -160,7 +160,7 @@ struct ReviewWizardView: View {
             // Navigation buttons
             navigationBar
         }
-        .frame(width: 600, height: 700)
+        .frame(width: 600, height: 850)
         .onAppear {
             initializeAssessments()
         }

@@ -2,8 +2,10 @@
  RecordListView is the main container for displaying research question records.
  
  Features:
+ - Odoo-style toolbar with filter tags displayed in search bar
  - View mode switcher (Table, Kanban, Cards)
  - Advanced search bar with filters, group by, and saved searches
+ - Pagination with counter and navigation arrows
  - Column visibility settings (for table view)
  - Hosts the three different view modes
  - Full-screen navigation to detail view
@@ -36,6 +38,8 @@ struct RecordListView: View {
     @State private var showingColumnSettings = false
     @State private var showingAddQuestion = false
     @State private var showingSearchPopover = false
+    @State private var currentPage = 0
+    private let pageSize = 25
     
     // MARK: - Computed Properties
     
@@ -83,6 +87,28 @@ struct RecordListView: View {
         return result
     }
     
+    /// Total number of pages
+    private var totalPages: Int {
+        max(1, (filteredQuestions.count + pageSize - 1) / pageSize)
+    }
+    
+    /// Questions for the current page
+    private var pagedQuestions: [ResearchQuestion] {
+        let startIndex = currentPage * pageSize
+        let endIndex = min(startIndex + pageSize, filteredQuestions.count)
+        
+        guard startIndex < filteredQuestions.count else { return [] }
+        return Array(filteredQuestions[startIndex..<endIndex])
+    }
+    
+    /// Display range for pagination (e.g., "1-25")
+    private var displayRange: String {
+        guard !filteredQuestions.isEmpty else { return "0" }
+        let startIndex = currentPage * pageSize + 1
+        let endIndex = min((currentPage + 1) * pageSize, filteredQuestions.count)
+        return "\(startIndex)-\(endIndex)"
+    }
+    
     /// Active filter count for badge display
     private var activeFilterCount: Int {
         var count = 0
@@ -92,6 +118,91 @@ struct RecordListView: View {
         if config.activeStartDate != nil { count += 1 }
         if config.activeEndDate != nil { count += 1 }
         return count
+    }
+    
+    /// Generate active filter tags for display in search bar
+    private var activeFilterTags: [RecordFilterTag] {
+        var tags: [RecordFilterTag] = []
+        
+        // Status filters
+        for statusRaw in config.activeStatusFilters {
+            if let status = ResearchQuestionStatus(rawValue: statusRaw) {
+                tags.append(RecordFilterTag(
+                    id: "status_\(statusRaw)",
+                    label: status.displayName,
+                    icon: status.iconName,
+                    color: statusColor(for: status),
+                    filterType: .status(statusRaw)
+                ))
+            }
+        }
+        
+        // Confidence filter
+        if let confidenceRaw = config.activeConfidenceFilter,
+           let confidence = ConfidenceLevel(rawValue: confidenceRaw) {
+            tags.append(RecordFilterTag(
+                id: "confidence_\(confidenceRaw)",
+                label: confidence.displayName,
+                icon: "gauge",
+                color: confidenceColor(for: confidence),
+                filterType: .confidence
+            ))
+        }
+        
+        // Tag filters
+        for tagId in config.activeTagIds {
+            if let tag = allTags.first(where: { $0.tagId == tagId }) {
+                tags.append(RecordFilterTag(
+                    id: "tag_\(tagId.uuidString)",
+                    label: tag.name,
+                    icon: "tag",
+                    color: tagColor(for: tag),
+                    filterType: .tag(tagId)
+                ))
+            }
+        }
+        
+        // Group by
+        if config.groupByColumn != .none {
+            tags.append(RecordFilterTag(
+                id: "groupby",
+                label: config.groupByColumn.displayName,
+                icon: "rectangle.3.group",
+                color: .purple,
+                filterType: .groupBy
+            ))
+        }
+        
+        return tags
+    }
+    
+    // MARK: - Color Helpers
+    
+    private func statusColor(for status: ResearchQuestionStatus) -> Color {
+        switch status {
+        case .active: return .green
+        case .onHold: return .orange
+        case .invalidated: return .red
+        case .archived: return .gray
+        }
+    }
+    
+    private func confidenceColor(for level: ConfidenceLevel) -> Color {
+        switch level {
+        case .veryLow: return .red
+        case .low: return .orange
+        case .medium: return .yellow
+        case .high: return .green
+        case .veryHigh: return .blue
+        }
+    }
+    
+    private func tagColor(for tag: Tag) -> Color {
+        guard let colorName = tag.colorName,
+              let tagColorEnum = TagColor(rawValue: colorName) else {
+            return .blue
+        }
+        return tagColorEnum.color
     }
     
     // MARK: - Body
@@ -106,7 +217,7 @@ struct RecordListView: View {
             // Content based on view mode
             viewContent
         }
-        .navigationTitle("Research Questions")
+        .navigationTitle("")
         .sheet(isPresented: $showingColumnSettings) {
             ColumnSettingsSheet(config: config)
         }
@@ -117,91 +228,125 @@ struct RecordListView: View {
                 navigationPath.append(newQuestion)
             }
         }
+        .onChange(of: filteredQuestions.count) { _, _ in
+            // Reset to first page when filters change
+            currentPage = 0
+        }
     }
     
-    // MARK: - Toolbar
+    // MARK: - Toolbar (Odoo-style)
     
     private var toolbar: some View {
         HStack(spacing: 12) {
-            // Left: New button
-            Button {
-                showingAddQuestion = true
+            // Left: New button with dropdown styling like Odoo
+            Menu {
+                Button {
+                    showingAddQuestion = true
+                } label: {
+                    Label("New Research Question", systemImage: "questionmark.circle")
+                }
             } label: {
-                Label("New", systemImage: "plus")
+                HStack(spacing: 4) {
+                    Text("New")
+                        .fontWeight(.medium)
+                    Image(systemName: "chevron.down")
+                        .font(.caption2)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.accentColor)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
             }
-            .buttonStyle(.borderedProminent)
+            .menuStyle(.borderlessButton)
+            
+            // Title
+            Text("Research Questions")
+                .font(.headline)
+            
+            // Gear icon for settings
+            if config.viewMode == .table {
+                Button {
+                    showingColumnSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
             
             Spacer()
             
-            // Center: Search bar with popover
-            searchBar
+            // Center: Search bar with filter tags (Odoo-style)
+            searchBarWithFilterTags
             
             Spacer()
             
-            // Right: Record count and view mode picker
-            Text("\(filteredQuestions.count) \(filteredQuestions.count == 1 ? "record" : "records")")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            // Right: Pagination counter and view mode picker
+            paginationControls
             
             Divider()
-                .frame(height: 24)
+                .frame(height: 16)
             
             viewModePicker
         }
-        .padding(.horizontal)
-        .padding(.vertical, 10)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .padding(.horizontal, 24)
+        .padding(.vertical, 8)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
     }
     
-    private var searchBar: some View {
+    /// Search bar that displays active filters as rectangular tags
+    private var searchBarWithFilterTags: some View {
         Button {
             showingSearchPopover = true
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
+                    .font(.caption)
                 
+                // Active filter tags displayed inside the search bar
+                ForEach(activeFilterTags) { tag in
+                    RecordFilterTagView(tag: tag) {
+                        removeFilter(tag)
+                    }
+                }
+                
+                // Search text or placeholder
                 if !searchText.isEmpty {
                     Text(searchText)
                         .foregroundStyle(.primary)
                         .lineLimit(1)
-                } else {
+                        .font(.subheadline)
+                    
+                    Button {
+                        searchText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                } else if activeFilterTags.isEmpty {
                     Text("Search...")
                         .foregroundStyle(.secondary)
+                        .font(.subheadline)
                 }
                 
-                Spacer()
-                
-                // Filter badge
-                if activeFilterCount > 0 {
-                    Text("\(activeFilterCount)")
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.accentColor)
-                        .foregroundStyle(.white)
-                        .clipShape(Capsule())
-                }
-                
-                // Group by indicator
-                if config.groupByColumn != .none {
-                    Image(systemName: "rectangle.3.group")
-                        .font(.caption)
-                        .foregroundStyle(Color.accentColor)
-                }
+                Spacer(minLength: 0)
                 
                 Image(systemName: "chevron.down")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .frame(minWidth: 280, maxWidth: 400)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .frame(minWidth: 300, maxWidth: 500)
             .background(Color(nsColor: .textBackgroundColor))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 4))
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 4)
                     .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
             )
         }
@@ -236,15 +381,82 @@ struct RecordListView: View {
         }
     }
     
-    private var viewModePicker: some View {
-        Picker("View Mode", selection: $config.viewMode) {
-            ForEach(ViewMode.allCases) { mode in
-                Label(mode.displayName, systemImage: mode.iconName)
-                    .tag(mode)
+    /// Pagination controls showing count and navigation arrows
+    private var paginationControls: some View {
+        HStack(spacing: 8) {
+            Text("\(displayRange) / \(filteredQuestions.count)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+            
+            HStack(spacing: 2) {
+                Button {
+                    if currentPage > 0 {
+                        currentPage -= 1
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.caption)
+                        .foregroundStyle(currentPage > 0 ? .primary : .tertiary)
+                        .frame(width: 20, height: 20)
+                }
+                .buttonStyle(.plain)
+                .disabled(currentPage == 0)
+                
+                Button {
+                    if currentPage < totalPages - 1 {
+                        currentPage += 1
+                    }
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(currentPage < totalPages - 1 ? .primary : .tertiary)
+                        .frame(width: 20, height: 20)
+                }
+                .buttonStyle(.plain)
+                .disabled(currentPage >= totalPages - 1)
             }
         }
-        .pickerStyle(.segmented)
-        .frame(width: 150)
+    }
+    
+    private var viewModePicker: some View {
+        HStack(spacing: 2) {
+            ForEach(ViewMode.allCases) { mode in
+                Button {
+                    config.viewMode = mode
+                } label: {
+                    Image(systemName: mode.iconName)
+                        .font(.subheadline)
+                        .foregroundStyle(config.viewMode == mode ? .primary : .secondary)
+                        .frame(width: 28, height: 24)
+                        .background(
+                            config.viewMode == mode
+                                ? Color(nsColor: .controlBackgroundColor)
+                                : Color.clear
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(2)
+        .background(Color(nsColor: .separatorColor).opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+    
+    // MARK: - Filter Removal
+    
+    private func removeFilter(_ tag: RecordFilterTag) {
+        switch tag.filterType {
+        case .status(let rawValue):
+            config.activeStatusFilters.remove(rawValue)
+        case .confidence:
+            config.activeConfidenceFilter = nil
+        case .tag(let tagId):
+            config.activeTagIds.remove(tagId)
+        case .groupBy:
+            config.groupByColumn = .none
+        }
     }
     
     // MARK: - View Content
@@ -254,13 +466,14 @@ struct RecordListView: View {
         switch config.viewMode {
         case .table:
             RecordTableView(
-                questions: filteredQuestions,
+                questions: pagedQuestions,
                 navigationPath: $navigationPath,
                 config: config,
                 showingColumnSettings: $showingColumnSettings
             )
             
         case .kanban:
+            // Kanban view shows all filtered questions (grouping handles the layout)
             RecordKanbanView(
                 questions: filteredQuestions,
                 navigationPath: $navigationPath,
@@ -269,11 +482,70 @@ struct RecordListView: View {
             
         case .cards:
             RecordCardGridView(
-                questions: filteredQuestions,
+                questions: pagedQuestions,
                 navigationPath: $navigationPath,
                 config: config
             )
         }
+    }
+}
+
+// MARK: - Record Filter Tag Model
+
+/// Represents an active filter displayed as a tag in the search bar
+struct RecordFilterTag: Identifiable {
+    let id: String
+    let label: String
+    let icon: String
+    let color: Color
+    let filterType: FilterType
+    
+    enum FilterType {
+        case status(String)
+        case confidence
+        case tag(UUID)
+        case groupBy
+    }
+}
+
+// MARK: - Record Filter Tag View
+
+/// Displays an active filter as a rectangular tag with icon, color, and remove button (Odoo-style)
+struct RecordFilterTagView: View {
+    let tag: RecordFilterTag
+    let onRemove: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            // Colored icon
+            Image(systemName: tag.icon)
+                .font(.system(size: 10))
+                .foregroundStyle(tag.color)
+            
+            // Label
+            Text(tag.label)
+                .font(.caption)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+            
+            // Remove button
+            Button {
+                onRemove()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(tag.color.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(tag.color.opacity(0.3), lineWidth: 1)
+        )
     }
 }
 

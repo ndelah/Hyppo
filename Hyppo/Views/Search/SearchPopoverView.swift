@@ -56,46 +56,15 @@ struct SearchPopoverView: View {
             
             Divider()
             
-            // Content
+            // Horizontal tab bar
+            tabBar
+            
+            Divider()
+            
+            // Content area
             ScrollView {
-                VStack(spacing: 0) {
-                    // Filters Section
-                    collapsibleSection(
-                        title: "Filters",
-                        icon: "line.3.horizontal.decrease.circle",
-                        section: .filters,
-                        badgeCount: activeFilterCount
-                    ) {
-                        filtersContent
-                    }
-                    
-                    Divider()
-                        .padding(.horizontal)
-                    
-                    // Group By Section
-                    collapsibleSection(
-                        title: "Group By",
-                        icon: "rectangle.3.group",
-                        section: .groupBy,
-                        badgeCount: config.groupByColumn != .none ? 1 : 0
-                    ) {
-                        groupByContent
-                    }
-                    
-                    Divider()
-                        .padding(.horizontal)
-                    
-                    // Favorites Section
-                    collapsibleSection(
-                        title: "Favorites",
-                        icon: "star",
-                        section: .favorites,
-                        badgeCount: config.savedSearches.count
-                    ) {
-                        favoritesContent
-                    }
-                }
-                .padding(.vertical, 8)
+                selectedSectionContent
+                    .padding()
             }
             
             Divider()
@@ -103,7 +72,7 @@ struct SearchPopoverView: View {
             // Footer
             footer
         }
-        .frame(width: 320, height: 450)
+        .frame(width: 580, height: 400)
         .background(Color(nsColor: .windowBackgroundColor))
         .alert("Save Search", isPresented: $showingSaveDialog) {
             TextField("Search name", text: $newSearchName)
@@ -142,6 +111,78 @@ struct SearchPopoverView: View {
         .padding()
     }
     
+    // MARK: - Tab Bar
+    
+    private var tabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(ExpandedSection.allCases, id: \.self) { section in
+                tabButton(for: section)
+                
+                if section != ExpandedSection.allCases.last {
+                    Divider()
+                        .frame(height: 24)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+    
+    private func tabButton(for section: ExpandedSection) -> some View {
+        let badgeCount: Int = {
+            switch section {
+            case .filters: return activeFilterCount
+            case .groupBy: return config.groupByColumn != .none ? 1 : 0
+            case .favorites: return config.savedSearches.count
+            }
+        }()
+        
+        return Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                expandedSection = section
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: section.iconName)
+                    .font(.caption)
+                
+                Text(section.rawValue)
+                    .font(.subheadline)
+                    .fontWeight(expandedSection == section ? .semibold : .regular)
+                
+                if badgeCount > 0 {
+                    Text("\(badgeCount)")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(Color.accentColor.opacity(0.2))
+                        .foregroundStyle(Color.accentColor)
+                        .clipShape(Capsule())
+                }
+            }
+            .foregroundStyle(expandedSection == section ? Color.accentColor : .secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .background(expandedSection == section ? Color.accentColor.opacity(0.1) : Color.clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+    
+    // MARK: - Section Content
+    
+    @ViewBuilder
+    private var selectedSectionContent: some View {
+        switch expandedSection {
+        case .filters:
+            filtersContent
+        case .groupBy:
+            groupByContent
+        case .favorites:
+            favoritesContent
+        }
+    }
+    
     // MARK: - Footer
     
     private var footer: some View {
@@ -162,175 +203,129 @@ struct SearchPopoverView: View {
         .padding()
     }
     
-    // MARK: - Collapsible Section
-    
-    @ViewBuilder
-    private func collapsibleSection<Content: View>(
-        title: String,
-        icon: String,
-        section: ExpandedSection,
-        badgeCount: Int,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(spacing: 0) {
-            // Section header
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    expandedSection = expandedSection == section ? section : section
-                }
-            } label: {
-                HStack {
-                    Image(systemName: icon)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 20)
-                    
-                    Text(title)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                    
-                    if badgeCount > 0 {
-                        Text("\(badgeCount)")
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.accentColor.opacity(0.2))
-                            .foregroundStyle(Color.accentColor)
-                            .clipShape(Capsule())
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: expandedSection == section ? "chevron.down" : "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal)
-            .padding(.vertical, 10)
-            
-            // Section content
-            if expandedSection == section {
-                content()
-                    .padding(.horizontal)
-                    .padding(.bottom, 12)
-            }
-        }
-    }
-    
     // MARK: - Filters Content
     
     private var filtersContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Status filters (multi-select)
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Status")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                FlowLayout(spacing: 6) {
-                    ForEach(ResearchQuestionStatus.allCases) { status in
-                        FilterChip(
-                            title: status.displayName,
-                            icon: status.iconName,
-                            isSelected: config.activeStatusFilters.contains(status.rawValue),
-                            color: statusColor(for: status)
-                        ) {
-                            toggleStatusFilter(status)
+        VStack(alignment: .leading, spacing: 16) {
+            // Top row: Status and Confidence side by side
+            HStack(alignment: .top, spacing: 24) {
+                // Status filters (multi-select)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Status")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    FlowLayout(spacing: 6) {
+                        ForEach(ResearchQuestionStatus.allCases) { status in
+                            FilterChip(
+                                title: status.displayName,
+                                icon: status.iconName,
+                                isSelected: config.activeStatusFilters.contains(status.rawValue),
+                                color: statusColor(for: status)
+                            ) {
+                                toggleStatusFilter(status)
+                            }
                         }
                     }
                 }
-            }
-            
-            // Confidence filter
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Confidence")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                FlowLayout(spacing: 6) {
-                    ForEach(ConfidenceLevel.allCases) { level in
-                        FilterChip(
-                            title: level.displayName,
-                            icon: "gauge",
-                            isSelected: config.activeConfidenceFilter == level.rawValue,
-                            color: confidenceColor(for: level)
-                        ) {
-                            toggleConfidenceFilter(level)
+                // Confidence filter
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Confidence")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    FlowLayout(spacing: 6) {
+                        ForEach(ConfidenceLevel.allCases) { level in
+                            FilterChip(
+                                title: level.displayName,
+                                icon: "gauge",
+                                isSelected: config.activeConfidenceFilter == level.rawValue,
+                                color: confidenceColor(for: level)
+                            ) {
+                                toggleConfidenceFilter(level)
+                            }
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             
-            // Tags filter
-            if !allTags.isEmpty {
+            // Bottom row: Tags and Date Range side by side
+            HStack(alignment: .top, spacing: 24) {
+                // Tags filter
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Tags")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
-                    FlowLayout(spacing: 6) {
-                        ForEach(allTags) { tag in
-                            FilterChip(
-                                title: tag.name,
-                                icon: "tag",
-                                isSelected: config.activeTagIds.contains(tag.tagId),
-                                color: tagColor(for: tag)
-                            ) {
-                                toggleTagFilter(tag)
+                    if !allTags.isEmpty {
+                        FlowLayout(spacing: 6) {
+                            ForEach(allTags) { tag in
+                                FilterChip(
+                                    title: tag.name,
+                                    icon: "tag",
+                                    isSelected: config.activeTagIds.contains(tag.tagId),
+                                    color: tagColor(for: tag)
+                                ) {
+                                    toggleTagFilter(tag)
+                                }
                             }
                         }
+                    } else {
+                        Text("No tags")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
                     }
                 }
-            }
-            
-            // Date range
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Date Range")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                HStack(spacing: 8) {
-                    DatePicker(
-                        "From",
-                        selection: Binding(
-                            get: { config.activeStartDate ?? Date().addingTimeInterval(-30 * 24 * 60 * 60) },
-                            set: { config.activeStartDate = $0 }
-                        ),
-                        displayedComponents: .date
-                    )
-                    .labelsHidden()
-                    .frame(maxWidth: .infinity)
-                    
-                    Text("to")
+                // Date range
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Date Range")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     
-                    DatePicker(
-                        "To",
-                        selection: Binding(
-                            get: { config.activeEndDate ?? Date() },
-                            set: { config.activeEndDate = $0 }
-                        ),
-                        displayedComponents: .date
-                    )
-                    .labelsHidden()
-                    .frame(maxWidth: .infinity)
-                }
-                
-                if config.activeStartDate != nil || config.activeEndDate != nil {
-                    Button {
-                        config.activeStartDate = nil
-                        config.activeEndDate = nil
-                    } label: {
-                        Label("Clear dates", systemImage: "xmark.circle")
+                    HStack(spacing: 8) {
+                        DatePicker(
+                            "From",
+                            selection: Binding(
+                                get: { config.activeStartDate ?? Date().addingTimeInterval(-30 * 24 * 60 * 60) },
+                                set: { config.activeStartDate = $0 }
+                            ),
+                            displayedComponents: .date
+                        )
+                        .labelsHidden()
+                        
+                        Text("to")
                             .font(.caption)
+                            .foregroundStyle(.secondary)
+                        
+                        DatePicker(
+                            "To",
+                            selection: Binding(
+                                get: { config.activeEndDate ?? Date() },
+                                set: { config.activeEndDate = $0 }
+                            ),
+                            displayedComponents: .date
+                        )
+                        .labelsHidden()
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
+                    
+                    if config.activeStartDate != nil || config.activeEndDate != nil {
+                        Button {
+                            config.activeStartDate = nil
+                            config.activeEndDate = nil
+                        } label: {
+                            Label("Clear dates", systemImage: "xmark.circle")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }

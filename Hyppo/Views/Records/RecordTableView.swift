@@ -47,6 +47,10 @@ struct RecordTableView: View {
     
     private var tableHeader: some View {
         HStack(spacing: 0) {
+            // Left margin spacer
+            Spacer()
+                .frame(width: 16)
+            
             ForEach(config.orderedVisibleColumns) { column in
                 HStack(spacing: 0) {
                     // Column header content
