@@ -1,14 +1,15 @@
 /**
  MainNavigationView is the root navigation container for the app.
  
- Provides a three-column layout: sidebar (assets), content (research questions),
- and detail (research question detail). On smaller windows, columns collapse appropriately.
+ Uses full-screen navigation with NavigationStack: the record list takes up
+ the full window, and clicking a record pushes to a full-screen detail view.
+ Back navigation returns to the list.
  */
 
 import SwiftUI
 import SwiftData
 
-/// Root navigation view with sidebar and detail areas
+/// Root navigation view with full-screen list and detail navigation
 struct MainNavigationView: View {
     // MARK: - Environment
     
@@ -16,133 +17,32 @@ struct MainNavigationView: View {
     
     // MARK: - State
     
-    @State private var selectedAsset: Asset?
-    @State private var selectedResearchQuestion: ResearchQuestion?
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
-    
-    // Shared filter state (used by both AssetDetailView and detail column toolbar)
-    @State private var statusFilter: ResearchQuestionStatus? = nil
+    @State private var navigationPath = NavigationPath()
     
     // Shortcut-triggered sheets
-    @State private var showingAddAssetSheet = false
-    @State private var showingAddLogSheet = false
-    @State private var showingNoResearchQuestionAlert = false
     @State private var showingGlobalSearch = false
-    @State private var showingAddQuestionFromDetail = false
     
     // MARK: - Body
     
     var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            // Sidebar - Asset list
-            SidebarView(selectedAsset: $selectedAsset)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 250, max: 350)
-        } content: {
-            // Content - Research Questions for selected asset
-            if let asset = selectedAsset {
-                AssetDetailView(
-                    asset: asset,
-                    selectedResearchQuestion: $selectedResearchQuestion,
-                    statusFilter: $statusFilter
-                )
-                .navigationSplitViewColumnWidth(min: 300, ideal: 350, max: 450)
-            } else {
-                EmptyStateView.noSelection
-            }
-        } detail: {
-            // Detail - Research Question detail (single report view)
-            if let question = selectedResearchQuestion {
-                ResearchQuestionDetailView(researchQuestion: question)
-            } else if let asset = selectedAsset {
-                EmptyStateView(
-                    iconName: "questionmark.circle",
-                    title: "Select a Research Question",
-                    description: "Choose a research question from the list to view its details and timeline."
-                )
-                .toolbar {
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        // Status filter menu
-                        Menu {
-                            Button("All Statuses") {
-                                statusFilter = nil
-                            }
-                            Divider()
-                            ForEach(ResearchQuestionStatus.allCases) { status in
-                                Button {
-                                    statusFilter = status
-                                } label: {
-                                    if statusFilter == status {
-                                        Label(status.displayName, systemImage: "checkmark")
-                                    } else {
-                                        Text(status.displayName)
-                                    }
-                                }
-                            }
-                        } label: {
-                            Label("Filter", systemImage: statusFilter == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                        }
-                        
-                        // Add Research Question
-                        Button(action: { showingAddQuestionFromDetail = true }) {
-                            Label("Add Research Question", systemImage: "plus")
-                        }
-                    }
+        NavigationStack(path: $navigationPath) {
+            // Full-screen record list
+            RecordListView(navigationPath: $navigationPath)
+                .navigationDestination(for: ResearchQuestion.self) { question in
+                    ResearchQuestionDetailView(researchQuestion: question)
                 }
-                .sheet(isPresented: $showingAddQuestionFromDetail) {
-                    ResearchWizardView(asset: asset) { newQuestion in
-                        modelContext.insert(newQuestion)
-                        newQuestion.asset = asset
-                        selectedResearchQuestion = newQuestion
-                    }
-                }
-            } else {
-                EmptyStateView.noSelection
-            }
-        }
-        .onChange(of: selectedAsset) { oldValue, newValue in
-            // Clear research question selection when asset changes
-            if oldValue != newValue {
-                selectedResearchQuestion = nil
-            }
         }
         // Handle menu shortcut notifications
-        .onReceive(NotificationCenter.default.publisher(for: .addAsset)) { _ in
-            showingAddAssetSheet = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .addLogEntry)) { _ in
-            if selectedResearchQuestion != nil {
-                showingAddLogSheet = true
-            } else {
-                showingNoResearchQuestionAlert = true
-            }
-        }
         .onReceive(NotificationCenter.default.publisher(for: .showGlobalSearch)) { _ in
             showingGlobalSearch = true
         }
-        // Shortcut-triggered sheets
-        .sheet(isPresented: $showingAddAssetSheet) {
-            AssetFormView(mode: .add) { newAsset in
-                modelContext.insert(newAsset)
-                selectedAsset = newAsset
-            }
-        }
-        .sheet(isPresented: $showingAddLogSheet) {
-            if let researchQuestion = selectedResearchQuestion {
-                LogEntryFormView(mode: .add(researchQuestion: researchQuestion)) { newLogEntry in
-                    modelContext.insert(newLogEntry)
-                    newLogEntry.researchQuestion = researchQuestion
-                }
-            }
-        }
-        .alert("No Research Question Selected", isPresented: $showingNoResearchQuestionAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Please select a research question first to add a log entry. Use ⌘⇧L after selecting a research question.")
-        }
         .sheet(isPresented: $showingGlobalSearch) {
             GlobalSearchView(
-                selectedAsset: $selectedAsset,
-                selectedResearchQuestion: $selectedResearchQuestion
+                selectedAsset: .constant(nil),
+                selectedResearchQuestion: .constant(nil),
+                onSelectQuestion: { question in
+                    navigationPath.append(question)
+                }
             )
         }
     }
@@ -152,5 +52,5 @@ struct MainNavigationView: View {
 
 #Preview {
     MainNavigationView()
-        .modelContainer(for: [Asset.self, ResearchQuestion.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self], inMemory: true)
+        .modelContainer(for: [Asset.self, ResearchQuestion.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self, Driver.self], inMemory: true)
 }

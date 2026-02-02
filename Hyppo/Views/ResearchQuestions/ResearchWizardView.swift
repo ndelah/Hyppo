@@ -18,7 +18,7 @@ struct ResearchWizardView: View {
     
     // MARK: - Properties
     
-    let asset: Asset
+    let asset: Asset?
     let existingQuestion: ResearchQuestion?
     let onSave: (ResearchQuestion) -> Void
     
@@ -44,8 +44,8 @@ struct ResearchWizardView: View {
     
     // MARK: - Initialization
     
-    init(asset: Asset, existingQuestion: ResearchQuestion? = nil, onSave: @escaping (ResearchQuestion) -> Void) {
-        self.asset = asset
+    init(asset: Asset?, existingQuestion: ResearchQuestion? = nil, onSave: @escaping (ResearchQuestion) -> Void) {
+        self.asset = asset ?? existingQuestion?.asset
         self.existingQuestion = existingQuestion
         self.onSave = onSave
         
@@ -128,9 +128,15 @@ struct ResearchWizardView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Research Wizard")
                         .font(.headline)
-                    Text("Creating research for \(asset.ticker)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if let asset = asset {
+                        Text("Creating research for \(asset.ticker)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Creating new research question")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 
                 Spacer()
@@ -521,7 +527,9 @@ struct ResearchWizardView: View {
                 thesisStatement: trimmedThesis,
                 confidence: confidence
             )
-            rq.asset = asset
+            if let asset = asset {
+                rq.asset = asset
+            }
         }
         
         // Save drivers and sub-drivers
