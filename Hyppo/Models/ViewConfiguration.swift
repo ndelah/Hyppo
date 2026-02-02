@@ -1,12 +1,95 @@
 /**
  ViewConfiguration manages user preferences for record view display.
  
- Stores view mode (table/kanban/cards), visible columns, and sort preferences
- in UserDefaults for persistence across app sessions.
+ Stores view mode (table/kanban/cards), visible columns, sort preferences,
+ saved searches, group by settings, and column widths in UserDefaults
+ for persistence across app sessions.
  */
 
 import Foundation
 import SwiftUI
+
+// MARK: - Saved Search
+
+/**
+ Represents a saved search configuration that can be persisted and reapplied.
+ */
+struct SavedSearch: Codable, Identifiable, Equatable {
+    let id: UUID
+    var name: String
+    var statusFilters: [String]
+    var confidenceFilter: Int?
+    var tagIds: [UUID]
+    var startDate: Date?
+    var endDate: Date?
+    var groupByColumn: String?
+    var searchText: String
+    
+    init(
+        id: UUID = UUID(),
+        name: String,
+        statusFilters: [String] = [],
+        confidenceFilter: Int? = nil,
+        tagIds: [UUID] = [],
+        startDate: Date? = nil,
+        endDate: Date? = nil,
+        groupByColumn: String? = nil,
+        searchText: String = ""
+    ) {
+        self.id = id
+        self.name = name
+        self.statusFilters = statusFilters
+        self.confidenceFilter = confidenceFilter
+        self.tagIds = tagIds
+        self.startDate = startDate
+        self.endDate = endDate
+        self.groupByColumn = groupByColumn
+        self.searchText = searchText
+    }
+}
+
+// MARK: - Group By Column
+
+/**
+ Available columns for grouping records in kanban and card views.
+ */
+enum GroupByColumn: String, CaseIterable, Identifiable {
+    case none = "none"
+    case status = "status"
+    case asset = "asset"
+    case confidence = "confidence"
+    case tags = "tags"
+    case createdDate = "createdDate"
+    case updatedDate = "updatedDate"
+    
+    var id: String { rawValue }
+    
+    /// Display name for UI
+    var displayName: String {
+        switch self {
+        case .none: return "None"
+        case .status: return "Status"
+        case .asset: return "Asset"
+        case .confidence: return "Confidence"
+        case .tags: return "Tags"
+        case .createdDate: return "Created Date"
+        case .updatedDate: return "Updated Date"
+        }
+    }
+    
+    /// SF Symbol icon name
+    var iconName: String {
+        switch self {
+        case .none: return "square.grid.2x2"
+        case .status: return "flag"
+        case .asset: return "building.2"
+        case .confidence: return "gauge"
+        case .tags: return "tag"
+        case .createdDate: return "calendar.badge.plus"
+        case .updatedDate: return "calendar"
+        }
+    }
+}
 
 // MARK: - View Mode
 
@@ -146,6 +229,9 @@ final class ViewConfiguration {
         static let visibleColumns = "recordVisibleColumns"
         static let sortColumn = "recordSortColumn"
         static let sortAscending = "recordSortAscending"
+        static let savedSearches = "recordSavedSearches"
+        static let groupByColumn = "recordGroupByColumn"
+        static let columnWidths = "recordColumnWidths"
     }
     
     // MARK: - Properties
@@ -179,6 +265,49 @@ final class ViewConfiguration {
         }
     }
     
+    /// Saved search configurations
+    var savedSearches: [SavedSearch] {
+        didSet {
+            if let encoded = try? JSONEncoder().encode(savedSearches) {
+                UserDefaults.standard.set(encoded, forKey: Keys.savedSearches)
+            }
+        }
+    }
+    
+    /// Current group by column for kanban/cards view
+    var groupByColumn: GroupByColumn {
+        didSet {
+            UserDefaults.standard.set(groupByColumn.rawValue, forKey: Keys.groupByColumn)
+        }
+    }
+    
+    /// Custom column widths (column rawValue -> width)
+    var columnWidths: [String: CGFloat] {
+        didSet {
+            UserDefaults.standard.set(columnWidths, forKey: Keys.columnWidths)
+        }
+    }
+    
+    // MARK: - Active Filter State (not persisted)
+    
+    /// Current status filters (multi-select)
+    var activeStatusFilters: Set<String> = []
+    
+    /// Current confidence filter
+    var activeConfidenceFilter: Int?
+    
+    /// Current tag IDs filter
+    var activeTagIds: Set<UUID> = []
+    
+    /// Current date range start
+    var activeStartDate: Date?
+    
+    /// Current date range end
+    var activeEndDate: Date?
+    
+    /// Current search text
+    var activeSearchText: String = ""
+    
     // MARK: - Initialization
     
     private init() {
@@ -211,6 +340,29 @@ final class ViewConfiguration {
             self.sortAscending = UserDefaults.standard.bool(forKey: Keys.sortAscending)
         } else {
             self.sortAscending = false // Default: newest first
+        }
+        
+        // Load saved searches
+        if let data = UserDefaults.standard.data(forKey: Keys.savedSearches),
+           let decoded = try? JSONDecoder().decode([SavedSearch].self, from: data) {
+            self.savedSearches = decoded
+        } else {
+            self.savedSearches = []
+        }
+        
+        // Load group by column
+        if let rawGroupBy = UserDefaults.standard.string(forKey: Keys.groupByColumn),
+           let groupBy = GroupByColumn(rawValue: rawGroupBy) {
+            self.groupByColumn = groupBy
+        } else {
+            self.groupByColumn = .status // Default: group by status for kanban
+        }
+        
+        // Load column widths
+        if let widths = UserDefaults.standard.dictionary(forKey: Keys.columnWidths) as? [String: CGFloat] {
+            self.columnWidths = widths
+        } else {
+            self.columnWidths = [:]
         }
     }
     
@@ -254,6 +406,9 @@ final class ViewConfiguration {
         visibleColumns = Set(RecordColumn.allCases.filter { $0.isDefaultVisible })
         sortColumn = .updated
         sortAscending = false
+        groupByColumn = .status
+        columnWidths = [:]
+        clearActiveFilters()
     }
     
     /**
@@ -261,6 +416,115 @@ final class ViewConfiguration {
      */
     var orderedVisibleColumns: [RecordColumn] {
         RecordColumn.allCases.filter { visibleColumns.contains($0) }
+    }
+    
+    // MARK: - Column Width Methods
+    
+    /**
+     Gets the width for a column, using custom width if set, otherwise the suggested width.
+     
+     - Parameter column: The column to get width for
+     - Returns: The column width
+     */
+    func widthForColumn(_ column: RecordColumn) -> CGFloat {
+        columnWidths[column.rawValue] ?? column.suggestedWidth
+    }
+    
+    /**
+     Sets a custom width for a column.
+     
+     - Parameters:
+       - column: The column to set width for
+       - width: The new width
+     */
+    func setWidthForColumn(_ column: RecordColumn, width: CGFloat) {
+        // Enforce minimum width
+        let minWidth: CGFloat = 50
+        columnWidths[column.rawValue] = max(width, minWidth)
+    }
+    
+    /**
+     Resets a column width to its default suggested width.
+     
+     - Parameter column: The column to reset
+     */
+    func resetColumnWidth(_ column: RecordColumn) {
+        columnWidths.removeValue(forKey: column.rawValue)
+    }
+    
+    // MARK: - Saved Search Methods
+    
+    /**
+     Saves the current filter configuration as a new saved search.
+     
+     - Parameter name: The name for the saved search
+     - Returns: The newly created SavedSearch
+     */
+    @discardableResult
+    func saveCurrentSearch(name: String) -> SavedSearch {
+        let search = SavedSearch(
+            name: name,
+            statusFilters: Array(activeStatusFilters),
+            confidenceFilter: activeConfidenceFilter,
+            tagIds: Array(activeTagIds),
+            startDate: activeStartDate,
+            endDate: activeEndDate,
+            groupByColumn: groupByColumn.rawValue,
+            searchText: activeSearchText
+        )
+        savedSearches.append(search)
+        return search
+    }
+    
+    /**
+     Deletes a saved search by ID.
+     
+     - Parameter id: The ID of the saved search to delete
+     */
+    func deleteSavedSearch(id: UUID) {
+        savedSearches.removeAll { $0.id == id }
+    }
+    
+    /**
+     Applies a saved search configuration to the active filters.
+     
+     - Parameter search: The saved search to apply
+     */
+    func applySavedSearch(_ search: SavedSearch) {
+        activeStatusFilters = Set(search.statusFilters)
+        activeConfidenceFilter = search.confidenceFilter
+        activeTagIds = Set(search.tagIds)
+        activeStartDate = search.startDate
+        activeEndDate = search.endDate
+        activeSearchText = search.searchText
+        
+        if let rawGroupBy = search.groupByColumn,
+           let groupBy = GroupByColumn(rawValue: rawGroupBy) {
+            groupByColumn = groupBy
+        }
+    }
+    
+    /**
+     Clears all active filters.
+     */
+    func clearActiveFilters() {
+        activeStatusFilters = []
+        activeConfidenceFilter = nil
+        activeTagIds = []
+        activeStartDate = nil
+        activeEndDate = nil
+        activeSearchText = ""
+    }
+    
+    /**
+     Checks if any filters are currently active.
+     */
+    var hasActiveFilters: Bool {
+        !activeStatusFilters.isEmpty ||
+        activeConfidenceFilter != nil ||
+        !activeTagIds.isEmpty ||
+        activeStartDate != nil ||
+        activeEndDate != nil
     }
 }
 

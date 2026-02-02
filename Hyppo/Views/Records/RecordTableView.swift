@@ -3,7 +3,8 @@
  
  Features:
  - Clickable column headers for sorting
- - Configurable column visibility
+ - Resizable columns via drag handles
+ - Column visibility settings button in header
  - Click row to navigate to detail view
  */
 
@@ -17,12 +18,18 @@ struct RecordTableView: View {
     let questions: [ResearchQuestion]
     @Binding var navigationPath: NavigationPath
     @Bindable var config: ViewConfiguration
+    @Binding var showingColumnSettings: Bool
+    
+    // MARK: - State
+    
+    @State private var draggedColumn: RecordColumn?
+    @State private var showingColumnPopover = false
     
     // MARK: - Body
     
     var body: some View {
         VStack(spacing: 0) {
-            // Table header
+            // Table header with resizable columns
             tableHeader
             
             Divider()
@@ -41,18 +48,28 @@ struct RecordTableView: View {
     private var tableHeader: some View {
         HStack(spacing: 0) {
             ForEach(config.orderedVisibleColumns) { column in
-                columnHeader(for: column)
-                    .frame(width: column.suggestedWidth, alignment: .leading)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 10)
-                
-                if column != config.orderedVisibleColumns.last {
-                    Divider()
-                        .frame(height: 20)
+                HStack(spacing: 0) {
+                    // Column header content
+                    columnHeader(for: column)
+                        .frame(width: config.widthForColumn(column) - 8, alignment: .leading)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 10)
+                    
+                    // Resizable divider (not on the last column)
+                    if column != config.orderedVisibleColumns.last {
+                        ResizableDivider(
+                            column: column,
+                            config: config
+                        )
+                    }
                 }
+                .frame(width: config.widthForColumn(column))
             }
             
             Spacer(minLength: 0)
+            
+            // Column settings button at the end
+            columnSettingsButton
         }
         .background(Color(nsColor: .controlBackgroundColor))
     }
@@ -85,6 +102,23 @@ struct RecordTableView: View {
         .disabled(!column.isSortable)
     }
     
+    private var columnSettingsButton: some View {
+        Button {
+            showingColumnPopover = true
+        } label: {
+            Image(systemName: "slider.horizontal.3")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .help("Edit columns")
+        .popover(isPresented: $showingColumnPopover, arrowEdge: .bottom) {
+            ColumnVisibilityPopover(config: config)
+        }
+    }
+    
     // MARK: - Table Body
     
     private var tableBody: some View {
@@ -95,6 +129,7 @@ struct RecordTableView: View {
                         RecordRowView(
                             question: question,
                             columns: config.orderedVisibleColumns,
+                            columnWidths: columnWidthsDict,
                             isSelected: false
                         )
                         .onTapGesture {
@@ -130,6 +165,16 @@ struct RecordTableView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
+    }
+    
+    // MARK: - Computed Properties
+    
+    private var columnWidthsDict: [RecordColumn: CGFloat] {
+        var dict: [RecordColumn: CGFloat] = [:]
+        for column in config.orderedVisibleColumns {
+            dict[column] = config.widthForColumn(column)
+        }
+        return dict
     }
     
     // MARK: - Sorting
@@ -198,6 +243,109 @@ struct RecordTableView: View {
     }
 }
 
+// MARK: - Resizable Divider
+
+/// A draggable divider between columns for resizing
+private struct ResizableDivider: View {
+    let column: RecordColumn
+    @Bindable var config: ViewConfiguration
+    
+    @State private var isDragging = false
+    
+    var body: some View {
+        Rectangle()
+            .fill(isDragging ? Color.accentColor : Color(nsColor: .separatorColor))
+            .frame(width: isDragging ? 3 : 1, height: 20)
+            .contentShape(Rectangle().size(width: 10, height: 40))
+            .gesture(
+                DragGesture(minimumDistance: 1)
+                    .onChanged { value in
+                        isDragging = true
+                        let currentWidth = config.widthForColumn(column)
+                        let newWidth = currentWidth + value.translation.width
+                        config.setWidthForColumn(column, width: newWidth)
+                    }
+                    .onEnded { _ in
+                        isDragging = false
+                    }
+            )
+            .onHover { hovering in
+                if hovering {
+                    NSCursor.resizeLeftRight.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+    }
+}
+
+// MARK: - Column Visibility Popover
+
+/// Popover for toggling column visibility
+private struct ColumnVisibilityPopover: View {
+    @Bindable var config: ViewConfiguration
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Visible Columns")
+                .font(.headline)
+                .padding()
+            
+            Divider()
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(RecordColumn.allCases) { column in
+                        Toggle(isOn: Binding(
+                            get: { config.visibleColumns.contains(column) },
+                            set: { _ in config.toggleColumn(column) }
+                        )) {
+                            HStack(spacing: 6) {
+                                Image(systemName: column.iconName)
+                                    .frame(width: 16)
+                                    .foregroundStyle(.secondary)
+                                Text(column.displayName)
+                            }
+                        }
+                        .toggleStyle(.checkbox)
+                        .disabled(column == .question) // Question column always visible
+                        .padding(.horizontal)
+                        .padding(.vertical, 4)
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+            
+            Divider()
+            
+            HStack {
+                Button("Reset Widths") {
+                    for column in RecordColumn.allCases {
+                        config.resetColumnWidth(column)
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .font(.caption)
+                
+                Spacer()
+                
+                Button("Reset All") {
+                    config.visibleColumns = Set(RecordColumn.allCases.filter { $0.isDefaultVisible })
+                    for column in RecordColumn.allCases {
+                        config.resetColumnWidth(column)
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.red)
+                .font(.caption)
+            }
+            .padding()
+        }
+        .frame(width: 220, height: 350)
+    }
+}
+
 // MARK: - Preview
 
 #Preview {
@@ -216,7 +364,8 @@ struct RecordTableView: View {
     return RecordTableView(
         questions: [question1, question2],
         navigationPath: .constant(NavigationPath()),
-        config: ViewConfiguration.shared
+        config: ViewConfiguration.shared,
+        showingColumnSettings: .constant(false)
     )
     .frame(width: 800, height: 400)
 }

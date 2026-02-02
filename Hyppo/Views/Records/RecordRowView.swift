@@ -14,6 +14,7 @@ struct RecordRowView: View {
     
     let question: ResearchQuestion
     let columns: [RecordColumn]
+    var columnWidths: [RecordColumn: CGFloat]?
     let isSelected: Bool
     
     // MARK: - Body
@@ -21,8 +22,10 @@ struct RecordRowView: View {
     var body: some View {
         HStack(spacing: 0) {
             ForEach(columns) { column in
+                let width = columnWidths?[column] ?? column.suggestedWidth
+                
                 columnCell(for: column)
-                    .frame(width: column.suggestedWidth, alignment: alignment(for: column))
+                    .frame(width: width - 8, alignment: alignment(for: column))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 10)
                 
