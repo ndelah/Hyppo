@@ -10,6 +10,10 @@
 - Prefer Pareto solutions now; leave clear seams to improve later.
 - Avoid overengineering: only introduce abstractions when they remove real duplication or risk.
 
+## Codebase orientation
+- **Before coding**: always read `docs/structure.md` first to understand file layout and locate relevant modules.
+- **After structural changes**: update `docs/structure.md` when adding, removing, or renaming files/folders.
+
 ## Architecture
 - Use a layered architecture.
 - Default: UI is thin; non-trivial logic should not live inside views.
