@@ -188,7 +188,7 @@ struct RecordListView: View {
                 if config.groupByColumn != .none {
                     Image(systemName: "rectangle.3.group")
                         .font(.caption)
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                 }
                 
                 Image(systemName: "chevron.down")

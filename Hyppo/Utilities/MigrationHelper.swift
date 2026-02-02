@@ -193,7 +193,7 @@ final class MigrationHelper {
         
         // If research question has a thesis but no drivers, create a general driver
         if needsDrivers {
-            let generalDriver = createDefaultDriver(for: rq, modelContext: modelContext)
+            _ = createDefaultDriver(for: rq, modelContext: modelContext)
             result.driversCreated += 1
             
             DebugLogger.info(

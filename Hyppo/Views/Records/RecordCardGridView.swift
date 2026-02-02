@@ -1,6 +1,13 @@
 /**
  RecordCardGridView displays research questions in a responsive card grid.
  
+ Supports dynamic grouping by various properties with section headers:
+ - Status: Active, On Hold, Invalidated, Archived
+ - Asset: Grouped by ticker
+ - Confidence: Grouped by confidence level
+ - Tags: Grouped by tag name
+ - Created/Updated Date: Grouped by month
+ 
  Uses a flexible grid layout that adapts to available width,
  showing cards at a consistent size with proper spacing.
  Click a card to navigate to its detail view.
@@ -33,24 +40,272 @@ struct RecordCardGridView: View {
         if questions.isEmpty {
             emptyState
         } else {
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: spacing) {
-                    ForEach(sortedQuestions) { question in
-                        RecordCardView(
-                            question: question,
-                            isSelected: false,
-                            isCompact: false
-                        )
-                        .onTapGesture {
-                            navigationPath.append(question)
-                        }
-                        .contextMenu {
-                            contextMenu(for: question)
+            GeometryReader { geometry in
+                ScrollView {
+                    VStack(spacing: 24) {
+                        if config.groupByColumn == .none {
+                            // No grouping - flat grid
+                            flatCardGrid
+                        } else {
+                            // Grouped with section headers
+                            groupedCardGrid
                         }
                     }
+                    .padding()
+                    .frame(minWidth: geometry.size.width)
                 }
-                .padding()
             }
+        }
+    }
+    
+    // MARK: - Flat Grid (No Grouping)
+    
+    private var flatCardGrid: some View {
+        LazyVGrid(columns: columns, spacing: spacing) {
+            ForEach(sortedQuestions) { question in
+                cardView(for: question)
+            }
+        }
+    }
+    
+    // MARK: - Grouped Grid
+    
+    private var groupedCardGrid: some View {
+        ForEach(groupedSections, id: \.id) { section in
+            VStack(alignment: .leading, spacing: 12) {
+                // Section header
+                sectionHeader(section)
+                
+                // Cards in section
+                LazyVGrid(columns: columns, spacing: spacing) {
+                    ForEach(section.questions) { question in
+                        cardView(for: question)
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Section Header
+    
+    private func sectionHeader(_ section: CardSection) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: section.icon)
+                .font(.title3)
+                .foregroundStyle(section.color)
+            
+            Text(section.title)
+                .font(.title3)
+                .fontWeight(.semibold)
+            
+            Text("\(section.questions.count)")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(section.color.opacity(0.15))
+                .foregroundStyle(section.color)
+                .clipShape(Capsule())
+            
+            Spacer()
+        }
+        .padding(.horizontal, 4)
+        .padding(.top, 8)
+    }
+    
+    // MARK: - Card View
+    
+    private func cardView(for question: ResearchQuestion) -> some View {
+        RecordCardView(
+            question: question,
+            isSelected: false,
+            isCompact: false
+        )
+        .onTapGesture {
+            navigationPath.append(question)
+        }
+        .contextMenu {
+            contextMenu(for: question)
+        }
+    }
+    
+    // MARK: - Grouped Sections
+    
+    /// Represents a section with a grouping key and questions
+    struct CardSection: Identifiable {
+        let id: String
+        let title: String
+        let icon: String
+        let color: Color
+        let questions: [ResearchQuestion]
+    }
+    
+    /// Generates sections based on the current groupBy setting
+    private var groupedSections: [CardSection] {
+        switch config.groupByColumn {
+        case .none:
+            return []
+        case .status:
+            return statusGroupedSections
+        case .asset:
+            return assetGroupedSections
+        case .confidence:
+            return confidenceGroupedSections
+        case .tags:
+            return tagGroupedSections
+        case .createdDate:
+            return dateGroupedSections(keyPath: \.createdAt, label: "Created")
+        case .updatedDate:
+            return dateGroupedSections(keyPath: \.updatedAt, label: "Updated")
+        }
+    }
+    
+    private var statusGroupedSections: [CardSection] {
+        ResearchQuestionStatus.allCases.compactMap { status in
+            let sectionQuestions = sortedQuestions.filter { $0.status == status }
+            guard !sectionQuestions.isEmpty else { return nil }
+            return CardSection(
+                id: status.rawValue,
+                title: status.displayName,
+                icon: status.iconName,
+                color: statusColor(for: status),
+                questions: sectionQuestions
+            )
+        }
+    }
+    
+    private var assetGroupedSections: [CardSection] {
+        var groups: [String: [ResearchQuestion]] = [:]
+        var noAssetQuestions: [ResearchQuestion] = []
+        
+        for question in sortedQuestions {
+            if let asset = question.asset {
+                let key = asset.ticker
+                groups[key, default: []].append(question)
+            } else {
+                noAssetQuestions.append(question)
+            }
+        }
+        
+        var sections = groups.keys.sorted().compactMap { ticker -> CardSection? in
+            guard let questions = groups[ticker], !questions.isEmpty else { return nil }
+            return CardSection(
+                id: ticker,
+                title: ticker,
+                icon: "building.2",
+                color: .blue,
+                questions: questions
+            )
+        }
+        
+        if !noAssetQuestions.isEmpty {
+            sections.append(CardSection(
+                id: "_no_asset",
+                title: "No Asset",
+                icon: "folder",
+                color: .gray,
+                questions: noAssetQuestions
+            ))
+        }
+        
+        return sections
+    }
+    
+    private var confidenceGroupedSections: [CardSection] {
+        var sections = ConfidenceLevel.allCases.compactMap { level -> CardSection? in
+            let sectionQuestions = sortedQuestions.filter { $0.confidenceCurrent == level.rawValue }
+            guard !sectionQuestions.isEmpty else { return nil }
+            return CardSection(
+                id: "confidence_\(level.rawValue)",
+                title: level.displayName,
+                icon: "gauge",
+                color: confidenceColor(for: level),
+                questions: sectionQuestions
+            )
+        }
+        
+        let notSetQuestions = sortedQuestions.filter { $0.confidenceCurrent == nil }
+        if !notSetQuestions.isEmpty {
+            sections.append(CardSection(
+                id: "confidence_none",
+                title: "Not Set",
+                icon: "gauge",
+                color: .gray,
+                questions: notSetQuestions
+            ))
+        }
+        
+        return sections
+    }
+    
+    private var tagGroupedSections: [CardSection] {
+        var tagQuestions: [String: (tag: Tag, questions: [ResearchQuestion])] = [:]
+        var untaggedQuestions: [ResearchQuestion] = []
+        
+        for question in sortedQuestions {
+            if let tags = question.tags, !tags.isEmpty {
+                for tag in tags {
+                    if tagQuestions[tag.tagId.uuidString] == nil {
+                        tagQuestions[tag.tagId.uuidString] = (tag: tag, questions: [])
+                    }
+                    tagQuestions[tag.tagId.uuidString]?.questions.append(question)
+                }
+            } else {
+                untaggedQuestions.append(question)
+            }
+        }
+        
+        var sections = tagQuestions.values.sorted { $0.tag.name < $1.tag.name }.compactMap { item -> CardSection? in
+            guard !item.questions.isEmpty else { return nil }
+            return CardSection(
+                id: item.tag.tagId.uuidString,
+                title: item.tag.name,
+                icon: "tag",
+                color: tagColor(for: item.tag),
+                questions: item.questions
+            )
+        }
+        
+        if !untaggedQuestions.isEmpty {
+            sections.append(CardSection(
+                id: "_untagged",
+                title: "Untagged",
+                icon: "tag.slash",
+                color: .gray,
+                questions: untaggedQuestions
+            ))
+        }
+        
+        return sections
+    }
+    
+    private func dateGroupedSections(keyPath: KeyPath<ResearchQuestion, Date>, label: String) -> [CardSection] {
+        let calendar = Calendar.current
+        var groups: [String: (date: Date, questions: [ResearchQuestion])] = [:]
+        
+        for question in sortedQuestions {
+            let date = question[keyPath: keyPath]
+            let components = calendar.dateComponents([.year, .month], from: date)
+            let key = "\(components.year!)-\(String(format: "%02d", components.month!))"
+            
+            if groups[key] == nil {
+                groups[key] = (date: calendar.date(from: components)!, questions: [])
+            }
+            groups[key]?.questions.append(question)
+        }
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM yyyy"
+        
+        return groups.keys.sorted().reversed().compactMap { key -> CardSection? in
+            guard let item = groups[key], !item.questions.isEmpty else { return nil }
+            return CardSection(
+                id: key,
+                title: dateFormatter.string(from: item.date),
+                icon: "calendar",
+                color: .purple,
+                questions: item.questions
+            )
         }
     }
     
@@ -137,6 +392,35 @@ struct RecordCardGridView: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Colors
+    
+    private func statusColor(for status: ResearchQuestionStatus) -> Color {
+        switch status {
+        case .active: return .green
+        case .onHold: return .orange
+        case .invalidated: return .red
+        case .archived: return .gray
+        }
+    }
+    
+    private func confidenceColor(for level: ConfidenceLevel) -> Color {
+        switch level {
+        case .veryLow: return .red
+        case .low: return .orange
+        case .medium: return .yellow
+        case .high: return .green
+        case .veryHigh: return .blue
+        }
+    }
+    
+    private func tagColor(for tag: Tag) -> Color {
+        guard let colorName = tag.colorName,
+              let color = TagColor(rawValue: colorName) else {
+            return .blue
+        }
+        return color.color
     }
 }
 
