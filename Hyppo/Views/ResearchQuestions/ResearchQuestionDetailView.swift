@@ -172,6 +172,223 @@ struct ResearchQuestionDetailView: View {
     
     // MARK: - Subviews
     
+    /// Tabbed menu section with Description, Health, and Tasks tabs
+    private var tabbedMenuSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Tab bar
+            tabBar
+            
+            // Tab content
+            tabContent
+        }
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.5), lineWidth: 1)
+        )
+    }
+    
+    /// Tab bar with Description, Health, and Tasks tabs
+    private var tabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(ResearchDetailTab.allCases) { tab in
+                tabButton(for: tab)
+            }
+            Spacer()
+        }
+        .background(Color(nsColor: .windowBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+    
+    /// Individual tab button
+    private func tabButton(for tab: ResearchDetailTab) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                selectedTab = tab
+            }
+        } label: {
+            VStack(spacing: 0) {
+                Text(tab.rawValue)
+                    .font(.subheadline)
+                    .fontWeight(selectedTab == tab ? .semibold : .regular)
+                    .foregroundStyle(selectedTab == tab ? .primary : .secondary)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                
+                // Active indicator
+                Rectangle()
+                    .fill(selectedTab == tab ? Color.accentColor : Color.clear)
+                    .frame(height: 2)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(tab.rawValue) tab")
+        .accessibilityAddTraits(selectedTab == tab ? .isSelected : [])
+    }
+    
+    /// Tab content based on selected tab
+    @ViewBuilder
+    private var tabContent: some View {
+        switch selectedTab {
+        case .description:
+            descriptionTabContent
+                .padding()
+                .transition(.opacity)
+        case .health:
+            healthTabContent
+                .padding()
+                .transition(.opacity)
+        case .tasks:
+            tasksTabContent
+                .transition(.opacity)
+        }
+    }
+    
+    /// Description tab content - shows thesis summary, context, drivers, subdrivers, and logic
+    private var descriptionTabContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Thesis Statement
+            if let thesis = researchQuestion.thesisStatement, !thesis.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Thesis Statement", systemImage: "text.quote")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                    
+                    Text(thesis)
+                        .font(.body)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(nsColor: .textBackgroundColor).opacity(0.5))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+            }
+            
+            // Context
+            if let context = researchQuestion.context, !context.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Context", systemImage: "info.circle")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                    
+                    Text(context)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            
+            // Drivers with logic and subdrivers
+            if !(researchQuestion.drivers?.isEmpty ?? true) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Key Assumptions", systemImage: "target")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                    
+                    VStack(spacing: 12) {
+                        ForEach(researchQuestion.topLevelDrivers) { driver in
+                            DriverDescriptionCard(driver: driver)
+                        }
+                    }
+                }
+            }
+            
+            // Scenarios
+            if !researchQuestion.scenarios.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Scenarios", systemImage: "arrow.up.arrow.down.circle")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(researchQuestion.scenarios.sorted { $0.scenarioType.sortOrder < $1.scenarioType.sortOrder }) { scenario in
+                            ScenarioRow(scenario: scenario)
+                        }
+                    }
+                }
+            }
+            
+            // Conclusion (when resolved)
+            if let conclusion = researchQuestion.conclusion, !conclusion.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Conclusion", systemImage: "flag.checkered")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                    
+                    Text(conclusion)
+                        .font(.body)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.green.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                    
+                    // Driver resolution summary
+                    if researchQuestion.allDriversResolved {
+                        HStack(spacing: 12) {
+                            Label("\(researchQuestion.confirmedDriversCount) confirmed", systemImage: "checkmark.seal.fill")
+                                .foregroundStyle(.green)
+                            Label("\(researchQuestion.discardedDriversCount) discarded", systemImage: "xmark.seal.fill")
+                                .foregroundStyle(.red)
+                        }
+                        .font(.caption)
+                    }
+                }
+            }
+            
+            // Empty state
+            if researchQuestion.thesisStatement == nil && researchQuestion.context == nil && (researchQuestion.drivers?.isEmpty ?? true) {
+                VStack(spacing: 8) {
+                    Image(systemName: "doc.text")
+                        .font(.title)
+                        .foregroundStyle(.tertiary)
+                    Text("No description yet")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text("Add a thesis statement, context, and assumptions to describe your investment thesis.")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+            }
+        }
+    }
+    
+    /// Health tab content - shows conviction health dashboard
+    private var healthTabContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if !(researchQuestion.drivers?.isEmpty ?? true) {
+                ConvictionHealthView(drivers: researchQuestion.drivers ?? [])
+            } else {
+                // Empty state for health
+                VStack(spacing: 8) {
+                    Image(systemName: "heart.text.square")
+                        .font(.title)
+                        .foregroundStyle(.tertiary)
+                    Text("No health data available")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text("Add assumptions and evidence to track conviction health.")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+            }
+        }
+    }
+    
+    /// Tasks tab content - shows research tasks
+    private var tasksTabContent: some View {
+        ResearchTasksView(researchQuestion: researchQuestion)
+    }
+    
     private var questionHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Title and status
@@ -615,6 +832,149 @@ private struct BulletPoint: View {
             
             Text(text)
                 .font(.subheadline)
+        }
+    }
+}
+
+// MARK: - Driver Description Card
+
+/// Card view displaying a driver with its logic and subdrivers in the Description tab
+private struct DriverDescriptionCard: View {
+    let driver: Driver
+    
+    /// Color for the driver's current status
+    private var statusColor: Color {
+        switch driver.status {
+        case .confirmed: return .green
+        case .discarded: return .red
+        case .needsRevision: return .orange
+        case .pending: return .gray
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Driver header with status
+            HStack(alignment: .top, spacing: 10) {
+                // Status indicator
+                Image(systemName: driver.status.iconName)
+                    .font(.body)
+                    .foregroundStyle(statusColor)
+                    .frame(width: 20)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    // Title
+                    Text(driver.title)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .strikethrough(driver.status == .discarded, color: .red)
+                        .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
+                    
+                    // Status badge
+                    if driver.status != .pending {
+                        Text(driver.status.displayName)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(statusColor.opacity(0.15))
+                            .foregroundStyle(statusColor)
+                            .clipShape(Capsule())
+                    }
+                }
+                
+                Spacer()
+            }
+            
+            // Logic/reasoning (if provided)
+            if let logic = driver.logic, !logic.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Logic")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.tertiary)
+                    
+                    Text(logic)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.leading, 30)
+                }
+            }
+            
+            // Description (if provided)
+            if let description = driver.driverDescription, !description.isEmpty {
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 30)
+            }
+            
+            // Sub-drivers
+            if let subDrivers = driver.subDrivers, !subDrivers.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(subDrivers.sorted(by: { $0.position < $1.position })) { subDriver in
+                        SubDriverRow(driver: subDriver)
+                    }
+                }
+                .padding(.leading, 30)
+            }
+        }
+        .padding(12)
+        .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(statusColor.opacity(0.3), lineWidth: 1)
+        )
+    }
+}
+
+/// Sub-driver row for the description tab
+private struct SubDriverRow: View {
+    let driver: Driver
+    
+    private var statusColor: Color {
+        switch driver.status {
+        case .confirmed: return .green
+        case .discarded: return .red
+        case .needsRevision: return .orange
+        case .pending: return .gray
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .top, spacing: 6) {
+                Text("→")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                
+                Image(systemName: driver.status.iconName)
+                    .font(.caption)
+                    .foregroundStyle(statusColor)
+                
+                Text(driver.title)
+                    .font(.caption)
+                    .strikethrough(driver.status == .discarded, color: .red)
+                    .foregroundStyle(driver.status == .discarded ? .tertiary : .secondary)
+                
+                if driver.status != .pending {
+                    Text(driver.status.displayName)
+                        .font(.caption2)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(statusColor.opacity(0.1))
+                        .foregroundStyle(statusColor)
+                        .clipShape(Capsule())
+                }
+            }
+            
+            // Logic for sub-driver (if provided)
+            if let logic = driver.logic, !logic.isEmpty {
+                Text(logic)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .padding(.leading, 30)
+            }
         }
     }
 }
