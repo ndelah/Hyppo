@@ -10,13 +10,13 @@ import Foundation
 /// App version constants and metadata
 struct AppVersion {
     /// Current semantic version (Major.Minor.Patch)
-    static let current = "1.0.0"
+    static let current = "2.0.0"
     
     /// Major version number
-    static let major = 1
+    static let major = 2
     
     /// Minor version number
-    static let minor = 0
+    static let minor = 1
     
     /// Patch version number
     static let patch = 0
@@ -25,7 +25,7 @@ struct AppVersion {
     static let build = 1
     
     /// Version name for display (e.g., "v1.0")
-    static let displayName = "v1.0.0"
+    static let displayName = "v2.1.0"
     
     /// Full version string including build number
     static var fullVersion: String {
