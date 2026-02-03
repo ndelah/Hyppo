@@ -27,6 +27,10 @@ struct AllTasksListView: View {
     
     @Binding var navigationPath: NavigationPath
     
+    // MARK: - Accessibility
+    
+    @AppStorage("textSizeMultiplier") private var textSizeMultiplier: Double = 1.0
+    
     // MARK: - State
     
     @State private var searchText = ""
@@ -131,17 +135,22 @@ struct AllTasksListView: View {
             
             Divider()
             
-            // Task input below search bar
-            TaskInputField(
-                placeholder: "Add a task... (@ for project, # for driver)"
-            )
+            // Task input below search bar (centered with max width)
+            HStack {
+                Spacer(minLength: 0)
+                TaskInputField(
+                    placeholder: "Add a task... (@ for project, # for driver)"
+                )
+                .frame(maxWidth: 720)
+                Spacer(minLength: 0)
+            }
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
             .background(Color(nsColor: .windowBackgroundColor))
             
             Divider()
             
-            // Content
+            // Content (centered with max width)
             if filteredTasks.isEmpty {
                 emptyState
             } else {
@@ -158,7 +167,7 @@ struct AllTasksListView: View {
             // Left side: Title with counts
             HStack(spacing: 8) {
                 Text("Tasks")
-                    .font(.headline)
+                    .font(.system(size: 15 * textSizeMultiplier, weight: .semibold))
                 
                 // Inbox badge
                 if inboxCount > 0 {
@@ -167,9 +176,9 @@ struct AllTasksListView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "tray")
-                                .font(.caption2)
+                                .font(.system(size: 10 * textSizeMultiplier))
                             Text("\(inboxCount)")
-                                .font(.caption)
+                                .font(.system(size: 11 * textSizeMultiplier))
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
@@ -194,7 +203,7 @@ struct AllTasksListView: View {
                 // Show completed toggle
                 Toggle("Completed", isOn: $showCompletedTasks)
                     .toggleStyle(.checkbox)
-                    .font(.caption)
+                    .font(.system(size: 11 * textSizeMultiplier))
                 
                 Divider()
                     .frame(height: 16)
@@ -214,7 +223,7 @@ struct AllTasksListView: View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-                .font(.caption)
+                .font(.system(size: 11 * textSizeMultiplier))
             
             // Active filter tags
             ForEach(activeFilterTags) { tag in
@@ -226,7 +235,7 @@ struct AllTasksListView: View {
             // Search field
             TextField("Search tasks...", text: $searchText)
                 .textFieldStyle(.plain)
-                .font(.subheadline)
+                .font(.system(size: 13 * textSizeMultiplier))
             
             if !searchText.isEmpty {
                 Button {
@@ -234,7 +243,7 @@ struct AllTasksListView: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
-                        .font(.caption)
+                        .font(.system(size: 11 * textSizeMultiplier))
                 }
                 .buttonStyle(.plain)
             }
@@ -255,7 +264,7 @@ struct AllTasksListView: View {
     private var paginationControls: some View {
         HStack(spacing: 8) {
             Text("\(displayRange) / \(filteredTasks.count)")
-                .font(.caption)
+                .font(.system(size: 11 * textSizeMultiplier))
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
             
@@ -266,7 +275,7 @@ struct AllTasksListView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.caption)
+                        .font(.system(size: 11 * textSizeMultiplier))
                         .foregroundStyle(currentPage > 0 ? .primary : .tertiary)
                 }
                 .buttonStyle(.plain)
@@ -278,7 +287,7 @@ struct AllTasksListView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.right")
-                        .font(.caption)
+                        .font(.system(size: 11 * textSizeMultiplier))
                         .foregroundStyle(currentPage < totalPages - 1 ? .primary : .tertiary)
                 }
                 .buttonStyle(.plain)
@@ -292,15 +301,15 @@ struct AllTasksListView: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "checklist")
-                .font(.system(size: 48))
+                .font(.system(size: 48 * textSizeMultiplier))
                 .foregroundStyle(.tertiary)
             
             Text(emptyStateTitle)
-                .font(.headline)
+                .font(.system(size: 15 * textSizeMultiplier, weight: .semibold))
                 .foregroundStyle(.secondary)
             
             Text(emptyStateDescription)
-                .font(.subheadline)
+                .font(.system(size: 13 * textSizeMultiplier))
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 300)
@@ -333,20 +342,25 @@ struct AllTasksListView: View {
     
     private var tasksList: some View {
         ScrollView {
-            LazyVStack(spacing: 2) {
-                ForEach(pagedTasks) { task in
-                    TodoistTaskRow(
-                        task: task,
-                        onNavigateToQuestion: {
-                            if let question = task.effectiveResearchQuestion {
-                                navigationPath.append(question)
+            HStack {
+                Spacer(minLength: 0)
+                LazyVStack(spacing: 2) {
+                    ForEach(pagedTasks) { task in
+                        TodoistTaskRow(
+                            task: task,
+                            onNavigateToQuestion: {
+                                if let question = task.effectiveResearchQuestion {
+                                    navigationPath.append(question)
+                                }
+                            },
+                            onDelete: {
+                                deleteTask(task)
                             }
-                        },
-                        onDelete: {
-                            deleteTask(task)
-                        }
-                    )
+                        )
+                    }
                 }
+                .frame(maxWidth: 720)
+                Spacer(minLength: 0)
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 24)
@@ -388,6 +402,7 @@ struct TodoistTaskRow: View {
     let onDelete: () -> Void
     
     @Environment(\.modelContext) private var modelContext
+    @AppStorage("textSizeMultiplier") private var textSizeMultiplier: Double = 1.0
     
     @State private var isHovering = false
     @State private var isEditing = false
@@ -403,7 +418,7 @@ struct TodoistTaskRow: View {
                 }
             } label: {
                 Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.body)
+                    .font(.system(size: 14 * textSizeMultiplier))
                     .foregroundStyle(task.isCompleted ? .green : .secondary)
             }
             .buttonStyle(.plain)
@@ -412,7 +427,7 @@ struct TodoistTaskRow: View {
             if isEditing {
                 TextField("Task description", text: $editText)
                     .textFieldStyle(.plain)
-                    .font(.body)
+                    .font(.system(size: 14 * textSizeMultiplier))
                     .focused($isTextFieldFocused)
                     .onSubmit {
                         saveEdit()
@@ -422,7 +437,7 @@ struct TodoistTaskRow: View {
                     }
             } else {
                 Text(task.text)
-                    .font(.body)
+                    .font(.system(size: 14 * textSizeMultiplier))
                     .strikethrough(task.isCompleted)
                     .foregroundStyle(task.isCompleted ? .secondary : .primary)
                     .lineLimit(2)
@@ -443,9 +458,9 @@ struct TodoistTaskRow: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "at")
-                                .font(.caption2)
+                                .font(.system(size: 10 * textSizeMultiplier))
                             Text(questionBadgeText(question))
-                                .font(.caption)
+                                .font(.system(size: 11 * textSizeMultiplier))
                         }
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
@@ -461,9 +476,9 @@ struct TodoistTaskRow: View {
                 if let driver = task.driver {
                     HStack(spacing: 4) {
                         Image(systemName: "number")
-                            .font(.caption2)
+                            .font(.system(size: 10 * textSizeMultiplier))
                         Text(driverBadgeText(driver))
-                            .font(.caption)
+                            .font(.system(size: 11 * textSizeMultiplier))
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
@@ -477,9 +492,9 @@ struct TodoistTaskRow: View {
                 if task.isInbox {
                     HStack(spacing: 4) {
                         Image(systemName: "tray")
-                            .font(.caption2)
+                            .font(.system(size: 10 * textSizeMultiplier))
                         Text("Inbox")
-                            .font(.caption)
+                            .font(.system(size: 11 * textSizeMultiplier))
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
@@ -490,7 +505,7 @@ struct TodoistTaskRow: View {
                 
                 // Date
                 Text(dateText)
-                    .font(.caption)
+                    .font(.system(size: 11 * textSizeMultiplier))
                     .foregroundStyle(.tertiary)
                     .frame(minWidth: 50, alignment: .trailing)
                 
@@ -500,7 +515,7 @@ struct TodoistTaskRow: View {
                         onDelete()
                     } label: {
                         Image(systemName: "trash")
-                            .font(.caption)
+                            .font(.system(size: 11 * textSizeMultiplier))
                             .foregroundStyle(.red.opacity(0.7))
                     }
                     .buttonStyle(.plain)
@@ -590,20 +605,22 @@ struct FilterTagView: View {
     let tag: ActiveFilterTag
     let onRemove: () -> Void
     
+    @AppStorage("textSizeMultiplier") private var textSizeMultiplier: Double = 1.0
+    
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: tag.icon)
-                .font(.caption2)
+                .font(.system(size: 10 * textSizeMultiplier))
             
             Text(tag.label)
-                .font(.caption)
+                .font(.system(size: 11 * textSizeMultiplier))
                 .lineLimit(1)
             
             Button {
                 onRemove()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(.system(size: 8 * textSizeMultiplier, weight: .bold))
             }
             .buttonStyle(.plain)
         }

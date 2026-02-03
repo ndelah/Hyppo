@@ -16,6 +16,10 @@ struct RecordCardView: View {
     let isSelected: Bool
     var isCompact: Bool = false
     
+    // MARK: - Accessibility
+    
+    @AppStorage("textSizeMultiplier") private var textSizeMultiplier: Double = 1.0
+    
     // MARK: - Body
     
     var body: some View {
@@ -25,15 +29,14 @@ struct RecordCardView: View {
             
             // Question text
             Text(question.questionText)
-                .font(isCompact ? .subheadline : .headline)
-                .fontWeight(.medium)
+                .font(.system(size: (isCompact ? 13 : 15) * textSizeMultiplier, weight: .medium))
                 .lineLimit(isCompact ? 2 : 3)
                 .fixedSize(horizontal: false, vertical: true)
             
             // Context preview (if not compact)
             if !isCompact, let context = question.context, !context.isEmpty {
                 Text(context)
-                    .font(.caption)
+                    .font(.system(size: 12 * textSizeMultiplier))
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
@@ -62,8 +65,7 @@ struct RecordCardView: View {
             // Asset ticker badge
             if let asset = question.asset {
                 Text(asset.ticker)
-                    .font(.caption)
-                    .fontWeight(.bold)
+                    .font(.system(size: 11 * textSizeMultiplier, weight: .bold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Color.blue.opacity(0.15))
@@ -81,11 +83,10 @@ struct RecordCardView: View {
     private var statusBadge: some View {
         HStack(spacing: 4) {
             Image(systemName: question.status.iconName)
-                .font(.caption)
+                .font(.system(size: 11 * textSizeMultiplier))
             if !isCompact {
                 Text(question.status.displayName)
-                    .font(.caption)
-                    .fontWeight(.medium)
+                    .font(.system(size: 11 * textSizeMultiplier, weight: .medium))
             }
         }
         .padding(.horizontal, isCompact ? 6 : 8)
@@ -142,12 +143,12 @@ struct RecordCardView: View {
                     ForEach(tags.prefix(2)) { tag in
                         Circle()
                             .fill(tagColor(for: tag))
-                            .frame(width: 8, height: 8)
+                            .frame(width: 8 * textSizeMultiplier, height: 8 * textSizeMultiplier)
                             .accessibilityLabel("Tag: \(tag.name)")
                     }
                     if tags.count > 2 {
                         Text("+\(tags.count - 2)")
-                            .font(.caption)
+                            .font(.system(size: 11 * textSizeMultiplier))
                             .foregroundStyle(.secondary)
                             .accessibilityLabel("\(tags.count - 2) more tags")
                     }
@@ -158,7 +159,7 @@ struct RecordCardView: View {
             
             // Last updated
             Text(question.updatedAt.formatted(date: .abbreviated, time: .omitted))
-                .font(.caption)
+                .font(.system(size: 11 * textSizeMultiplier))
                 .foregroundStyle(.tertiary)
                 .accessibilityLabel("Last updated \(question.updatedAt.formatted(date: .long, time: .omitted))")
         }
@@ -207,13 +208,14 @@ private struct MetricBadge: View {
     let color: Color
     var isCompact: Bool = false
     
+    @AppStorage("textSizeMultiplier") private var textSizeMultiplier: Double = 1.0
+    
     var body: some View {
         HStack(spacing: 3) {
             Image(systemName: icon)
-                .font(.caption)
+                .font(.system(size: 11 * textSizeMultiplier))
             Text(text)
-                .font(.caption)
-                .fontWeight(.medium)
+                .font(.system(size: 11 * textSizeMultiplier, weight: .medium))
         }
         .foregroundStyle(color)
     }

@@ -55,7 +55,7 @@ struct RecordTableView: View {
                 HStack(spacing: 0) {
                     // Column header content
                     columnHeader(for: column)
-                        .frame(width: config.widthForColumn(column) - 8, alignment: .leading)
+                        .frame(width: config.widthForColumn(column) - 8, alignment: column.alignment)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 10)
                     
