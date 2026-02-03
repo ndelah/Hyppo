@@ -664,8 +664,8 @@ struct TodoistTaskRow: View {
                             }
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(Color.blue.opacity(0.12))
-                            .foregroundStyle(.blue)
+                            .background(Color.cyan.opacity(0.12))
+                            .foregroundStyle(.cyan)
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                         }
                         .buttonStyle(.plain)

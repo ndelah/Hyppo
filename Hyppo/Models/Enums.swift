@@ -312,6 +312,57 @@ enum ConfidenceLevel: Int, Codable, CaseIterable, Identifiable {
 // MARK: - Display Settings
 
 /**
+ Represents the date format preference for displaying dates.
+ 
+ Controls how dates are formatted throughout the app.
+ */
+enum DateFormatPreference: String, Codable, CaseIterable, Identifiable {
+    case short = "short"           // 1/15/26
+    case medium = "medium"         // Jan 15, 2026
+    case long = "long"             // January 15, 2026
+    case iso = "iso"               // 2026-01-15
+    case european = "european"     // 15/01/2026
+    
+    var id: String { rawValue }
+    
+    /// Display name for the preference
+    var displayName: String {
+        switch self {
+        case .short: return "Short (1/15/26)"
+        case .medium: return "Medium (Jan 15, 2026)"
+        case .long: return "Long (January 15, 2026)"
+        case .iso: return "ISO (2026-01-15)"
+        case .european: return "European (15/01/2026)"
+        }
+    }
+    
+    /// Formats a date according to this preference
+    func format(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        
+        switch self {
+        case .short:
+            formatter.dateStyle = .short
+        case .medium:
+            formatter.dateStyle = .medium
+        case .long:
+            formatter.dateStyle = .long
+        case .iso:
+            formatter.dateFormat = "yyyy-MM-dd"
+        case .european:
+            formatter.dateFormat = "dd/MM/yyyy"
+        }
+        
+        return formatter.string(from: date)
+    }
+    
+    /// Example date string for preview
+    var exampleDate: String {
+        format(Date())
+    }
+}
+
+/**
  Represents the display density preference for content.
  
  Controls how much information is shown at once in lists
@@ -320,7 +371,6 @@ enum ConfidenceLevel: Int, Codable, CaseIterable, Identifiable {
 enum DisplayDensity: String, Codable, CaseIterable, Identifiable {
     case compact = "Compact"
     case comfortable = "Comfortable"
-    case expanded = "Expanded"
     
     var id: String { rawValue }
     
@@ -332,7 +382,6 @@ enum DisplayDensity: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .compact: return 1
         case .comfortable: return 2
-        case .expanded: return 4
         }
     }
     
@@ -340,7 +389,7 @@ enum DisplayDensity: String, Codable, CaseIterable, Identifiable {
     var showMetadataRow: Bool {
         switch self {
         case .compact: return false
-        case .comfortable, .expanded: return true
+        case .comfortable: return true
         }
     }
     
@@ -349,7 +398,6 @@ enum DisplayDensity: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .compact: return false
         case .comfortable: return true
-        case .expanded: return true
         }
     }
 }

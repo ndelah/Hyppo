@@ -161,11 +161,11 @@ struct LogEntryFormView: View {
                         
                         // Date picker
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Date & Time")
+                            Text("Date")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             
-                            DatePicker("", selection: $occurredAt, displayedComponents: [.date, .hourAndMinute])
+                            DatePicker("", selection: $occurredAt, displayedComponents: [.date])
                                 .labelsHidden()
                         }
                         
@@ -263,38 +263,22 @@ struct LogEntryFormView: View {
             // Driver picker
             LogDriverPicker(selectedDriver: $selectedDriver, drivers: availableDrivers)
             
-            // Show sentiment and source type only when driver is selected
+            // Show sentiment only when driver is selected
             if selectedDriver != nil {
                 VStack(alignment: .leading, spacing: 12) {
-                    // Sentiment and Source Type Row
-                    HStack(spacing: 16) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Sentiment")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            
-                            Picker("Sentiment", selection: $sentiment) {
-                                ForEach(EvidenceSentiment.allCases) { s in
-                                    Label(s.rawValue, systemImage: s.iconName).tag(s)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .labelsHidden()
-                        }
+                    // Sentiment Row
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Sentiment")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                         
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Source Type")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            
-                            Picker("Source", selection: $sourceType) {
-                                ForEach(SourceType.allCases) { s in
-                                    Label(s.displayName, systemImage: s.iconName).tag(s)
-                                }
+                        Picker("Sentiment", selection: $sentiment) {
+                            ForEach(EvidenceSentiment.allCases) { s in
+                                Label(s.rawValue, systemImage: s.iconName).tag(s)
                             }
-                            .pickerStyle(.menu)
-                            .labelsHidden()
                         }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
                     }
                     
                     // Source URL

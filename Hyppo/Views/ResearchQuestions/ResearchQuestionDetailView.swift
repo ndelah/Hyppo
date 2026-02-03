@@ -388,17 +388,13 @@ struct ResearchQuestionDetailView: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
-                    .background(Color.purple)
+                    .background(Color.cyan)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
                 
                 // Question title and status
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Image(systemName: researchQuestion.status.iconName)
-                            .font(.title3)
-                            .foregroundStyle(statusColor)
-                        
                         Text(researchQuestion.questionText)
                             .font(.title2)
                             .fontWeight(.bold)

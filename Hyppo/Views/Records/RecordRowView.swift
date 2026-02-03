@@ -105,7 +105,7 @@ struct RecordRowView: View {
             if let asset = question.asset {
                 Text(asset.ticker)
                     .font(.system(size: 13 * textSizeMultiplier, weight: .semibold))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(.cyan)
             } else {
                 Text("—")
                     .font(.system(size: 13 * textSizeMultiplier))

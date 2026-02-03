@@ -125,9 +125,14 @@ private struct GeneralSettingsTab: View {
     @AppStorage("defaultConfidenceLevel") private var defaultConfidenceLevel: Int = 3
     @AppStorage("showSystemLogs") private var showSystemLogs: Bool = true
     @AppStorage("displayDensity") private var displayDensity: String = DisplayDensity.comfortable.rawValue
+    @AppStorage("dateFormatPreference") private var dateFormatPreference: String = DateFormatPreference.medium.rawValue
     
     private var density: DisplayDensity {
         DisplayDensity(rawValue: displayDensity) ?? .comfortable
+    }
+    
+    private var dateFormat: DateFormatPreference {
+        DateFormatPreference(rawValue: dateFormatPreference) ?? .medium
     }
     
     var body: some View {
@@ -137,7 +142,6 @@ private struct GeneralSettingsTab: View {
                     ForEach(DisplayDensity.allCases) { density in
                         VStack(alignment: .leading) {
                             Text(density.displayName)
-                            // Note: description is not available on the shared DisplayDensity enum
                         }
                         .tag(density.rawValue)
                     }
@@ -154,6 +158,29 @@ private struct GeneralSettingsTab: View {
                 Toggle("Show system-generated log entries", isOn: $showSystemLogs)
             } header: {
                 Text("Display")
+            }
+            
+            Section {
+                Picker("Date Format", selection: $dateFormatPreference) {
+                    ForEach(DateFormatPreference.allCases) { format in
+                        Text(format.displayName).tag(format.rawValue)
+                    }
+                }
+                .pickerStyle(.menu)
+                
+                // Preview of current format
+                HStack {
+                    Text("Preview:")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(dateFormat.format(Date()))
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.primary)
+                }
+            } header: {
+                Text("Date Display")
             }
             
             Section {

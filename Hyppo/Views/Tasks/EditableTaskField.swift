@@ -332,8 +332,8 @@ private struct EditQuestionBadge: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(Color.blue.opacity(0.15))
-        .foregroundStyle(.blue)
+        .background(Color.cyan.opacity(0.15))
+        .foregroundStyle(.cyan)
         .clipShape(RoundedRectangle(cornerRadius: 4))
     }
     
