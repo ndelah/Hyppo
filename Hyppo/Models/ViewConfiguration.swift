@@ -209,6 +209,16 @@ enum RecordColumn: String, CaseIterable, Identifiable {
             return false
         }
     }
+    
+    /// Content alignment for this column
+    var alignment: Alignment {
+        switch self {
+        case .drivers, .scenarios, .logEntries:
+            return .center
+        case .question, .assetName, .status, .confidence, .tags, .created, .updated:
+            return .leading
+        }
+    }
 }
 
 // MARK: - View Configuration
