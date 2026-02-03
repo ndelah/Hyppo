@@ -126,18 +126,18 @@ struct AllTasksListView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Task input at top
+            // Toolbar (with search bar)
+            toolbar
+            
+            Divider()
+            
+            // Task input below search bar
             TaskInputField(
                 placeholder: "Add a task... (@ for project, # for driver)"
             )
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
             .background(Color(nsColor: .windowBackgroundColor))
-            
-            Divider()
-            
-            // Toolbar
-            toolbar
             
             Divider()
             

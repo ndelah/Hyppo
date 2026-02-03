@@ -656,67 +656,6 @@ private struct TagToggleChip: View {
     }
 }
 
-// MARK: - Flow Layout (for tag wrapping)
-
-/// A layout that arranges views in a horizontal flow, wrapping to new lines as needed
-private struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
-    
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = FlowResult(
-            in: proposal.replacingUnspecifiedDimensions().width,
-            subviews: subviews,
-            spacing: spacing
-        )
-        return result.size
-    }
-    
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = FlowResult(
-            in: bounds.width,
-            subviews: subviews,
-            spacing: spacing
-        )
-        
-        for (index, subview) in subviews.enumerated() {
-            let point = result.points[index]
-            subview.place(
-                at: CGPoint(x: bounds.minX + point.x, y: bounds.minY + point.y),
-                proposal: .unspecified
-            )
-        }
-    }
-    
-    struct FlowResult {
-        var size: CGSize = .zero
-        var points: [CGPoint] = []
-        
-        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
-            var x: CGFloat = 0
-            var y: CGFloat = 0
-            var lineHeight: CGFloat = 0
-            
-            for subview in subviews {
-                let size = subview.sizeThatFits(.unspecified)
-                
-                if x + size.width > maxWidth && x > 0 {
-                    x = 0
-                    y += lineHeight + spacing
-                    lineHeight = 0
-                }
-                
-                points.append(CGPoint(x: x, y: y))
-                lineHeight = max(lineHeight, size.height)
-                x += size.width + spacing
-                
-                self.size.width = max(self.size.width, x - spacing)
-            }
-            
-            self.size.height = y + lineHeight
-        }
-    }
-}
-
 // MARK: - Log Driver Picker
 
 /**

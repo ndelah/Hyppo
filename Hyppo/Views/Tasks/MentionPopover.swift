@@ -291,7 +291,13 @@ struct MentionItemRow<Item: MentionItem>: View {
                 let match = String(text[startIndex..<endIndex])
                 let after = String(text[endIndex...])
                 
-                Text(before) + Text(match).bold().foregroundStyle(.primary) + Text(after)
+                // Use AttributedString to avoid deprecated Text concatenation
+                var attributed = AttributedString(before)
+                var matchPart = AttributedString(match)
+                matchPart.font = .body.bold()
+                attributed.append(matchPart)
+                attributed.append(AttributedString(after))
+                Text(attributed)
             } else {
                 Text(text)
             }
