@@ -812,3 +812,4 @@ Hyppo/
 | Table Views | Full table-driven UI for all entities |
 | Task enhancement | Global view only (existing `ResearchTask` model sufficient) |
 
+

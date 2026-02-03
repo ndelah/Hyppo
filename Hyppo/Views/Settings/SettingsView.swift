@@ -25,6 +25,12 @@ struct SettingsView: View {
                 }
                 .tag(SettingsTab.general)
             
+            AppearanceSettingsTab()
+                .tabItem {
+                    Label("Appearance", systemImage: "textformat.size")
+                }
+                .tag(SettingsTab.appearance)
+            
             BackupSettingsTab()
                 .tabItem {
                     Label("Backup", systemImage: "externaldrive")
@@ -37,7 +43,7 @@ struct SettingsView: View {
                 }
                 .tag(SettingsTab.about)
         }
-        .frame(width: 500, height: 350)
+        .frame(minWidth: 500, minHeight: 400)
     }
 }
 
@@ -45,6 +51,7 @@ struct SettingsView: View {
 
 private enum SettingsTab: String {
     case general
+    case appearance
     case backup
     case about
 }
@@ -96,6 +103,137 @@ private struct GeneralSettingsTab: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+}
+
+// MARK: - Appearance Settings Tab
+
+private struct AppearanceSettingsTab: View {
+    @AppStorage("textSizeMultiplier") private var textSizeMultiplier: Double = 1.0
+    @AppStorage("reduceMotionEnabled") private var reduceMotionEnabled: Bool = false
+    @AppStorage("highContrastEnabled") private var highContrastEnabled: Bool = false
+    
+    /// Text size presets for easy selection
+    private let textSizePresets: [(name: String, value: Double)] = [
+        ("Small", 0.85),
+        ("Default", 1.0),
+        ("Medium", 1.15),
+        ("Large", 1.3),
+        ("Extra Large", 1.5)
+    ]
+    
+    var body: some View {
+        Form {
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Text Size")
+                        Spacer()
+                        Text(textSizeLabel)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Slider(
+                        value: $textSizeMultiplier,
+                        in: 0.85...1.5,
+                        step: 0.05
+                    ) {
+                        Text("Text Size")
+                    } minimumValueLabel: {
+                        Text("A")
+                            .font(.caption)
+                    } maximumValueLabel: {
+                        Text("A")
+                            .font(.title2)
+                    }
+                    .accessibilityLabel("Text size multiplier")
+                    .accessibilityValue(textSizeLabel)
+                    
+                    // Preset buttons
+                    HStack(spacing: 8) {
+                        ForEach(textSizePresets, id: \.value) { preset in
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    textSizeMultiplier = preset.value
+                                }
+                            } label: {
+                                Text(preset.name)
+                                    .font(.caption)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(isPresetSelected(preset.value) ? Color.accentColor : Color.secondary.opacity(0.2))
+                                    )
+                                    .foregroundStyle(isPresetSelected(preset.value) ? .white : .primary)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("\(preset.name) text size")
+                            .accessibilityAddTraits(isPresetSelected(preset.value) ? .isSelected : [])
+                        }
+                    }
+                    
+                    // Preview text
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Preview")
+                            .font(.footnote)
+                            .foregroundStyle(.tertiary)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Research Question Title")
+                                .font(.system(size: 15 * textSizeMultiplier, weight: .semibold))
+                            Text("This is how body text will appear in the app with your current text size setting.")
+                                .font(.system(size: 13 * textSizeMultiplier))
+                                .foregroundStyle(.secondary)
+                            Text("Caption and metadata text")
+                                .font(.system(size: 11 * textSizeMultiplier))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(nsColor: .controlBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    .padding(.top, 8)
+                }
+            } header: {
+                Text("Text Size")
+            } footer: {
+                Text("Adjusts text size throughout the app. This works in addition to your system accessibility settings.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Section {
+                Toggle("Reduce motion", isOn: $reduceMotionEnabled)
+                    .accessibilityHint("Reduces animations and motion effects in the app")
+                
+                Toggle("Increase contrast", isOn: $highContrastEnabled)
+                    .accessibilityHint("Uses higher contrast colors for better visibility")
+            } header: {
+                Text("Accessibility")
+            } footer: {
+                Text("These settings work alongside your macOS accessibility preferences.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+    
+    /// Returns a human-readable label for the current text size
+    private var textSizeLabel: String {
+        let percentage = Int(textSizeMultiplier * 100)
+        if let preset = textSizePresets.first(where: { isPresetSelected($0.value) }) {
+            return "\(preset.name) (\(percentage)%)"
+        }
+        return "\(percentage)%"
+    }
+    
+    /// Checks if a preset value matches the current multiplier
+    private func isPresetSelected(_ value: Double) -> Bool {
+        abs(textSizeMultiplier - value) < 0.01
     }
 }
 

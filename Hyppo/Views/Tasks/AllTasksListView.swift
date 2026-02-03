@@ -1,17 +1,18 @@
 /**
- AllTasksListView displays all research tasks across all research questions.
+ AllTasksListView displays all research tasks in a Todoist-style flat list.
  
  Features:
- - Shows tasks grouped by their parent driver/research question
- - Supports filtering and searching
- - Links back to the parent research question
- - Pagination support
+ - Always-visible task input field at the top with @ and # mention support
+ - Flat list of tasks (not grouped by driver)
+ - Tasks show @question and #driver badges
+ - Supports filtering, searching, and pagination
+ - Click task to edit, click badges to navigate
  */
 
 import SwiftUI
 import SwiftData
 
-/// View displaying all tasks from all research questions
+/// View displaying all tasks in a Todoist-style flat list
 struct AllTasksListView: View {
     // MARK: - Environment
     
@@ -29,19 +30,30 @@ struct AllTasksListView: View {
     // MARK: - State
     
     @State private var searchText = ""
-    @State private var showCompletedTasks = true
+    @State private var showCompletedTasks = false
+    @State private var showInboxOnly = false
     @State private var currentPage = 0
     private let pageSize = 25
     
     // MARK: - Computed Properties
     
-    /// Filtered tasks based on search and completion filter
+    /// Incomplete tasks (shown first)
+    private var incompleteTasks: [ResearchTask] {
+        allTasks.filter { !$0.isCompleted }
+    }
+    
+    /// Completed tasks
+    private var completedTasks: [ResearchTask] {
+        allTasks.filter { $0.isCompleted }
+    }
+    
+    /// Filtered tasks based on search and filters
     private var filteredTasks: [ResearchTask] {
-        var result = allTasks
+        var result = showCompletedTasks ? allTasks : incompleteTasks
         
-        // Filter by completion status
-        if !showCompletedTasks {
-            result = result.filter { !$0.isCompleted }
+        // Filter to inbox only
+        if showInboxOnly {
+            result = result.filter { $0.isInbox }
         }
         
         // Filter by search text
@@ -50,7 +62,8 @@ struct AllTasksListView: View {
             result = result.filter { task in
                 task.text.lowercased().contains(searchLower) ||
                 (task.driver?.title.lowercased().contains(searchLower) ?? false) ||
-                (task.driver?.researchQuestion?.questionText.lowercased().contains(searchLower) ?? false)
+                (task.effectiveResearchQuestion?.questionText.lowercased().contains(searchLower) ?? false) ||
+                (task.effectiveResearchQuestion?.asset?.ticker.lowercased().contains(searchLower) ?? false)
             }
         }
         
@@ -79,16 +92,30 @@ struct AllTasksListView: View {
         return "\(startIndex)-\(endIndex)"
     }
     
+    /// Inbox task count
+    private var inboxCount: Int {
+        allTasks.filter { $0.isInbox && !$0.isCompleted }.count
+    }
+    
     // Active filter tags for display
     private var activeFilterTags: [ActiveFilterTag] {
         var tags: [ActiveFilterTag] = []
         
-        if !showCompletedTasks {
+        if showInboxOnly {
             tags.append(ActiveFilterTag(
-                id: "incomplete",
-                label: "Incomplete Only",
-                icon: "circle",
-                color: .blue
+                id: "inbox",
+                label: "Inbox",
+                icon: "tray",
+                color: .purple
+            ))
+        }
+        
+        if showCompletedTasks {
+            tags.append(ActiveFilterTag(
+                id: "completed",
+                label: "Including Completed",
+                icon: "checkmark.circle",
+                color: .green
             ))
         }
         
@@ -99,6 +126,16 @@ struct AllTasksListView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            // Task input at top
+            TaskInputField(
+                placeholder: "Add a task... (@ for project, # for driver)"
+            )
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .background(Color(nsColor: .windowBackgroundColor))
+            
+            Divider()
+            
             // Toolbar
             toolbar
             
@@ -118,9 +155,32 @@ struct AllTasksListView: View {
     
     private var toolbar: some View {
         HStack(spacing: 12) {
-            // Left side: Title
-            Text("All Tasks")
-                .font(.headline)
+            // Left side: Title with counts
+            HStack(spacing: 8) {
+                Text("Tasks")
+                    .font(.headline)
+                
+                // Inbox badge
+                if inboxCount > 0 {
+                    Button {
+                        showInboxOnly.toggle()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "tray")
+                                .font(.caption2)
+                            Text("\(inboxCount)")
+                                .font(.caption)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(showInboxOnly ? Color.purple.opacity(0.2) : Color(nsColor: .controlBackgroundColor))
+                        .foregroundStyle(showInboxOnly ? .purple : .secondary)
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Show inbox tasks only")
+                }
+            }
             
             Spacer()
             
@@ -129,10 +189,10 @@ struct AllTasksListView: View {
             
             Spacer()
             
-            // Right side: Pagination and toggle
+            // Right side: Filters and pagination
             HStack(spacing: 16) {
                 // Show completed toggle
-                Toggle("Show Completed", isOn: $showCompletedTasks)
+                Toggle("Completed", isOn: $showCompletedTasks)
                     .toggleStyle(.checkbox)
                     .font(.caption)
                 
@@ -235,11 +295,11 @@ struct AllTasksListView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(.tertiary)
             
-            Text("No Tasks Found")
+            Text(emptyStateTitle)
                 .font(.headline)
                 .foregroundStyle(.secondary)
             
-            Text("Tasks will appear here when you create them from research questions.")
+            Text(emptyStateDescription)
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -249,21 +309,47 @@ struct AllTasksListView: View {
         .background(Color(nsColor: .windowBackgroundColor))
     }
     
+    private var emptyStateTitle: String {
+        if showInboxOnly {
+            return "Inbox Empty"
+        } else if !searchText.isEmpty {
+            return "No Matching Tasks"
+        } else {
+            return "No Tasks Yet"
+        }
+    }
+    
+    private var emptyStateDescription: String {
+        if showInboxOnly {
+            return "Tasks without a project or driver will appear here."
+        } else if !searchText.isEmpty {
+            return "Try a different search term or clear filters."
+        } else {
+            return "Add your first task using the input above. Use @ to assign a project and # to assign a driver."
+        }
+    }
+    
     // MARK: - Tasks List
     
     private var tasksList: some View {
         ScrollView {
-            LazyVStack(spacing: 8) {
+            LazyVStack(spacing: 2) {
                 ForEach(pagedTasks) { task in
-                    TaskCardView(task: task) {
-                        // Navigate to the research question
-                        if let question = task.driver?.researchQuestion {
-                            navigationPath.append(question)
+                    TodoistTaskRow(
+                        task: task,
+                        onNavigateToQuestion: {
+                            if let question = task.effectiveResearchQuestion {
+                                navigationPath.append(question)
+                            }
+                        },
+                        onDelete: {
+                            deleteTask(task)
                         }
-                    }
+                    )
                 }
             }
-            .padding()
+            .padding(.vertical, 8)
+            .padding(.horizontal, 24)
         }
         .background(Color(nsColor: .windowBackgroundColor))
     }
@@ -272,22 +358,41 @@ struct AllTasksListView: View {
     
     private func removeFilter(_ tag: ActiveFilterTag) {
         switch tag.id {
-        case "incomplete":
-            showCompletedTasks = true
+        case "inbox":
+            showInboxOnly = false
+        case "completed":
+            showCompletedTasks = false
         default:
             break
         }
     }
+    
+    private func deleteTask(_ task: ResearchTask) {
+        // Remove from relationships
+        if let question = task.researchQuestion {
+            question.tasks?.removeAll { $0.taskId == task.taskId }
+        }
+        if let driver = task.driver {
+            driver.tasks?.removeAll { $0.taskId == task.taskId }
+        }
+        modelContext.delete(task)
+    }
 }
 
-// MARK: - Task Card View
+// MARK: - Todoist-Style Task Row
 
-/// Card view for displaying a single task with context
-struct TaskCardView: View {
+/// A Todoist-inspired task row with checkbox, text, badges, and date
+struct TodoistTaskRow: View {
     @Bindable var task: ResearchTask
     let onNavigateToQuestion: () -> Void
+    let onDelete: () -> Void
+    
+    @Environment(\.modelContext) private var modelContext
     
     @State private var isHovering = false
+    @State private var isEditing = false
+    @State private var editText = ""
+    @FocusState private var isTextFieldFocused: Bool
     
     var body: some View {
         HStack(spacing: 12) {
@@ -298,69 +403,173 @@ struct TaskCardView: View {
                 }
             } label: {
                 Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
+                    .font(.body)
                     .foregroundStyle(task.isCompleted ? .green : .secondary)
             }
             .buttonStyle(.plain)
             
-            // Task content
-            VStack(alignment: .leading, spacing: 4) {
+            // Task text (editable)
+            if isEditing {
+                TextField("Task description", text: $editText)
+                    .textFieldStyle(.plain)
+                    .font(.body)
+                    .focused($isTextFieldFocused)
+                    .onSubmit {
+                        saveEdit()
+                    }
+                    .onExitCommand {
+                        cancelEdit()
+                    }
+            } else {
                 Text(task.text)
                     .font(.body)
                     .strikethrough(task.isCompleted)
                     .foregroundStyle(task.isCompleted ? .secondary : .primary)
-                
-                // Context info
-                HStack(spacing: 8) {
-                    if let driver = task.driver {
-                        Label(driver.title, systemImage: "target")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                    .lineLimit(2)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        startEditing()
                     }
-                    
-                    if let question = task.driver?.researchQuestion {
-                        Text("•")
-                            .foregroundStyle(.tertiary)
-                        
-                        Button {
-                            onNavigateToQuestion()
-                        } label: {
-                            Text(question.questionText)
-                                .font(.caption)
-                                .foregroundStyle(.blue)
-                                .lineLimit(1)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
             }
             
             Spacer()
             
-            // Completion date or created date
-            if let completedAt = task.completedAt {
-                Text(completedAt, style: .date)
-                    .font(.caption2)
+            // Badges and metadata
+            HStack(spacing: 8) {
+                // Research question badge
+                if let question = task.effectiveResearchQuestion {
+                    Button {
+                        onNavigateToQuestion()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "at")
+                                .font(.caption2)
+                            Text(questionBadgeText(question))
+                                .font(.caption)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.blue.opacity(0.12))
+                        .foregroundStyle(.blue)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .buttonStyle(.plain)
+                    .help(question.questionText)
+                }
+                
+                // Driver badge
+                if let driver = task.driver {
+                    HStack(spacing: 4) {
+                        Image(systemName: "number")
+                            .font(.caption2)
+                        Text(driverBadgeText(driver))
+                            .font(.caption)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.orange.opacity(0.12))
+                    .foregroundStyle(.orange)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .help(driver.title)
+                }
+                
+                // Inbox indicator (no question or driver)
+                if task.isInbox {
+                    HStack(spacing: 4) {
+                        Image(systemName: "tray")
+                            .font(.caption2)
+                        Text("Inbox")
+                            .font(.caption)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.purple.opacity(0.12))
+                    .foregroundStyle(.purple)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+                
+                // Date
+                Text(dateText)
+                    .font(.caption)
                     .foregroundStyle(.tertiary)
-            } else {
-                Text(task.createdAt, style: .date)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .frame(minWidth: 50, alignment: .trailing)
+                
+                // Delete button (visible on hover)
+                if isHovering && !isEditing {
+                    Button {
+                        onDelete()
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.caption)
+                            .foregroundStyle(.red.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.opacity)
+                }
             }
         }
-        .padding()
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(isHovering ? Color(nsColor: .controlBackgroundColor) : Color(nsColor: .textBackgroundColor))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isHovering || isEditing ? Color(nsColor: .controlBackgroundColor).opacity(0.5) : Color.clear)
         )
         .onHover { hovering in
-            isHovering = hovering
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovering = hovering
+            }
         }
+    }
+    
+    // MARK: - Helpers
+    
+    private func questionBadgeText(_ question: ResearchQuestion) -> String {
+        if let ticker = question.asset?.ticker {
+            return ticker
+        }
+        let text = question.questionText
+        return text.count > 12 ? String(text.prefix(10)) + "..." : text
+    }
+    
+    private func driverBadgeText(_ driver: Driver) -> String {
+        let text = driver.title
+        return text.count > 12 ? String(text.prefix(10)) + "..." : text
+    }
+    
+    private var dateText: String {
+        let date = task.completedAt ?? task.createdAt
+        let calendar = Calendar.current
+        
+        if calendar.isDateInToday(date) {
+            return "Today"
+        } else if calendar.isDateInYesterday(date) {
+            return "Yesterday"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM d"
+            return formatter.string(from: date)
+        }
+    }
+    
+    // MARK: - Edit Actions
+    
+    private func startEditing() {
+        editText = task.text
+        isEditing = true
+        isTextFieldFocused = true
+    }
+    
+    private func saveEdit() {
+        let trimmed = editText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            task.text = trimmed
+        }
+        isEditing = false
+    }
+    
+    private func cancelEdit() {
+        isEditing = false
+        editText = ""
     }
 }
 
@@ -410,7 +619,6 @@ struct FilterTagView: View {
 
 #Preview {
     AllTasksListView(navigationPath: .constant(NavigationPath()))
-        .modelContainer(for: [ResearchTask.self, Driver.self, ResearchQuestion.self], inMemory: true)
+        .modelContainer(for: [ResearchTask.self, Driver.self, ResearchQuestion.self, Asset.self], inMemory: true)
         .frame(width: 900, height: 600)
 }
-

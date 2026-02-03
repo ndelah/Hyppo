@@ -81,10 +81,10 @@ struct RecordCardView: View {
     private var statusBadge: some View {
         HStack(spacing: 4) {
             Image(systemName: question.status.iconName)
-                .font(.caption2)
+                .font(.caption)
             if !isCompact {
                 Text(question.status.displayName)
-                    .font(.caption2)
+                    .font(.caption)
                     .fontWeight(.medium)
             }
         }
@@ -93,6 +93,7 @@ struct RecordCardView: View {
         .background(statusColor.opacity(0.15))
         .foregroundStyle(statusColor)
         .clipShape(Capsule())
+        .accessibilityLabel("Status: \(question.status.displayName)")
     }
     
     private var metricsRow: some View {
@@ -142,11 +143,13 @@ struct RecordCardView: View {
                         Circle()
                             .fill(tagColor(for: tag))
                             .frame(width: 8, height: 8)
+                            .accessibilityLabel("Tag: \(tag.name)")
                     }
                     if tags.count > 2 {
                         Text("+\(tags.count - 2)")
-                            .font(.caption2)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
+                            .accessibilityLabel("\(tags.count - 2) more tags")
                     }
                 }
             }
@@ -155,8 +158,9 @@ struct RecordCardView: View {
             
             // Last updated
             Text(question.updatedAt.formatted(date: .abbreviated, time: .omitted))
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(.tertiary)
+                .accessibilityLabel("Last updated \(question.updatedAt.formatted(date: .long, time: .omitted))")
         }
     }
     
@@ -206,9 +210,9 @@ private struct MetricBadge: View {
     var body: some View {
         HStack(spacing: 3) {
             Image(systemName: icon)
-                .font(.caption2)
+                .font(.caption)
             Text(text)
-                .font(.caption2)
+                .font(.caption)
                 .fontWeight(.medium)
         }
         .foregroundStyle(color)

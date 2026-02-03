@@ -2,8 +2,8 @@
  Hyppo application entry point.
  
  Configures the SwiftData model container with all entity types
- and installs the root navigation shell. Provides Settings window access
- and Quick Capture HUD functionality.
+ and installs the root navigation shell. Provides Settings window access,
+ Quick Capture HUD, and Quick Add Task functionality.
  */
 
 import SwiftUI
@@ -11,9 +11,10 @@ import SwiftData
 
 @main
 struct HyppoApp: App {
-    // MARK: - Quick Capture Service
+    // MARK: - Services
     
     @StateObject private var quickCaptureService = QuickCaptureService.shared
+    @StateObject private var quickAddTaskService = QuickAddTaskService.shared
     
     // MARK: - Initialization
     
@@ -125,15 +126,21 @@ struct HyppoApp: App {
     var body: some Scene {
         // Main application window
         WindowGroup {
-            OdooStyleNavigationView()
-                .sheet(isPresented: $quickCaptureService.isHUDVisible) {
-                    QuickCaptureHUD(service: quickCaptureService)
-                        .modelContainer(sharedModelContainer)
-                }
-                .task {
-                    // Run migration on first launch after update
-                    await runMigrationIfNeeded()
-                }
+            AccessibilityAwareRootView {
+                OdooStyleNavigationView()
+                    .sheet(isPresented: $quickCaptureService.isHUDVisible) {
+                        QuickCaptureHUD(service: quickCaptureService)
+                            .modelContainer(sharedModelContainer)
+                    }
+                    .sheet(isPresented: $quickAddTaskService.isPopoverVisible) {
+                        QuickAddTaskPopover()
+                            .modelContainer(sharedModelContainer)
+                    }
+                    .task {
+                        // Run migration on first launch after update
+                        await runMigrationIfNeeded()
+                    }
+            }
         }
         .modelContainer(sharedModelContainer)
         .windowStyle(.automatic)
@@ -155,6 +162,11 @@ struct HyppoApp: App {
                     NotificationCenter.default.post(name: .addLogEntry, object: nil)
                 }
                 .keyboardShortcut("l", modifiers: [.command, .shift])
+                
+                Button("New Task") {
+                    quickAddTaskService.showPopover()
+                }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
                 
                 Divider()
                 

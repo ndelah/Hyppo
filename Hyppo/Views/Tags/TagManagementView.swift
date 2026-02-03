@@ -127,6 +127,7 @@ struct TagRowView: View {
             Circle()
                 .fill(tagColor)
                 .frame(width: 12, height: 12)
+                .accessibilityHidden(true)
             
             Text(tag.name)
                 .font(.body)
@@ -148,8 +149,11 @@ struct TagRowView: View {
                     .font(.caption)
             }
             .buttonStyle(.borderless)
+            .accessibilityLabel("Edit tag \(tag.name)")
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Tag: \(tag.name), used by \(tag.assets?.count ?? 0) asset\((tag.assets?.count ?? 0) == 1 ? "" : "s")")
     }
     
     private var tagColor: Color {
@@ -346,9 +350,10 @@ struct TagChip: View {
                     onRemove()
                 } label: {
                     Image(systemName: "xmark")
-                        .font(.caption2)
+                        .font(.caption)
                 }
                 .buttonStyle(.borderless)
+                .accessibilityLabel("Remove tag \(tag.name)")
             }
         }
         .padding(.horizontal, 8)
@@ -356,6 +361,8 @@ struct TagChip: View {
         .background(tagColor.opacity(0.15))
         .foregroundStyle(tagColor)
         .clipShape(Capsule())
+        .accessibilityElement(children: onRemove != nil ? .contain : .combine)
+        .accessibilityLabel(onRemove == nil ? "Tag: \(tag.name)" : "")
     }
     
     private var tagColor: Color {

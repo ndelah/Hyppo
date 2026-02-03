@@ -68,7 +68,7 @@ struct ResearchQuestionDetailView: View {
                 Divider()
                 
                 // Research tasks
-                ResearchTasksView(drivers: researchQuestion.drivers ?? [])
+                ResearchTasksView(researchQuestion: researchQuestion)
                 
                 Divider()
                 

@@ -169,14 +169,16 @@ struct RecordRowView: View {
                     }
                     if tags.count > 3 {
                         Text("+\(tags.count - 3)")
-                            .font(.caption2)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
+                            .accessibilityLabel("\(tags.count - 3) more tags")
                     }
                 }
             } else {
                 Text("—")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
+                    .accessibilityLabel("No tags")
             }
         }
     }
@@ -234,12 +236,13 @@ private struct TagPill: View {
     
     var body: some View {
         Text(tag.name)
-            .font(.caption2)
+            .font(.caption)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(tagColor.opacity(0.2))
             .foregroundStyle(tagColor)
             .clipShape(Capsule())
+            .accessibilityLabel("Tag: \(tag.name)")
     }
     
     private var tagColor: Color {

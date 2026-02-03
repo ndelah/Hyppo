@@ -182,6 +182,10 @@ final class ResearchQuestion {
     @Relationship(deleteRule: .cascade, inverse: \Driver.researchQuestion)
     var drivers: [Driver]?
     
+    /// Tasks directly linked to this research question (not through drivers)
+    @Relationship(deleteRule: .cascade, inverse: \ResearchTask.researchQuestion)
+    var tasks: [ResearchTask]?
+    
     /// Log entries for this research question (ordered chronologically)
     @Relationship(deleteRule: .cascade) var logEntries: [LogEntry]?
     
@@ -318,6 +322,64 @@ final class ResearchQuestion {
             let pending = pendingDriversCount
             return "\(pending) of \(total) pending"
         }
+    }
+    
+    // MARK: - Task Properties
+    
+    /// Returns all tasks associated with this question (direct + through drivers)
+    var allTasks: [ResearchTask] {
+        var allTasks = tasks ?? []
+        
+        // Add tasks from drivers
+        if let drivers = drivers {
+            for driver in drivers {
+                if let driverTasks = driver.tasks {
+                    allTasks.append(contentsOf: driverTasks)
+                }
+                // Include sub-driver tasks
+                if let subDrivers = driver.subDrivers {
+                    for subDriver in subDrivers {
+                        if let subTasks = subDriver.tasks {
+                            allTasks.append(contentsOf: subTasks)
+                        }
+                    }
+                }
+            }
+        }
+        
+        return allTasks
+    }
+    
+    /// Returns all tasks sorted by creation date (newest first)
+    var sortedTasks: [ResearchTask] {
+        allTasks.sorted { $0.createdAt > $1.createdAt }
+    }
+    
+    /// Count of all tasks (direct + through drivers)
+    var totalTaskCount: Int {
+        allTasks.count
+    }
+    
+    /// Count of completed tasks
+    var completedTaskCount: Int {
+        allTasks.filter { $0.isCompleted }.count
+    }
+    
+    /// Count of incomplete tasks
+    var incompleteTaskCount: Int {
+        allTasks.filter { !$0.isCompleted }.count
+    }
+    
+    /// All drivers including sub-drivers, flattened for picker display
+    var allDriversFlattened: [Driver] {
+        var result: [Driver] = []
+        for driver in topLevelDrivers {
+            result.append(driver)
+            if let subs = driver.subDrivers?.sorted(by: { $0.position < $1.position }) {
+                result.append(contentsOf: subs)
+            }
+        }
+        return result
     }
     
     // MARK: - Methods

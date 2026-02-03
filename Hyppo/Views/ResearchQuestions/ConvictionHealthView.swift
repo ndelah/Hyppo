@@ -231,6 +231,8 @@ struct ConvictionHealthView: View {
         .background(status.color.opacity(0.15))
         .foregroundStyle(status.color)
         .clipShape(Capsule())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Health score \(summary.healthScore) out of 100, status: \(status.label)")
     }
     
     private var evidenceSummaryBar: some View {
@@ -263,6 +265,8 @@ struct ConvictionHealthView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 4))
             }
             .frame(height: 8)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Evidence balance: \(summary.totalSupporting) supporting, \(summary.totalNeutral) neutral, \(summary.totalContradicting) contradicting")
             
             // Legend
             HStack(spacing: 16) {
@@ -278,9 +282,11 @@ struct ConvictionHealthView: View {
                         Text("\(summary.blindSpotCount) blind spot\(summary.blindSpotCount == 1 ? "" : "s")")
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(summary.blindSpotCount) assumption\(summary.blindSpotCount == 1 ? "" : "s") without evidence")
                 }
             }
-            .font(.caption2)
+            .font(.caption)
         }
     }
     
@@ -386,10 +392,10 @@ struct ConvictionHealthView: View {
                             .foregroundStyle(balance > 0 ? .green.opacity(0.8) : (balance < 0 ? .red.opacity(0.8) : .secondary))
                             .frame(width: 50)
                         
-                        evidenceStatusBadge(for: sub, isSmall: true)
+                        evidenceStatusBadge(for: sub)
                             .frame(width: 80)
                         
-                        validationBadge(for: sub, isSmall: true)
+                        validationBadge(for: sub)
                             .frame(width: 90)
                     }
                     .padding(.horizontal, 8)
@@ -503,19 +509,19 @@ struct ConvictionHealthView: View {
     // MARK: - Evidence Status Badge (Data-based)
     
     /// Badge showing evidence-based status (Supported/Challenged/Blind Spot/Neutral)
-    private func evidenceStatusBadge(for driver: Driver, isSmall: Bool = false) -> some View {
+    private func evidenceStatusBadge(for driver: Driver) -> some View {
         let balance = driver.totalEvidenceBalance
         let hasBlindSpot = driver.hasBlindSpot
         
         return Group {
             if hasBlindSpot {
-                badge("Blind Spot", color: .orange, icon: "eye.slash", isSmall: isSmall)
+                badge("Blind Spot", color: .orange, icon: "eye.slash")
             } else if balance > 0 {
-                badge("Supported", color: .green, icon: "checkmark.circle", isSmall: isSmall)
+                badge("Supported", color: .green, icon: "checkmark.circle")
             } else if balance < 0 {
-                badge("Challenged", color: .red, icon: "exclamationmark.circle", isSmall: isSmall)
+                badge("Challenged", color: .red, icon: "exclamationmark.circle")
             } else {
-                badge("Neutral", color: .gray, icon: "circle", isSmall: isSmall)
+                badge("Neutral", color: .gray, icon: "circle")
             }
         }
     }
@@ -523,34 +529,38 @@ struct ConvictionHealthView: View {
     // MARK: - Validation Status Badge (Review-based)
     
     /// Badge showing validation status from reviews (Confirmed/Discarded/Needs Revision/Pending)
-    private func validationBadge(for driver: Driver, isSmall: Bool = false) -> some View {
+    private func validationBadge(for driver: Driver) -> some View {
         let status = driver.status
         
         return Group {
             switch status {
             case .confirmed:
-                badge("Confirmed", color: .green, icon: "checkmark.seal.fill", isSmall: isSmall)
+                badge("Confirmed", color: .green, icon: "checkmark.seal.fill")
             case .discarded:
-                badge("Discarded", color: .red, icon: "xmark.seal.fill", isSmall: isSmall)
+                badge("Discarded", color: .red, icon: "xmark.seal.fill")
             case .needsRevision:
-                badge("Revision", color: .orange, icon: "exclamationmark.circle.fill", isSmall: isSmall)
+                badge("Revision", color: .orange, icon: "exclamationmark.circle.fill")
             case .pending:
-                badge("Pending", color: .gray, icon: "circle.dashed", isSmall: isSmall)
+                badge("Pending", color: .gray, icon: "circle.dashed")
             }
         }
     }
     
-    private func badge(_ text: String, color: Color, icon: String, isSmall: Bool) -> some View {
+    private func badge(_ text: String, color: Color, icon: String) -> some View {
         HStack(spacing: 3) {
             Image(systemName: icon)
             Text(text)
+                .lineLimit(1)
         }
-        .font(isSmall ? .system(size: 8, weight: .bold) : .caption2.bold())
+        .font(.caption.bold())
         .padding(.horizontal, 5)
         .padding(.vertical, 2)
         .background(color.opacity(0.1))
         .foregroundStyle(color)
         .clipShape(Capsule())
+        .fixedSize()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(text)
     }
 }
 

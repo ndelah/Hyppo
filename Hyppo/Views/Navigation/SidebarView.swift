@@ -328,10 +328,12 @@ struct AssetRowView: View {
                             }
                             if tags.count > 3 {
                                 Text("+\(tags.count - 3)")
-                                    .font(.caption2)
+                                    .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
                         }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(tagAccessibilityLabel)
                     }
                 }
             }
@@ -339,6 +341,30 @@ struct AssetRowView: View {
             Spacer()
         }
         .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint(asset.isArchived ? "Archived asset" : "Double tap to select")
+    }
+    
+    /// Accessibility label for the entire row
+    private var accessibilityLabel: String {
+        var parts = ["\(asset.ticker), \(asset.name)"]
+        parts.append("\(asset.researchQuestionsCount) research \(asset.researchQuestionsCount == 1 ? "question" : "questions")")
+        if asset.isArchived {
+            parts.append("Archived")
+        }
+        return parts.joined(separator: ", ")
+    }
+    
+    /// Accessibility label for tags
+    private var tagAccessibilityLabel: String {
+        guard let tags = asset.tags, !tags.isEmpty else { return "" }
+        let tagNames = tags.prefix(3).map { $0.name }
+        let label = "Tags: \(tagNames.joined(separator: ", "))"
+        if tags.count > 3 {
+            return "\(label), and \(tags.count - 3) more"
+        }
+        return label
     }
     
     private func colorFor(_ tag: Tag) -> Color {

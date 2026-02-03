@@ -35,6 +35,9 @@ struct OdooStyleNavigationView: View {
     // MARK: - Environment
     
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.sizeCategory) private var sizeCategory
+    @Environment(\.colorSchemeContrast) private var colorContrast
     
     // MARK: - State
     
@@ -116,8 +119,13 @@ struct OdooStyleNavigationView: View {
     /// Individual navigation tab button
     private func tabButton(for tab: AppNavigationTab) -> some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.15)) {
+            // Respect reduce motion preference
+            if reduceMotion {
                 selectedTab = tab
+            } else {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    selectedTab = tab
+                }
             }
         } label: {
             Text(tab.rawValue)
@@ -128,12 +136,15 @@ struct OdooStyleNavigationView: View {
                 .padding(.vertical, 6)
                 .background(
                     selectedTab == tab
-                        ? Color.accentColor.opacity(0.1)
+                        ? Color.accentColor.opacity(colorContrast == .increased ? 0.2 : 0.1)
                         : Color.clear
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 4))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(tab.rawValue)
+        .accessibilityAddTraits(selectedTab == tab ? .isSelected : [])
+        .accessibilityHint("Switch to \(tab.rawValue) section")
     }
     
     // MARK: - Content View
