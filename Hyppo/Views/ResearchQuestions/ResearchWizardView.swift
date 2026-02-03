@@ -16,6 +16,10 @@ struct ResearchWizardView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
+    // MARK: - Queries
+    
+    @Query(sort: \Asset.ticker) private var allAssets: [Asset]
+    
     // MARK: - Properties
     
     let asset: Asset?
@@ -27,6 +31,12 @@ struct ResearchWizardView: View {
     @State private var currentStep = 1
     @State private var showValidationError = false
     @State private var validationMessage = ""
+    
+    // Asset selection/creation state (only used when no asset is provided)
+    @State private var selectedAsset: Asset?
+    @State private var isCreatingNewAsset = false
+    @State private var newAssetTicker: String = ""
+    @State private var newAssetName: String = ""
     
     // Step 1: Frame the Problem
     /// Investment Thesis - the core belief being tested (maps to questionText for model compatibility)
@@ -79,9 +89,27 @@ struct ResearchWizardView: View {
     
     // MARK: - Computed Properties
     
+    /// The effective asset to use (provided, selected, or will be created)
+    private var effectiveAsset: Asset? {
+        asset ?? selectedAsset
+    }
+    
+    /// Whether the user has a valid asset configuration (either selected or creating new)
+    private var hasValidAssetConfig: Bool {
+        if asset != nil || selectedAsset != nil {
+            return true
+        }
+        if isCreatingNewAsset {
+            let trimmedTicker = newAssetTicker.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedName = newAssetName.trimmingCharacters(in: .whitespacesAndNewlines)
+            return !trimmedTicker.isEmpty && !trimmedName.isEmpty
+        }
+        return true // Allow creating research without an asset
+    }
+    
     private var isStep1Valid: Bool {
         let trimmedThesis = investmentThesis.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !trimmedThesis.isEmpty
+        return !trimmedThesis.isEmpty && hasValidAssetConfig
     }
     
     private var validDriversForDesign: [DriverDTO] {
@@ -130,10 +158,39 @@ struct ResearchWizardView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Research Wizard")
                         .font(.headline)
-                    if let asset = asset {
-                        Text("Creating research for \(asset.ticker)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    if let existingAsset = asset {
+                        // Asset was provided externally
+                        HStack(spacing: 4) {
+                            Text("Creating research for")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(existingAsset.ticker)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                        }
+                    } else if let selected = selectedAsset {
+                        // User selected an existing asset
+                        HStack(spacing: 4) {
+                            Text("Creating research for")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(selected.ticker)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                        }
+                    } else if isCreatingNewAsset && !newAssetTicker.isEmpty {
+                        // User is creating a new asset
+                        HStack(spacing: 4) {
+                            Text("Creating research for new asset:")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(newAssetTicker.uppercased())
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.blue)
+                        }
                     } else {
                         Text("Creating new research question")
                             .font(.caption)
@@ -209,6 +266,11 @@ struct ResearchWizardView: View {
                 Text("Define your investment thesis, why it matters, and the key assumptions that must be true.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+            }
+            
+            // Asset/Ticker Section (only show if no asset was provided)
+            if asset == nil && existingQuestion == nil {
+                assetSelectionSection
             }
             
             // Investment Thesis
@@ -299,6 +361,173 @@ struct ResearchWizardView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                         .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Asset Selection Section
+    
+    /// Section for selecting an existing asset or creating a new one
+    private var assetSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Asset / Ticker")
+                    .font(.headline)
+                Text("(optional)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Text("Link this research to an asset or create a new one.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            // Toggle between select existing or create new
+            Picker("", selection: $isCreatingNewAsset) {
+                Text("Select Existing").tag(false)
+                Text("Create New").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 240)
+            
+            if isCreatingNewAsset {
+                // Create new asset form
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 12) {
+                        // Ticker field
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Ticker")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            TextField("e.g. AAPL", text: $newAssetTicker)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 100)
+                                .textCase(.uppercase)
+                                .onChange(of: newAssetTicker) { _, newValue in
+                                    newAssetTicker = newValue.uppercased()
+                                }
+                        }
+                        
+                        // Company name field
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Company Name")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            TextField("e.g. Apple Inc.", text: $newAssetName)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(minWidth: 200)
+                        }
+                    }
+                    
+                    // Show validation hint
+                    if !newAssetTicker.isEmpty || !newAssetName.isEmpty {
+                        if newAssetTicker.isEmpty || newAssetName.isEmpty {
+                            HStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.circle")
+                                    .foregroundStyle(.orange)
+                                Text("Both ticker and company name are required to create an asset")
+                                    .foregroundStyle(.orange)
+                            }
+                            .font(.caption)
+                        } else {
+                            HStack(spacing: 4) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.green)
+                                Text("New asset will be created: \(newAssetTicker.uppercased()) - \(newAssetName)")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .font(.caption)
+                        }
+                    }
+                }
+                .padding(12)
+                .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                // Select existing asset
+                if allAssets.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("No existing assets found.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Button {
+                            isCreatingNewAsset = true
+                        } label: {
+                            Label("Create your first asset", systemImage: "plus.circle")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.blue)
+                    }
+                    .padding(12)
+                    .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Menu {
+                            Button {
+                                selectedAsset = nil
+                            } label: {
+                                Text("No asset (skip)")
+                            }
+                            
+                            Divider()
+                            
+                            ForEach(allAssets) { assetOption in
+                                Button {
+                                    selectedAsset = assetOption
+                                } label: {
+                                    HStack {
+                                        Text(assetOption.ticker)
+                                            .fontWeight(.semibold)
+                                        Text("- \(assetOption.name)")
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                if let selected = selectedAsset {
+                                    HStack(spacing: 6) {
+                                        Text(selected.ticker)
+                                            .fontWeight(.semibold)
+                                            .foregroundStyle(.primary)
+                                        Text("- \(selected.name)")
+                                            .foregroundStyle(.secondary)
+                                    }
+                                } else {
+                                    Text("Select an asset...")
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.down")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .background(Color(nsColor: .textBackgroundColor))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                            )
+                        }
+                        .menuStyle(.borderlessButton)
+                        
+                        // Quick stats for selected asset
+                        if let selected = selectedAsset {
+                            HStack(spacing: 12) {
+                                Label("\(selected.researchQuestionsCount) research questions", systemImage: "doc.text")
+                                if let exchange = selected.exchange {
+                                    Label(exchange, systemImage: "building.columns")
+                                }
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }
