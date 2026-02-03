@@ -25,6 +25,8 @@ struct RecordTableView: View {
     @State private var draggedColumn: RecordColumn?
     @State private var showingColumnPopover = false
     @State private var availableWidth: CGFloat = 800
+    @State private var currentPage = 0
+    private let pageSize = 50
     
     // MARK: - Computed Properties (Responsive)
     
@@ -36,6 +38,30 @@ struct RecordTableView: View {
     /// Proportionally calculated widths for visible columns
     private var responsiveWidths: [RecordColumn: CGFloat] {
         config.responsiveWidths(for: responsiveColumns, availableWidth: availableWidth)
+    }
+    
+    // MARK: - Pagination Computed Properties
+    
+    /// Total number of pages
+    private var totalPages: Int {
+        max(1, (sortedQuestions.count + pageSize - 1) / pageSize)
+    }
+    
+    /// Questions for the current page
+    private var pagedQuestions: [ResearchQuestion] {
+        let startIndex = currentPage * pageSize
+        let endIndex = min(startIndex + pageSize, sortedQuestions.count)
+        
+        guard startIndex < sortedQuestions.count else { return [] }
+        return Array(sortedQuestions[startIndex..<endIndex])
+    }
+    
+    /// Display range for pagination (e.g., "1-50")
+    private var displayRange: String {
+        guard !sortedQuestions.isEmpty else { return "0" }
+        let startIndex = currentPage * pageSize + 1
+        let endIndex = min((currentPage + 1) * pageSize, sortedQuestions.count)
+        return "\(startIndex)-\(endIndex)"
     }
     
     // MARK: - Body
@@ -55,11 +81,17 @@ struct RecordTableView: View {
                     tableBody
                 }
             }
+            .frame(maxWidth: geometry.size.width)
+            .clipped()
             .onAppear {
                 availableWidth = geometry.size.width
             }
             .onChange(of: geometry.size.width) { _, newWidth in
                 availableWidth = newWidth
+            }
+            .onChange(of: questions.count) { _, _ in
+                // Reset to first page when questions change (e.g., filtering)
+                currentPage = 0
             }
         }
     }
@@ -82,7 +114,7 @@ struct RecordTableView: View {
                         .frame(width: columnWidth - 16, alignment: column.alignment)
                         .padding(.leading, column.alignment == .leading ? 12 : 8)
                         .padding(.trailing, 8)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, 14)
                     
                     // Resizable divider (not on the last column)
                     if column != responsiveColumns.last {
@@ -98,10 +130,53 @@ struct RecordTableView: View {
             
             Spacer(minLength: 0)
             
+            // Pagination controls
+            paginationControls
+            
             // Column settings button at the end
             columnSettingsButton
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .clipped()
         .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+    }
+    
+    // MARK: - Pagination Controls
+    
+    private var paginationControls: some View {
+        HStack(spacing: 8) {
+            Text("\(displayRange) / \(sortedQuestions.count)")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+            
+            HStack(spacing: 2) {
+                Button {
+                    if currentPage > 0 {
+                        currentPage -= 1
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 11))
+                        .foregroundStyle(currentPage > 0 ? .primary : .tertiary)
+                }
+                .buttonStyle(.plain)
+                .disabled(currentPage == 0)
+                
+                Button {
+                    if currentPage < totalPages - 1 {
+                        currentPage += 1
+                    }
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11))
+                        .foregroundStyle(currentPage < totalPages - 1 ? .primary : .tertiary)
+                }
+                .buttonStyle(.plain)
+                .disabled(currentPage >= totalPages - 1)
+            }
+        }
+        .padding(.trailing, 8)
     }
     
     @ViewBuilder
@@ -142,7 +217,7 @@ struct RecordTableView: View {
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.vertical, 14)
         .help("Edit columns")
         .popover(isPresented: $showingColumnPopover, arrowEdge: .bottom) {
             ColumnVisibilityPopover(config: config)
@@ -154,7 +229,7 @@ struct RecordTableView: View {
     private var tableBody: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(sortedQuestions) { question in
+                ForEach(pagedQuestions) { question in
                     VStack(spacing: 0) {
                         RecordRowView(
                             question: question,
@@ -175,6 +250,8 @@ struct RecordTableView: View {
                 }
             }
         }
+        .id(currentPage) // Force re-render when page changes
+        .background(Color(nsColor: .windowBackgroundColor))
     }
     
     // MARK: - Empty State
@@ -226,7 +303,7 @@ struct RecordTableView: View {
             case .updated:
                 result = lhs.updatedAt < rhs.updatedAt
                 
-            case .drivers, .scenarios, .logEntries, .tags:
+            case .drivers, .logEntries, .tags:
                 // Non-sortable columns default to updated date
                 result = lhs.updatedAt < rhs.updatedAt
             }
@@ -277,8 +354,8 @@ private struct ResizableDivider: View {
     var body: some View {
         Rectangle()
             .fill(isDragging ? Color.accentColor : Color(nsColor: .separatorColor))
-            .frame(width: isDragging ? 3 : 1, height: 20)
-            .contentShape(Rectangle().size(width: 10, height: 40))
+            .frame(width: isDragging ? 3 : 1, height: 24)
+            .contentShape(Rectangle().size(width: 10, height: 44))
             .gesture(
                 DragGesture(minimumDistance: 1)
                     .onChanged { value in

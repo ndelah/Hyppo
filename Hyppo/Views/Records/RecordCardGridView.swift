@@ -367,7 +367,7 @@ struct RecordCardGridView: View {
             case .updated:
                 result = lhs.updatedAt < rhs.updatedAt
                 
-            case .drivers, .scenarios, .logEntries, .tags:
+            case .drivers, .logEntries, .tags:
                 // Non-sortable columns default to updated date
                 result = lhs.updatedAt < rhs.updatedAt
             }

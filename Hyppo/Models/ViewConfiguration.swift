@@ -134,7 +134,6 @@ enum RecordColumn: String, CaseIterable, Identifiable {
     case status = "status"
     case confidence = "confidence"
     case drivers = "drivers"
-    case scenarios = "scenarios"
     case logEntries = "logEntries"
     case tags = "tags"
     case created = "created"
@@ -150,7 +149,6 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .status: return "Status"
         case .confidence: return "Confidence"
         case .drivers: return "Drivers"
-        case .scenarios: return "Scenarios"
         case .logEntries: return "Logs"
         case .tags: return "Tags"
         case .created: return "Created"
@@ -166,7 +164,6 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .status: return "flag"
         case .confidence: return "gauge"
         case .drivers: return "target"
-        case .scenarios: return "arrow.up.arrow.down"
         case .logEntries: return "note.text"
         case .tags: return "tag"
         case .created: return "calendar.badge.plus"
@@ -179,7 +176,7 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         switch self {
         case .question, .assetName, .status, .confidence, .updated:
             return true
-        case .drivers, .scenarios, .logEntries, .tags, .created:
+        case .drivers, .logEntries, .tags, .created:
             return false
         }
     }
@@ -192,7 +189,6 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .status: return 100
         case .confidence: return 100
         case .drivers: return 70
-        case .scenarios: return 80
         case .logEntries: return 60
         case .tags: return 120
         case .created: return 100
@@ -205,7 +201,7 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         switch self {
         case .question, .assetName, .status, .confidence, .created, .updated:
             return true
-        case .drivers, .scenarios, .logEntries, .tags:
+        case .drivers, .logEntries, .tags:
             return false
         }
     }
@@ -215,7 +211,7 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         switch self {
         case .question:
             return .leading
-        case .assetName, .status, .confidence, .drivers, .scenarios, .logEntries, .tags, .created, .updated:
+        case .assetName, .status, .confidence, .drivers, .logEntries, .tags, .created, .updated:
             return .center
         }
     }
@@ -233,7 +229,6 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .tags: return 6          // Nice to have
         case .drivers: return 7       // Count info
         case .logEntries: return 8    // Count info
-        case .scenarios: return 9     // Least critical
         }
     }
     
@@ -246,7 +241,6 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .status: return 70
         case .confidence: return 70
         case .drivers: return 40
-        case .scenarios: return 50
         case .logEntries: return 40
         case .tags: return 60
         case .created: return 70
@@ -260,7 +254,7 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .question: return 3.0    // Takes most extra space
         case .tags: return 1.5        // Tags can benefit from extra space
         case .assetName, .status, .confidence, .created, .updated: return 1.0
-        case .drivers, .scenarios, .logEntries: return 0.5  // Compact columns grow less
+        case .drivers, .logEntries: return 0.5  // Compact columns grow less
         }
     }
 }
@@ -541,6 +535,7 @@ final class ViewConfiguration {
     /**
      Calculates proportional widths for columns based on available space.
      Columns get their minimum width plus a proportional share of extra space based on flexGrow.
+     Ensures total width never exceeds available space.
      
      - Parameters:
        - columns: The columns to calculate widths for
@@ -564,13 +559,33 @@ final class ViewConfiguration {
             // Base width is minimum, plus proportional share of extra space
             let flexShare = totalFlexGrow > 0 ? (column.flexGrow / totalFlexGrow) : 0
             let columnWidth = column.minWidth + (extraSpace * flexShare)
-            
-            // Apply any user-customized width if it's larger than calculated
-            // This respects manual column resizing while still being responsive
-            if let customWidth = columnWidths[column.rawValue], customWidth > columnWidth {
-                widths[column] = customWidth
-            } else {
-                widths[column] = columnWidth
+            widths[column] = columnWidth
+        }
+        
+        // Apply custom widths, but ensure total doesn't exceed usable width
+        var totalCustomizedWidth = widths.values.reduce(CGFloat(0), +)
+        
+        for column in columns {
+            if let customWidth = columnWidths[column.rawValue] {
+                let currentWidth = widths[column] ?? column.minWidth
+                let widthDifference = customWidth - currentWidth
+                
+                // Only apply custom width if it fits within remaining space
+                if totalCustomizedWidth + widthDifference <= usableWidth {
+                    widths[column] = customWidth
+                    totalCustomizedWidth += widthDifference
+                }
+            }
+        }
+        
+        // Final safety check: if total still exceeds usable width, scale down proportionally
+        let finalTotal = widths.values.reduce(CGFloat(0), +)
+        if finalTotal > usableWidth && finalTotal > 0 {
+            let scaleFactor = usableWidth / finalTotal
+            for column in columns {
+                if let width = widths[column] {
+                    widths[column] = max(column.minWidth, width * scaleFactor)
+                }
             }
         }
         

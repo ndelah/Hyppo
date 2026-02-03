@@ -40,7 +40,7 @@ struct AllTasksListView: View {
     @State private var searchText = ""
     @State private var showingSearchPopover = false
     @State private var currentPage = 0
-    private let pageSize = 25
+    private let pageSize = 50
     
     // MARK: - Computed Properties
     
@@ -94,14 +94,14 @@ struct AllTasksListView: View {
         return result
     }
     
-    /// Group tasks based on the current group by setting
+    /// Group tasks based on the current group by setting (uses pagedTasks for pagination)
     private var groupedTasks: [(String, [ResearchTask])] {
         switch config.groupByColumn {
         case .none:
             return [("", pagedTasks)]
             
         case .researchQuestion:
-            let grouped = Dictionary(grouping: filteredTasks) { task -> String in
+            let grouped = Dictionary(grouping: pagedTasks) { task -> String in
                 if let question = task.effectiveResearchQuestion {
                     if let ticker = question.asset?.ticker {
                         return ticker
@@ -114,7 +114,7 @@ struct AllTasksListView: View {
             return grouped.sorted { $0.key < $1.key }
             
         case .driver:
-            let grouped = Dictionary(grouping: filteredTasks) { task -> String in
+            let grouped = Dictionary(grouping: pagedTasks) { task -> String in
                 if let driver = task.driver {
                     return driver.title
                 }
@@ -124,7 +124,7 @@ struct AllTasksListView: View {
             
         case .tags:
             // Group by first tag of the research question
-            let grouped = Dictionary(grouping: filteredTasks) { task -> String in
+            let grouped = Dictionary(grouping: pagedTasks) { task -> String in
                 if let question = task.effectiveResearchQuestion,
                    let firstTag = question.tags?.first {
                     return firstTag.name
@@ -134,7 +134,7 @@ struct AllTasksListView: View {
             return grouped.sorted { $0.key < $1.key }
             
         case .status:
-            let grouped = Dictionary(grouping: filteredTasks) { task -> String in
+            let grouped = Dictionary(grouping: pagedTasks) { task -> String in
                 task.isCompleted ? "Completed" : "Incomplete"
             }
             // Show incomplete first
@@ -143,7 +143,7 @@ struct AllTasksListView: View {
         case .createdDate:
             let formatter = DateFormatter()
             formatter.dateFormat = "MMM d, yyyy"
-            let grouped = Dictionary(grouping: filteredTasks) { task -> String in
+            let grouped = Dictionary(grouping: pagedTasks) { task -> String in
                 formatter.string(from: task.createdAt)
             }
             return grouped.sorted { $0.key > $1.key }
@@ -265,7 +265,7 @@ struct AllTasksListView: View {
                 placeholder: "Add a task... (@ for project, # for driver)"
             )
             .padding(.horizontal, 24)
-            .padding(.vertical, 12)
+            .padding(.vertical, 16)
             .background(Color(nsColor: .windowBackgroundColor))
             
             Divider()
@@ -278,6 +278,10 @@ struct AllTasksListView: View {
             }
         }
         .navigationTitle("")
+        .onChange(of: filteredTasks.count) { _, _ in
+            // Reset to first page when filtered tasks change (e.g., filtering)
+            currentPage = 0
+        }
     }
     
     // MARK: - Toolbar
@@ -322,7 +326,7 @@ struct AllTasksListView: View {
             paginationControls
         }
         .padding(.horizontal, 24)
-        .padding(.vertical, 8)
+        .padding(.vertical, 12)
         .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
     }
     
@@ -372,8 +376,8 @@ struct AllTasksListView: View {
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .frame(minWidth: 300, maxWidth: 500)
             .background(Color(nsColor: .textBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -551,6 +555,7 @@ struct AllTasksListView: View {
             .padding(.vertical, 8)
             .padding(.horizontal, 24)
         }
+        .id("\(currentPage)-\(config.groupByColumn.rawValue)") // Force re-render when page or grouping changes
         .background(Color(nsColor: .windowBackgroundColor))
     }
     
@@ -658,12 +663,12 @@ struct TodoistTaskRow: View {
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "at")
-                                    .font(.system(size: 10 * textSizeMultiplier))
-                                Text(questionBadgeText(question))
                                     .font(.system(size: 11 * textSizeMultiplier))
+                                Text(questionBadgeText(question))
+                                    .font(.system(size: 12 * textSizeMultiplier))
                             }
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
                             .background(Color.cyan.opacity(0.12))
                             .foregroundStyle(.cyan)
                             .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -676,12 +681,12 @@ struct TodoistTaskRow: View {
                     if let driver = task.driver, rowWidth >= hideDriverThreshold {
                         HStack(spacing: 4) {
                             Image(systemName: "number")
-                                .font(.system(size: 10 * textSizeMultiplier))
-                            Text(driverBadgeText(driver))
                                 .font(.system(size: 11 * textSizeMultiplier))
+                            Text(driverBadgeText(driver))
+                                .font(.system(size: 12 * textSizeMultiplier))
                         }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
                         .background(Color.orange.opacity(0.12))
                         .foregroundStyle(.orange)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -692,12 +697,12 @@ struct TodoistTaskRow: View {
                     if task.isInbox && rowWidth >= hideInboxThreshold {
                         HStack(spacing: 4) {
                             Image(systemName: "tray")
-                                .font(.system(size: 10 * textSizeMultiplier))
-                            Text("Inbox")
                                 .font(.system(size: 11 * textSizeMultiplier))
+                            Text("Inbox")
+                                .font(.system(size: 12 * textSizeMultiplier))
                         }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
                         .background(Color.purple.opacity(0.12))
                         .foregroundStyle(.purple)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -706,7 +711,7 @@ struct TodoistTaskRow: View {
                     // Date (hidden at very narrow widths)
                     if rowWidth >= hideDateThreshold {
                         Text(dateText)
-                            .font(.system(size: 11 * textSizeMultiplier))
+                            .font(.system(size: 12 * textSizeMultiplier))
                             .foregroundStyle(.tertiary)
                             .frame(minWidth: 50, alignment: .trailing)
                     }
@@ -717,7 +722,7 @@ struct TodoistTaskRow: View {
                             onDelete()
                         } label: {
                             Image(systemName: "trash")
-                                .font(.system(size: 11 * textSizeMultiplier))
+                                .font(.system(size: 12 * textSizeMultiplier))
                                 .foregroundStyle(.red.opacity(0.7))
                         }
                         .buttonStyle(.plain)
@@ -727,7 +732,7 @@ struct TodoistTaskRow: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.vertical, 12)
         .background(
             GeometryReader { geometry in
                 Color.clear
@@ -818,12 +823,12 @@ struct TaskFilterTagView: View {
         HStack(spacing: 4) {
             // Colored icon
             Image(systemName: tag.icon)
-                .font(.system(size: 10 * textSizeMultiplier))
+                .font(.system(size: 11 * textSizeMultiplier))
                 .foregroundStyle(tag.color)
             
             // Label
             Text(tag.label)
-                .font(.system(size: 11 * textSizeMultiplier))
+                .font(.system(size: 12 * textSizeMultiplier))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
             
@@ -832,13 +837,13 @@ struct TaskFilterTagView: View {
                 onRemove()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 8 * textSizeMultiplier, weight: .semibold))
+                    .font(.system(size: 9 * textSizeMultiplier, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.vertical, 5)
         .background(tag.color.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .overlay(

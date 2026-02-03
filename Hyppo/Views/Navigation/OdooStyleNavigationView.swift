@@ -90,7 +90,7 @@ struct OdooStyleNavigationView: View {
             
             Spacer()
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 12)
         .padding(.horizontal, 16)
         .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
         .overlay(alignment: .bottom) {
@@ -114,11 +114,11 @@ struct OdooStyleNavigationView: View {
             }
         } label: {
             Text(tab.rawValue)
-                .font(.subheadline)
+                .font(.system(size: 14))
                 .fontWeight(selectedTab == tab ? .medium : .regular)
                 .foregroundStyle(selectedTab == tab ? .primary : .secondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
                 .background(
                     selectedTab == tab
                         ? Color.accentColor.opacity(colorContrast == .increased ? 0.2 : 0.1)

@@ -244,8 +244,8 @@ struct RecordListView: View {
             } label: {
                 Text("New")
                     .fontWeight(.medium)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
                     .background(Color.accentColor)
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -284,7 +284,7 @@ struct RecordListView: View {
             viewModePicker
         }
         .padding(.horizontal, 24)
-        .padding(.vertical, 8)
+        .padding(.vertical, 12)
         .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
     }
     
@@ -332,8 +332,8 @@ struct RecordListView: View {
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .frame(minWidth: 300, maxWidth: 500)
             .background(Color(nsColor: .textBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -511,12 +511,12 @@ struct RecordFilterTagView: View {
         HStack(spacing: 4) {
             // Colored icon
             Image(systemName: tag.icon)
-                .font(.system(size: 10))
+                .font(.system(size: 11))
                 .foregroundStyle(tag.color)
             
             // Label
             Text(tag.label)
-                .font(.caption)
+                .font(.system(size: 12))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
             
@@ -525,13 +525,13 @@ struct RecordFilterTagView: View {
                 onRemove()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 8, weight: .semibold))
+                    .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.vertical, 5)
         .background(tag.color.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .overlay(

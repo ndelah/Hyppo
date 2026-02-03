@@ -39,11 +39,11 @@ struct RecordRowView: View {
                         .frame(width: width - 16, alignment: column.alignment)
                         .padding(.leading, column.alignment == .leading ? 12 : 8)
                         .padding(.trailing, 8)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, 14)
                     
                     if column != columns.last {
                         Divider()
-                            .frame(height: 24)
+                            .frame(height: 28)
                     }
                 }
                 .frame(width: width)
@@ -51,6 +51,8 @@ struct RecordRowView: View {
             
             Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .clipped()
         .background(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
         .contentShape(Rectangle())
     }
@@ -70,8 +72,6 @@ struct RecordRowView: View {
             confidenceCell
         case .drivers:
             driversCell
-        case .scenarios:
-            scenariosCell
         case .logEntries:
             logEntriesCell
         case .tags:
@@ -88,12 +88,12 @@ struct RecordRowView: View {
     private var questionCell: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(question.questionText)
-                .font(.system(size: 13 * textSizeMultiplier, weight: .medium))
+                .font(.system(size: 14 * textSizeMultiplier, weight: .medium))
                 .lineLimit(2)
             
             if let context = question.context, !context.isEmpty {
                 Text(context)
-                    .font(.system(size: 11 * textSizeMultiplier))
+                    .font(.system(size: 12 * textSizeMultiplier))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -104,11 +104,11 @@ struct RecordRowView: View {
         Group {
             if let asset = question.asset {
                 Text(asset.ticker)
-                    .font(.system(size: 13 * textSizeMultiplier, weight: .semibold))
+                    .font(.system(size: 14 * textSizeMultiplier, weight: .semibold))
                     .foregroundStyle(.cyan)
             } else {
                 Text("—")
-                    .font(.system(size: 13 * textSizeMultiplier))
+                    .font(.system(size: 14 * textSizeMultiplier))
                     .foregroundStyle(.tertiary)
             }
         }
@@ -117,9 +117,9 @@ struct RecordRowView: View {
     private var statusCell: some View {
         HStack(spacing: 4) {
             Image(systemName: question.status.iconName)
-                .font(.system(size: 11 * textSizeMultiplier))
+                .font(.system(size: 12 * textSizeMultiplier))
             Text(question.status.displayName)
-                .font(.system(size: 11 * textSizeMultiplier, weight: .medium))
+                .font(.system(size: 12 * textSizeMultiplier, weight: .medium))
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
@@ -132,11 +132,11 @@ struct RecordRowView: View {
         Group {
             if let confidence = question.confidence {
                 Text(confidence.shortLabel)
-                    .font(.system(size: 11 * textSizeMultiplier))
+                    .font(.system(size: 12 * textSizeMultiplier))
                     .foregroundStyle(confidenceColor(for: confidence))
             } else {
                 Text("—")
-                    .font(.system(size: 11 * textSizeMultiplier))
+                    .font(.system(size: 12 * textSizeMultiplier))
                     .foregroundStyle(.tertiary)
             }
         }
@@ -145,21 +145,14 @@ struct RecordRowView: View {
     private var driversCell: some View {
         let count = question.drivers?.count ?? 0
         return Text("\(count)")
-            .font(.system(size: 13 * textSizeMultiplier))
-            .foregroundStyle(count > 0 ? .primary : .tertiary)
-    }
-    
-    private var scenariosCell: some View {
-        let count = question.scenariosCount
-        return Text("\(count)")
-            .font(.system(size: 13 * textSizeMultiplier))
+            .font(.system(size: 14 * textSizeMultiplier))
             .foregroundStyle(count > 0 ? .primary : .tertiary)
     }
     
     private var logEntriesCell: some View {
         let count = question.logEntriesCount
         return Text("\(count)")
-            .font(.system(size: 13 * textSizeMultiplier))
+            .font(.system(size: 14 * textSizeMultiplier))
             .foregroundStyle(count > 0 ? .primary : .tertiary)
     }
     
@@ -172,14 +165,14 @@ struct RecordRowView: View {
                     }
                     if tags.count > 3 {
                         Text("+\(tags.count - 3)")
-                            .font(.system(size: 11 * textSizeMultiplier))
+                            .font(.system(size: 12 * textSizeMultiplier))
                             .foregroundStyle(.secondary)
                             .accessibilityLabel("\(tags.count - 3) more tags")
                     }
                 }
             } else {
                 Text("—")
-                    .font(.system(size: 11 * textSizeMultiplier))
+                    .font(.system(size: 12 * textSizeMultiplier))
                     .foregroundStyle(.tertiary)
                     .accessibilityLabel("No tags")
             }
@@ -188,13 +181,13 @@ struct RecordRowView: View {
     
     private var createdCell: some View {
         Text(question.createdAt.formatted(date: .abbreviated, time: .omitted))
-            .font(.system(size: 11 * textSizeMultiplier))
+            .font(.system(size: 12 * textSizeMultiplier))
             .foregroundStyle(.secondary)
     }
     
     private var updatedCell: some View {
         Text(question.updatedAt.formatted(date: .abbreviated, time: .omitted))
-            .font(.system(size: 11 * textSizeMultiplier))
+            .font(.system(size: 12 * textSizeMultiplier))
             .foregroundStyle(.secondary)
     }
     
@@ -231,7 +224,7 @@ private struct TagPill: View {
     
     var body: some View {
         Text(tag.name)
-            .font(.system(size: 11 * textSizeMultiplier))
+            .font(.system(size: 12 * textSizeMultiplier))
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(tagColor.opacity(0.2))
