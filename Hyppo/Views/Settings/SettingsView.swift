@@ -318,12 +318,12 @@ private struct AboutSettingsTab: View {
             Spacer()
             
             // App icon placeholder
-            Image(systemName: "note.text.badge.plus")
+            Image(systemName: "brain.head.profile")
                 .font(.system(size: 64))
                 .foregroundStyle(.blue)
             
             VStack(spacing: 4) {
-                Text("Footnote")
+                Text("Hyppo")
                     .font(.title)
                     .fontWeight(.semibold)
                 
@@ -354,7 +354,7 @@ private struct AboutSettingsTab: View {
             
             Spacer()
             
-            Text("© 2026 Footnote. All rights reserved.")
+            Text("© 2026 Hyppo. All rights reserved.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
