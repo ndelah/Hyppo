@@ -725,7 +725,6 @@ final class AnalyticsService {
         var alerts: [RiskAlert] = []
         
         let questions = fetchAll(ResearchQuestion.self, from: modelContext)
-        let evidence = fetchAll(Evidence.self, from: modelContext)
         let reminders = fetchAll(ReviewReminder.self, from: modelContext)
         
         let now = Date()
