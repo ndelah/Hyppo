@@ -500,6 +500,223 @@ struct LogEntryFormView: View {
     }
 }
 
+// MARK: - Tag Picker View
+
+/// A view for selecting tags from available tags
+struct TagPickerView: View {
+    @Binding var selectedTags: [Tag]
+    
+    @Query(sort: \Tag.name) private var allTags: [Tag]
+    @State private var showingTagCreation = false
+    @State private var newTagName = ""
+    @State private var newTagColor: TagColor = .blue
+    
+    @Environment(\.modelContext) private var modelContext
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if allTags.isEmpty {
+                HStack {
+                    Text("No tags yet")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                    
+                    Button("Create tag") {
+                        showingTagCreation = true
+                    }
+                    .font(.caption)
+                }
+            } else {
+                FlowLayout(spacing: 6) {
+                    ForEach(allTags) { tag in
+                        TagToggleChip(
+                            tag: tag,
+                            isSelected: selectedTags.contains(where: { $0.tagId == tag.tagId })
+                        ) {
+                            toggleTag(tag)
+                        }
+                    }
+                    
+                    // Add tag button
+                    Button {
+                        showingTagCreation = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                                .font(.caption2)
+                            Text("New")
+                                .font(.caption)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(Color(nsColor: .controlBackgroundColor))
+                        .foregroundStyle(.secondary)
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .popover(isPresented: $showingTagCreation) {
+            VStack(spacing: 12) {
+                Text("Create Tag")
+                    .font(.headline)
+                
+                TextField("Tag name", text: $newTagName)
+                    .textFieldStyle(.roundedBorder)
+                
+                Picker("Color", selection: $newTagColor) {
+                    ForEach(TagColor.allCases) { color in
+                        HStack {
+                            Circle()
+                                .fill(color.color)
+                                .frame(width: 12, height: 12)
+                            Text(color.displayName)
+                        }
+                        .tag(color)
+                    }
+                }
+                .pickerStyle(.menu)
+                
+                HStack {
+                    Button("Cancel") {
+                        newTagName = ""
+                        showingTagCreation = false
+                    }
+                    
+                    Spacer()
+                    
+                    Button("Create") {
+                        createTag()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(newTagName.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            .padding()
+            .frame(width: 250)
+        }
+    }
+    
+    private func toggleTag(_ tag: Tag) {
+        if let index = selectedTags.firstIndex(where: { $0.tagId == tag.tagId }) {
+            selectedTags.remove(at: index)
+        } else {
+            selectedTags.append(tag)
+        }
+    }
+    
+    private func createTag() {
+        let tag = Tag(name: newTagName, colorName: newTagColor.rawValue)
+        modelContext.insert(tag)
+        selectedTags.append(tag)
+        newTagName = ""
+        showingTagCreation = false
+    }
+}
+
+/// A toggleable chip for tag selection
+private struct TagToggleChip: View {
+    let tag: Tag
+    let isSelected: Bool
+    let action: () -> Void
+    
+    private var tagColor: Color {
+        guard let colorName = tag.colorName,
+              let color = TagColor(rawValue: colorName) else {
+            return .blue
+        }
+        return color.color
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(tagColor)
+                    .frame(width: 8, height: 8)
+                Text(tag.name)
+                    .font(.caption)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(isSelected ? tagColor.opacity(0.2) : Color(nsColor: .controlBackgroundColor))
+            .foregroundStyle(isSelected ? tagColor : .primary)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(isSelected ? tagColor : Color(nsColor: .separatorColor), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Flow Layout (for tag wrapping)
+
+/// A layout that arranges views in a horizontal flow, wrapping to new lines as needed
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = FlowResult(
+            in: proposal.replacingUnspecifiedDimensions().width,
+            subviews: subviews,
+            spacing: spacing
+        )
+        return result.size
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = FlowResult(
+            in: bounds.width,
+            subviews: subviews,
+            spacing: spacing
+        )
+        
+        for (index, subview) in subviews.enumerated() {
+            let point = result.points[index]
+            subview.place(
+                at: CGPoint(x: bounds.minX + point.x, y: bounds.minY + point.y),
+                proposal: .unspecified
+            )
+        }
+    }
+    
+    struct FlowResult {
+        var size: CGSize = .zero
+        var points: [CGPoint] = []
+        
+        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
+            var x: CGFloat = 0
+            var y: CGFloat = 0
+            var lineHeight: CGFloat = 0
+            
+            for subview in subviews {
+                let size = subview.sizeThatFits(.unspecified)
+                
+                if x + size.width > maxWidth && x > 0 {
+                    x = 0
+                    y += lineHeight + spacing
+                    lineHeight = 0
+                }
+                
+                points.append(CGPoint(x: x, y: y))
+                lineHeight = max(lineHeight, size.height)
+                x += size.width + spacing
+                
+                self.size.width = max(self.size.width, x - spacing)
+            }
+            
+            self.size.height = y + lineHeight
+        }
+    }
+}
+
 // MARK: - Log Driver Picker
 
 /**
