@@ -314,7 +314,7 @@ struct LogEntryFormView: View {
             }
         }
         .padding(12)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -527,7 +527,7 @@ struct LogDriverPicker: View {
                     .foregroundStyle(.tertiary)
             }
             .padding(10)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(Color(nsColor: .windowBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .menuStyle(.borderlessButton)

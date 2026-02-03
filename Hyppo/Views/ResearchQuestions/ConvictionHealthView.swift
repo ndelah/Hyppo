@@ -193,7 +193,7 @@ struct ConvictionHealthView: View {
             }
         }
         .padding(isCompact ? 12 : 16)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     

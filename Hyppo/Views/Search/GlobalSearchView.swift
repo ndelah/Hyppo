@@ -331,7 +331,7 @@ struct GlobalSearchView: View {
                         }
                     }
                     .padding(10)
-                    .background(Color(nsColor: .controlBackgroundColor))
+                    .background(Color(nsColor: .windowBackgroundColor))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     
                     // Quick filters
@@ -357,7 +357,7 @@ struct GlobalSearchView: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color(nsColor: .controlBackgroundColor))
+                            .background(Color(nsColor: .windowBackgroundColor))
                             .clipShape(Capsule())
                         }
                         
@@ -395,7 +395,7 @@ struct GlobalSearchView: View {
                                 }
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(selectedTag != nil ? Color.accentColor.opacity(0.2) : Color(nsColor: .controlBackgroundColor))
+                                .background(selectedTag != nil ? Color.accentColor.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
                                 .clipShape(Capsule())
                             }
                         }
@@ -433,7 +433,7 @@ struct GlobalSearchView: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(selectedConfidence != nil ? Color.accentColor.opacity(0.2) : Color(nsColor: .controlBackgroundColor))
+                            .background(selectedConfidence != nil ? Color.accentColor.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
                             .clipShape(Capsule())
                         }
                         
@@ -487,7 +487,7 @@ struct GlobalSearchView: View {
                             Spacer()
                         }
                         .padding(8)
-                        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }

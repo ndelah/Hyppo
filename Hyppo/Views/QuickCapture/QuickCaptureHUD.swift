@@ -194,7 +194,7 @@ struct QuickCaptureHUD: View {
                 .focused($focusedField, equals: .url)
         }
         .padding(10)
-        .background(Color(.controlBackgroundColor))
+        .background(Color(.windowBackgroundColor))
         .cornerRadius(8)
         
         // Compact destination display
@@ -329,7 +329,7 @@ struct QuickCaptureHUD: View {
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.controlBackgroundColor))
+        .background(Color(.windowBackgroundColor))
         .cornerRadius(8)
     }
     
@@ -413,7 +413,7 @@ struct QuickCaptureHUD: View {
                 .font(.body)
                 .frame(minHeight: 60, maxHeight: 100)
                 .padding(4)
-                .background(Color(.controlBackgroundColor))
+                .background(Color(.windowBackgroundColor))
                 .cornerRadius(6)
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)

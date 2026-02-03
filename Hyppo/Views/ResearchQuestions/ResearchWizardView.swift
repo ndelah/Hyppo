@@ -368,7 +368,7 @@ struct ResearchWizardView: View {
                                     .font(.caption2)
                             }
                             .frame(width: 60, height: 44)
-                            .background(confidence == level.rawValue ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                            .background(confidence == level.rawValue ? Color.accentColor : Color(nsColor: .windowBackgroundColor))
                             .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? .orange : .primary))
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
@@ -433,7 +433,7 @@ struct ResearchWizardView: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 5)
-                            .background(Color(nsColor: .controlBackgroundColor))
+                            .background(Color(nsColor: .windowBackgroundColor))
                             .foregroundStyle(.secondary)
                             .clipShape(Capsule())
                             .overlay(
@@ -587,7 +587,7 @@ struct ResearchWizardView: View {
                     }
                 }
                 .padding(12)
-                .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             } else {
                 // Select existing asset
@@ -606,7 +606,7 @@ struct ResearchWizardView: View {
                         .foregroundStyle(.blue)
                     }
                     .padding(12)
-                    .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                    .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 } else {
                     VStack(alignment: .leading, spacing: 8) {
@@ -839,7 +839,7 @@ struct ResearchWizardView: View {
                 
             }
             .padding()
-            .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+            .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             
             // Readiness check
@@ -886,7 +886,7 @@ struct ResearchWizardView: View {
             }
         }
         .padding()
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.3))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -1090,7 +1090,7 @@ private struct WizardTagToggleChip: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
-            .background(isSelected ? tagColor.opacity(0.2) : Color(nsColor: .controlBackgroundColor))
+            .background(isSelected ? tagColor.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
             .foregroundStyle(isSelected ? tagColor : .primary)
             .clipShape(Capsule())
             .overlay(

@@ -188,7 +188,7 @@ struct ReviewAnalyticsView: View {
             Spacer()
         }
         .padding(20)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -259,7 +259,7 @@ struct ReviewAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -389,7 +389,7 @@ struct ReviewAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -456,7 +456,7 @@ struct ReviewAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -534,7 +534,7 @@ struct ReviewAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     

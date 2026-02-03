@@ -317,7 +317,7 @@ struct ResearchQuestionFormView: View {
                                 .font(.caption2)
                         }
                         .frame(width: 70, height: 50)
-                        .background(confidence == level.rawValue ? Color.blue : Color(nsColor: .controlBackgroundColor))
+                        .background(confidence == level.rawValue ? Color.blue : Color(nsColor: .windowBackgroundColor))
                         .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? .orange : .primary))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }

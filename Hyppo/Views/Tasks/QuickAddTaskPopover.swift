@@ -37,7 +37,7 @@ struct QuickAddTaskPopover: View {
                     .foregroundStyle(.tertiary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color(nsColor: .controlBackgroundColor))
+                    .background(Color(nsColor: .windowBackgroundColor))
                     .clipShape(RoundedRectangle(cornerRadius: 4))
                 
                 Button {
@@ -96,7 +96,7 @@ struct QuickAddTaskPopover: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 10)
-            .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+            .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
         }
         .frame(width: 500)
         .background(Color(nsColor: .windowBackgroundColor))

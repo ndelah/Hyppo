@@ -188,7 +188,7 @@ struct EvidenceFormView: View {
                                     .fontWeight(.medium)
                             }
                             .padding(8)
-                            .background(Color(nsColor: .controlBackgroundColor))
+                            .background(Color(nsColor: .windowBackgroundColor))
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
                     }
@@ -565,7 +565,7 @@ struct DriverPicker: View {
                     .font(.caption)
             }
             .padding(8)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(Color(nsColor: .windowBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
     }

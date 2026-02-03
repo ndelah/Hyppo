@@ -119,7 +119,7 @@ struct AnalyticsDashboardView: View {
             }
         }
         .padding(.vertical, 8)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
     }
     
     private func sectionButton(_ section: AnalyticsSection) -> some View {

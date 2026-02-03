@@ -101,7 +101,7 @@ struct RecordTableView: View {
             // Column settings button at the end
             columnSettingsButton
         }
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
     }
     
     @ViewBuilder

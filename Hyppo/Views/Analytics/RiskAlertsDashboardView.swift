@@ -230,7 +230,7 @@ struct RiskAlertsDashboardView: View {
                 .font(.subheadline)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color(nsColor: .controlBackgroundColor))
+                .background(Color(nsColor: .windowBackgroundColor))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)
@@ -255,7 +255,7 @@ struct RiskAlertsDashboardView: View {
                 .font(.subheadline)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color(nsColor: .controlBackgroundColor))
+                .background(Color(nsColor: .windowBackgroundColor))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)
@@ -305,7 +305,7 @@ struct RiskAlertsDashboardView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -363,7 +363,7 @@ struct RiskAlertsDashboardView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -397,7 +397,7 @@ struct RiskAlertsDashboardView: View {
             }
         }
         .padding(16)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     

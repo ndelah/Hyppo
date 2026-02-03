@@ -177,7 +177,7 @@ struct TaskAnalyticsView: View {
             Spacer()
         }
         .padding(20)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -256,7 +256,7 @@ struct TaskAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -328,7 +328,7 @@ struct TaskAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -413,7 +413,7 @@ struct TaskAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -440,7 +440,7 @@ struct TaskAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -492,7 +492,7 @@ struct TaskAnalyticsView: View {
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 8)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
     

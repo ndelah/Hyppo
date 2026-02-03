@@ -208,7 +208,7 @@ struct ReviewWizardView: View {
                 .font(.headline)
         }
         .padding(.vertical, 16)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
     }
     
     private func stepIndicator(for step: WizardStep) -> some View {
@@ -344,7 +344,7 @@ struct ReviewWizardView: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -441,7 +441,7 @@ struct ReviewWizardView: View {
                                     .font(.caption2)
                             }
                             .frame(width: 44, height: 44)
-                            .background(newConfidence == level ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                            .background(newConfidence == level ? Color.accentColor : Color(nsColor: .windowBackgroundColor))
                             .foregroundStyle(newConfidence == level ? .white : (newConfidence >= level ? .orange : .primary))
                             .clipShape(Circle())
                         }
@@ -673,7 +673,7 @@ struct ReviewWizardView: View {
             }
         }
         .padding()
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
     }
     
     // MARK: - Helpers
@@ -898,7 +898,7 @@ private struct StatusButton: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
-            .background(isSelected ? statusColor : Color(nsColor: .controlBackgroundColor))
+            .background(isSelected ? statusColor : Color(nsColor: .windowBackgroundColor))
             .foregroundStyle(isSelected ? .white : .secondary)
             .clipShape(Capsule())
             .overlay(
@@ -942,7 +942,7 @@ private struct OutcomeSelectionCard: View {
                 }
             }
             .padding()
-            .background(isSelected ? reviewOutcomeColor(outcome).opacity(0.1) : Color(nsColor: .controlBackgroundColor))
+            .background(isSelected ? reviewOutcomeColor(outcome).opacity(0.1) : Color(nsColor: .windowBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
@@ -1019,7 +1019,7 @@ private struct RevisionPromptSheet: View {
                             }
                         }
                         .padding()
-                        .background(Color(nsColor: .controlBackgroundColor))
+                        .background(Color(nsColor: .windowBackgroundColor))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
@@ -1046,7 +1046,7 @@ private struct RevisionPromptSheet: View {
                 .disabled(!hasChanges)
             }
             .padding()
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(Color(nsColor: .windowBackgroundColor))
         }
         .frame(width: 500, height: 500)
         .onAppear {

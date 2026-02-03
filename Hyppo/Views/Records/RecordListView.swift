@@ -285,7 +285,7 @@ struct RecordListView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 8)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
     }
     
     /// Search bar that displays active filters as rectangular tags
@@ -364,7 +364,7 @@ struct RecordListView: View {
                     }
                 }
                 .padding()
-                .background(Color(nsColor: .controlBackgroundColor))
+                .background(Color(nsColor: .windowBackgroundColor))
                 
                 Divider()
                 
@@ -423,7 +423,7 @@ struct RecordListView: View {
                         .frame(width: 28, height: 24)
                         .background(
                             config.viewMode == mode
-                                ? Color(nsColor: .controlBackgroundColor)
+                                ? Color(nsColor: .windowBackgroundColor)
                                 : Color.clear
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 4))

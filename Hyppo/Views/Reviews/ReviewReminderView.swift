@@ -55,7 +55,7 @@ struct ReviewReminderView: View {
             }
         }
         .padding(10)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .sheet(isPresented: $showingCadenceSheet) {
             CadenceConfigSheet(researchQuestion: researchQuestion)

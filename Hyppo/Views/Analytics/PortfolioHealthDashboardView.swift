@@ -169,7 +169,7 @@ struct PortfolioHealthDashboardView: View {
             Spacer()
         }
         .padding(20)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -253,7 +253,7 @@ struct PortfolioHealthDashboardView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -315,7 +315,7 @@ struct PortfolioHealthDashboardView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -382,7 +382,7 @@ struct PortfolioHealthDashboardView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -456,7 +456,7 @@ struct PortfolioHealthDashboardView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     

@@ -302,7 +302,7 @@ struct AllTasksListView: View {
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(config.activeShowInboxOnly ? Color.purple.opacity(0.2) : Color(nsColor: .controlBackgroundColor))
+                        .background(config.activeShowInboxOnly ? Color.purple.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
                         .foregroundStyle(config.activeShowInboxOnly ? .purple : .secondary)
                         .clipShape(Capsule())
                     }
@@ -323,7 +323,7 @@ struct AllTasksListView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 8)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
     }
     
     // MARK: - Search Bar with Filter Tags (Odoo-style)
@@ -404,7 +404,7 @@ struct AllTasksListView: View {
                     }
                 }
                 .padding()
-                .background(Color(nsColor: .controlBackgroundColor))
+                .background(Color(nsColor: .windowBackgroundColor))
                 
                 Divider()
                 
@@ -739,7 +739,7 @@ struct TodoistTaskRow: View {
         )
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(isHovering || isEditing ? Color(nsColor: .controlBackgroundColor).opacity(0.5) : Color.clear)
+                .fill(isHovering || isEditing ? Color(nsColor: .windowBackgroundColor).opacity(0.5) : Color.clear)
         )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {

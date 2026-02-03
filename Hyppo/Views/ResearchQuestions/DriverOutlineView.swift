@@ -55,7 +55,7 @@ struct DriverOutlineView: View {
                             }
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(Color(nsColor: .controlBackgroundColor))
+                            .background(Color(nsColor: .windowBackgroundColor))
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                             .shadow(radius: 4)
                             .onAppear { draggedDriverId = driver.id }
@@ -508,7 +508,7 @@ struct SourceTypeChip: View {
                 .font(.caption2)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(isSelected ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                .background(isSelected ? Color.accentColor : Color(nsColor: .windowBackgroundColor))
                 .foregroundStyle(isSelected ? .white : .primary)
                 .clipShape(Capsule())
                 .overlay(

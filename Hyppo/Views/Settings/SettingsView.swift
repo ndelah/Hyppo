@@ -10,6 +10,11 @@ import SwiftData
 
 /// Main settings/preferences view
 struct SettingsView: View {
+    // MARK: - Environment
+    
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorSchemeContrast) private var colorContrast
+    
     // MARK: - State
     
     /// Selected settings tab
@@ -18,42 +23,100 @@ struct SettingsView: View {
     // MARK: - Body
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            GeneralSettingsTab()
-                .tabItem {
-                    Label("General", systemImage: "gear")
-                }
-                .tag(SettingsTab.general)
+        VStack(spacing: 0) {
+            // Custom tab bar for consistency with main navigation
+            settingsTabBar
             
-            AppearanceSettingsTab()
-                .tabItem {
-                    Label("Appearance", systemImage: "textformat.size")
+            // Content area
+            Group {
+                switch selectedTab {
+                case .general:
+                    GeneralSettingsTab()
+                case .appearance:
+                    AppearanceSettingsTab()
+                case .backup:
+                    BackupSettingsTab()
+                case .about:
+                    AboutSettingsTab()
                 }
-                .tag(SettingsTab.appearance)
-            
-            BackupSettingsTab()
-                .tabItem {
-                    Label("Backup", systemImage: "externaldrive")
-                }
-                .tag(SettingsTab.backup)
-            
-            AboutSettingsTab()
-                .tabItem {
-                    Label("About", systemImage: "info.circle")
-                }
-                .tag(SettingsTab.about)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 500, minHeight: 400)
+        .background(Color(nsColor: .underPageBackgroundColor))
+    }
+    
+    // MARK: - Settings Tab Bar
+    
+    /// Custom tab bar styled to match main navigation
+    private var settingsTabBar: some View {
+        HStack(spacing: 0) {
+            // Tab buttons
+            HStack(spacing: 4) {
+                ForEach(SettingsTab.allCases, id: \.self) { tab in
+                    settingsTabButton(for: tab)
+                }
+            }
+            .padding(.leading, 16)
+            
+            Spacer()
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 16)
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+        .overlay(alignment: .bottom) {
+            Divider()
+        }
+    }
+    
+    /// Individual settings tab button
+    private func settingsTabButton(for tab: SettingsTab) -> some View {
+        Button {
+            if reduceMotion {
+                selectedTab = tab
+            } else {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    selectedTab = tab
+                }
+            }
+        } label: {
+            Text(tab.displayName)
+                .font(.subheadline)
+                .fontWeight(selectedTab == tab ? .medium : .regular)
+                .foregroundStyle(selectedTab == tab ? .primary : .secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    selectedTab == tab
+                        ? Color.accentColor.opacity(colorContrast == .increased ? 0.2 : 0.1)
+                        : Color.clear
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(tab.displayName)
+        .accessibilityAddTraits(selectedTab == tab ? .isSelected : [])
+        .accessibilityHint("Switch to \(tab.displayName) settings")
     }
 }
 
 // MARK: - Settings Tabs Enum
 
-private enum SettingsTab: String {
+private enum SettingsTab: String, CaseIterable {
     case general
     case appearance
     case backup
     case about
+    
+    /// Display name for the tab
+    var displayName: String {
+        switch self {
+        case .general: return "General"
+        case .appearance: return "Appearance"
+        case .backup: return "Backup"
+        case .about: return "About"
+        }
+    }
 }
 
 // MARK: - General Settings Tab
@@ -191,7 +254,7 @@ private struct AppearanceSettingsTab: View {
                         }
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(nsColor: .controlBackgroundColor))
+                        .background(Color(nsColor: .windowBackgroundColor))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                     .padding(.top, 8)

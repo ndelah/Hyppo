@@ -315,7 +315,7 @@ struct RecordKanbanView: View {
                 .fontWeight(.medium)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
-                .background(Color(nsColor: .controlBackgroundColor))
+                .background(Color(nsColor: .windowBackgroundColor))
                 .clipShape(Capsule())
         }
         .padding(.horizontal, 12)

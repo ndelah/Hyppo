@@ -197,7 +197,7 @@ struct ResearchQuestionDetailView: View {
             }
             Spacer()
         }
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
     
@@ -648,7 +648,7 @@ struct ResearchQuestionDetailView: View {
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 12)
-            .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+            .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
             .clipShape(RoundedRectangle(cornerRadius: 8))
             
             if filteredLogEntries.isEmpty {
@@ -841,7 +841,7 @@ private struct CollapsibleSection<Content: View>: View {
             .buttonStyle(.plain)
             .padding(.vertical, 8)
             .padding(.horizontal, 12)
-            .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+            .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
             
             // Content (collapsible)
             if isExpanded {
@@ -898,7 +898,7 @@ private struct DescriptionSection<Content: View>: View {
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 12)
-            .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+            .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
             
             // Content (always visible)
             content()

@@ -72,7 +72,7 @@ struct ResearchTasksView: View {
                 completedToggle
             }
         }
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.3))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -124,7 +124,7 @@ struct ResearchTasksView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(Capsule())
     }
     
@@ -326,7 +326,7 @@ struct SimpleTaskRow: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 4)
-                .fill(isHovering || isEditing ? Color(nsColor: .controlBackgroundColor).opacity(0.5) : Color.clear)
+                .fill(isHovering || isEditing ? Color(nsColor: .windowBackgroundColor).opacity(0.5) : Color.clear)
         )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.1)) {

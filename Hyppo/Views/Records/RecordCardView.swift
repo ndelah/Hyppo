@@ -179,7 +179,7 @@ struct RecordCardView: View {
     // MARK: - Helpers
     
     private var cardBackground: Color {
-        Color(nsColor: .controlBackgroundColor)
+        Color(nsColor: .windowBackgroundColor)
     }
     
     private var statusColor: Color {

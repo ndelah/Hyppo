@@ -187,7 +187,7 @@ struct DriverAnalyticsView: View {
             Spacer()
         }
         .padding(20)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -282,7 +282,7 @@ struct DriverAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -381,7 +381,7 @@ struct DriverAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -427,7 +427,7 @@ struct DriverAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -454,7 +454,7 @@ struct DriverAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -511,7 +511,7 @@ struct DriverAnalyticsView: View {
             }
         }
         .padding(12)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -562,7 +562,7 @@ struct DriverAnalyticsView: View {
             }
             .font(.caption)
             .padding(8)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(Color(nsColor: .windowBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .padding(16)

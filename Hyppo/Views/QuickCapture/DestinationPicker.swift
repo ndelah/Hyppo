@@ -165,7 +165,7 @@ struct DestinationPicker: View {
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
-                        .background(Color(.controlBackgroundColor))
+                        .background(Color(.windowBackgroundColor))
                         .cornerRadius(6)
                     }
                     .menuStyle(.borderlessButton)
@@ -275,7 +275,7 @@ struct DestinationPicker: View {
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
-                        .background(Color(.controlBackgroundColor))
+                        .background(Color(.windowBackgroundColor))
                         .cornerRadius(6)
                     }
                     .menuStyle(.borderlessButton)
@@ -324,7 +324,7 @@ struct DestinationPicker: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
-                .background(Color(.controlBackgroundColor))
+                .background(Color(.windowBackgroundColor))
                 .cornerRadius(6)
             }
             .menuStyle(.borderlessButton)
@@ -407,7 +407,7 @@ struct InlineAssetForm: View {
             }
         }
         .padding(10)
-        .background(Color(.controlBackgroundColor))
+        .background(Color(.windowBackgroundColor))
         .cornerRadius(8)
     }
     
@@ -487,7 +487,7 @@ struct InlineQuestionForm: View {
             }
         }
         .padding(10)
-        .background(Color(.controlBackgroundColor))
+        .background(Color(.windowBackgroundColor))
         .cornerRadius(8)
     }
     

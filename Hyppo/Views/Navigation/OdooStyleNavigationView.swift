@@ -92,7 +92,7 @@ struct OdooStyleNavigationView: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 16)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
         .overlay(alignment: .bottom) {
             Divider()
         }
@@ -175,7 +175,7 @@ struct ComingSoonView: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color(nsColor: .underPageBackgroundColor))
     }
 }
 

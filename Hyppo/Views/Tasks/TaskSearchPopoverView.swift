@@ -503,7 +503,7 @@ private struct TaskFilterChip: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
-            .background(isSelected ? color.opacity(0.2) : Color(nsColor: .controlBackgroundColor))
+            .background(isSelected ? color.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
             .foregroundStyle(isSelected ? color : .primary)
             .clipShape(Capsule())
             .overlay(
