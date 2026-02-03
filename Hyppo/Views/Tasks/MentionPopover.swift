@@ -115,6 +115,7 @@ struct MentionPopover<Item: MentionItem>: View {
     let onDismiss: () -> Void
     
     @State private var selectedIndex: Int = 0
+    @FocusState private var isFocused: Bool
     
     /// Filtered items based on search text
     private var filteredItems: [Item] {
@@ -142,7 +143,7 @@ struct MentionPopover<Item: MentionItem>: View {
                 
                 Spacer()
                 
-                Text("↑↓ navigate • ⏎ select • esc dismiss")
+                Text("↑↓ navigate • ⏎/⇥ select • esc dismiss")
                     .font(.caption2)
                     .foregroundStyle(.quaternary)
             }
@@ -190,6 +191,8 @@ struct MentionPopover<Item: MentionItem>: View {
                 .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+        .focusable()
+        .focused($isFocused)
         .onKeyPress(.upArrow) {
             moveSelection(by: -1)
             return .handled
@@ -199,9 +202,11 @@ struct MentionPopover<Item: MentionItem>: View {
             return .handled
         }
         .onKeyPress(.return) {
-            if !filteredItems.isEmpty && selectedIndex < filteredItems.count {
-                onSelect(filteredItems[selectedIndex])
-            }
+            selectCurrentItem()
+            return .handled
+        }
+        .onKeyPress(.tab) {
+            selectCurrentItem()
             return .handled
         }
         .onKeyPress(.escape) {
@@ -211,6 +216,19 @@ struct MentionPopover<Item: MentionItem>: View {
         .onChange(of: filterText) { _, _ in
             // Reset selection when filter changes
             selectedIndex = 0
+        }
+        .onAppear {
+            // Request focus when popover appears so keyboard navigation works
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isFocused = true
+            }
+        }
+    }
+    
+    /// Selects the currently highlighted item
+    private func selectCurrentItem() {
+        if !filteredItems.isEmpty && selectedIndex < filteredItems.count {
+            onSelect(filteredItems[selectedIndex])
         }
     }
     
@@ -280,28 +298,32 @@ struct MentionItemRow<Item: MentionItem>: View {
         if filterText.isEmpty {
             Text(text)
         } else {
-            let lowercasedText = text.lowercased()
-            let lowercasedFilter = filterText.lowercased()
-            
-            if let range = lowercasedText.range(of: lowercasedFilter) {
-                let startIndex = text.index(text.startIndex, offsetBy: lowercasedText.distance(from: lowercasedText.startIndex, to: range.lowerBound))
-                let endIndex = text.index(text.startIndex, offsetBy: lowercasedText.distance(from: lowercasedText.startIndex, to: range.upperBound))
-                
-                let before = String(text[..<startIndex])
-                let match = String(text[startIndex..<endIndex])
-                let after = String(text[endIndex...])
-                
-                // Use AttributedString to avoid deprecated Text concatenation
-                var attributed = AttributedString(before)
-                var matchPart = AttributedString(match)
-                matchPart.font = .body.bold()
-                attributed.append(matchPart)
-                attributed.append(AttributedString(after))
-                Text(attributed)
-            } else {
-                Text(text)
-            }
+            Text(buildHighlightedAttributedString(text: text, filter: filterText))
         }
+    }
+    
+    /// Builds an attributed string with the filter text highlighted in bold
+    private func buildHighlightedAttributedString(text: String, filter: String) -> AttributedString {
+        let lowercasedText = text.lowercased()
+        let lowercasedFilter = filter.lowercased()
+        
+        guard let range = lowercasedText.range(of: lowercasedFilter) else {
+            return AttributedString(text)
+        }
+        
+        let startIndex = text.index(text.startIndex, offsetBy: lowercasedText.distance(from: lowercasedText.startIndex, to: range.lowerBound))
+        let endIndex = text.index(text.startIndex, offsetBy: lowercasedText.distance(from: lowercasedText.startIndex, to: range.upperBound))
+        
+        let before = String(text[..<startIndex])
+        let match = String(text[startIndex..<endIndex])
+        let after = String(text[endIndex...])
+        
+        var attributed = AttributedString(before)
+        var matchPart = AttributedString(match)
+        matchPart.font = .body.bold()
+        attributed.append(matchPart)
+        attributed.append(AttributedString(after))
+        return attributed
     }
 }
 

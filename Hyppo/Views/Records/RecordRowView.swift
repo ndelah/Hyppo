@@ -28,15 +28,18 @@ struct RecordRowView: View {
             ForEach(columns) { column in
                 let width = columnWidths?[column] ?? column.suggestedWidth
                 
-                columnCell(for: column)
-                    .frame(width: width - 8, alignment: alignment(for: column))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 10)
-                
-                if column != columns.last {
-                    Divider()
-                        .frame(height: 24)
+                HStack(spacing: 0) {
+                    columnCell(for: column)
+                        .frame(width: width - 8, alignment: alignment(for: column))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 10)
+                    
+                    if column != columns.last {
+                        Divider()
+                            .frame(height: 24)
+                    }
                 }
+                .frame(width: width)
             }
             
             Spacer(minLength: 0)
