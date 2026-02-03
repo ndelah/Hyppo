@@ -60,10 +60,12 @@ struct ResearchWizardView: View {
                 DriverDTO(
                     title: d.title,
                     description: d.driverDescription ?? "",
+                    logic: d.logic ?? "",
                     subDrivers: (d.subDrivers ?? []).map { sd in
                         DriverDTO(
                             title: sd.title,
                             description: sd.driverDescription ?? "",
+                            logic: sd.logic ?? "",
                             isSubDriver: true
                         )
                     }
@@ -345,18 +347,36 @@ struct ResearchWizardView: View {
                 // Assumptions
                 if !validDriversForDesign.isEmpty {
                     reviewSection(icon: "target", title: "Key Assumptions (\(validDriversForDesign.count))", color: .green) {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 12) {
                             ForEach(Array(validDriversForDesign.enumerated()), id: \.element.id) { index, driver in
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("\(index + 1). \(driver.title)")
                                         .font(.subheadline)
                                         .fontWeight(.medium)
                                     
+                                    // Logic if defined
+                                    if !driver.logic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        Text(driver.logic)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .padding(.leading, 12)
+                                    }
+                                    
                                     // Sub-drivers
                                     ForEach(driver.subDrivers.filter { !$0.title.isEmpty }) { sub in
-                                        Text("  → \(sub.title)")
-                                            .font(.caption)
-                                            .foregroundStyle(.tertiary)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("  → \(sub.title)")
+                                                .font(.caption)
+                                                .foregroundStyle(.tertiary)
+                                            
+                                            // Sub-driver logic if defined
+                                            if !sub.logic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                                Text(sub.logic)
+                                                    .font(.caption2)
+                                                    .foregroundStyle(.quaternary)
+                                                    .padding(.leading, 24)
+                                            }
+                                        }
                                     }
                                 }
                                 .padding(.vertical, 4)
@@ -399,6 +419,11 @@ struct ResearchWizardView: View {
         }
     }
     
+    /// Count of drivers that have logic defined
+    private var driversWithLogicCount: Int {
+        validDriversForDesign.filter { !$0.logic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
+    }
+    
     private var readinessChecklist: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Readiness Checklist")
@@ -408,6 +433,7 @@ struct ResearchWizardView: View {
             HStack(spacing: 12) {
                 checklistItem(passed: !investmentThesis.isEmpty, text: "Investment thesis defined")
                 checklistItem(passed: !validDriversForDesign.isEmpty, text: "Assumptions added")
+                checklistItem(passed: driversWithLogicCount > 0, text: "Logic defined (\(driversWithLogicCount)/\(validDriversForDesign.count))")
                 checklistItem(passed: confidence != nil, text: "Confidence set")
             }
         }
@@ -536,9 +562,11 @@ struct ResearchWizardView: View {
         for (index, d) in drivers.enumerated() {
             let trimmedTitle = d.title.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmedTitle.isEmpty {
+                let trimmedLogic = d.logic.trimmingCharacters(in: .whitespacesAndNewlines)
                 let driver = Driver(
                     title: trimmedTitle,
                     driverDescription: d.description.isEmpty ? nil : d.description,
+                    logic: trimmedLogic.isEmpty ? nil : trimmedLogic,
                     position: index
                 )
                 driver.researchQuestion = rq
@@ -546,9 +574,11 @@ struct ResearchWizardView: View {
                 for (subIndex, sd) in d.subDrivers.enumerated() {
                     let trimmedSubTitle = sd.title.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmedSubTitle.isEmpty {
+                        let trimmedSubLogic = sd.logic.trimmingCharacters(in: .whitespacesAndNewlines)
                         let subDriver = Driver(
                             title: trimmedSubTitle,
                             driverDescription: sd.description.isEmpty ? nil : sd.description,
+                            logic: trimmedSubLogic.isEmpty ? nil : trimmedSubLogic,
                             position: subIndex,
                             parentDriver: driver
                         )

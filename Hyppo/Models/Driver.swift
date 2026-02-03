@@ -21,6 +21,9 @@ final class Driver {
     /// Optional longer explanation
     var driverDescription: String?
     
+    /// The logic or reasoning behind this driver/assumption (e.g., "Why must this be true?")
+    var logic: String?
+    
     /// Ordering among siblings
     var position: Int
     
@@ -52,12 +55,14 @@ final class Driver {
     init(
         title: String,
         driverDescription: String? = nil,
+        logic: String? = nil,
         position: Int = 0,
         parentDriver: Driver? = nil
     ) {
         self.driverId = UUID()
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.driverDescription = driverDescription?.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.logic = logic?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.position = position
         self.parentDriver = parentDriver
         self.statusRaw = DriverStatus.pending.rawValue

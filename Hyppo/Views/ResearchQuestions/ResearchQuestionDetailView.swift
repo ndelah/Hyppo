@@ -10,6 +10,15 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 
+/// Tab selection for the detail menu
+enum ResearchDetailTab: String, CaseIterable, Identifiable {
+    case description = "Description"
+    case health = "Health"
+    case tasks = "Tasks"
+    
+    var id: String { rawValue }
+}
+
 /// Detail view for a selected research question showing all content and timeline
 struct ResearchQuestionDetailView: View {
     // MARK: - Environment
@@ -35,6 +44,9 @@ struct ResearchQuestionDetailView: View {
     @State private var showingAddLogEntry = false
     @State private var selectedLogEntry: LogEntry?
     @State private var logEntryForEvidence: LogEntry?
+    
+    // Tab selection state
+    @State private var selectedTab: ResearchDetailTab = .description
     
     // Section expansion states
     @State private var isThesisStatementExpanded = true
@@ -62,13 +74,8 @@ struct ResearchQuestionDetailView: View {
                 
                 Divider()
                 
-                // Conviction Health Dashboard
-                ConvictionHealthView(drivers: researchQuestion.drivers ?? [])
-                
-                Divider()
-                
-                // Research tasks
-                ResearchTasksView(researchQuestion: researchQuestion)
+                // Tabbed menu section
+                tabbedMenuSection
                 
                 Divider()
                 

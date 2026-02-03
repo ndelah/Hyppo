@@ -57,13 +57,13 @@ struct QuickAddTaskPopover: View {
             
             // Task input
             TaskInputField(
-                placeholder: "What do you need to do? (@ for project, # for driver)",
                 onTaskCreated: { _ in
                     // Dismiss after a short delay to show the task was created
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         dismiss()
                     }
-                }
+                },
+                placeholder: "What do you need to do? (@ for project, # for driver)"
             )
             .padding()
             .background(Color(nsColor: .textBackgroundColor))

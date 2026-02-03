@@ -158,7 +158,12 @@ struct AccessibilityEnhancedModifier: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .environment(\.accessibilityReduceMotion, shouldReduceMotion)
+            .transaction { transaction in
+                // Disable animations when reduce motion is preferred
+                if shouldReduceMotion {
+                    transaction.animation = nil
+                }
+            }
     }
 }
 
@@ -258,7 +263,6 @@ struct AccessibilityAwareRootView<Content: View>: View {
     var body: some View {
         content
             .environment(\.textSizeMultiplier, textSizeMultiplier)
-            .environment(\.accessibilityReduceMotion, shouldReduceMotion)
             .transaction { transaction in
                 // Disable animations when reduce motion is enabled
                 if shouldReduceMotion {

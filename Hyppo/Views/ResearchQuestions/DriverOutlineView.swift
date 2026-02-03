@@ -21,6 +21,9 @@ struct DriverOutlineView: View {
     /// Currently dragged driver ID for visual feedback
     @State private var draggedDriverId: UUID?
     
+    /// Focus state for keyboard navigation between driver fields
+    @FocusState private var focusedField: DriverRowField?
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(prompt)
@@ -36,7 +39,10 @@ struct DriverOutlineView: View {
                             onDelete: { deleteDriver(at: index) },
                             onAddSubDriver: { addSubDriver(at: index) },
                             onMoveUp: index > 0 ? { moveDriverUp(at: index) } : nil,
-                            onMoveDown: index < drivers.count - 1 ? { moveDriverDown(at: index) } : nil
+                            onMoveDown: index < drivers.count - 1 ? { moveDriverDown(at: index) } : nil,
+                            onFocusNextDriver: { focusNextDriver(after: index) },
+                            onFocusPreviousDriver: { focusPreviousDriver(before: index) },
+                            focusedField: $focusedField
                         )
                         .opacity(draggedDriverId == driver.id ? 0.5 : 1.0)
                         .draggable(driver.id.uuidString) {
@@ -67,16 +73,19 @@ struct DriverOutlineView: View {
                             // Visual feedback handled by opacity
                         }
                         
-                        // Sub-drivers (only show if expanded)
+                        // Sub-drivers (only show if parent is expanded for sub-drivers)
                         if drivers[index].isExpanded {
-                            ForEach(Array(drivers[index].subDrivers.enumerated()), id: \.element.id) { subIndex, _ in
+                            ForEach(Array(drivers[index].subDrivers.enumerated()), id: \.element.id) { subIndex, subDriver in
                                 DriverRowView(
                                     driver: $drivers[index].subDrivers[subIndex],
                                     onDelete: { deleteSubDriver(parentIndex: index, subIndex: subIndex) },
                                     onAddSubDriver: nil,
                                     onMoveUp: subIndex > 0 ? { moveSubDriverUp(parentIndex: index, subIndex: subIndex) } : nil,
                                     onMoveDown: subIndex < drivers[index].subDrivers.count - 1 ? { moveSubDriverDown(parentIndex: index, subIndex: subIndex) } : nil,
-                                    isSubDriver: true
+                                    isSubDriver: true,
+                                    onFocusNextDriver: { focusNextSubDriver(parentIndex: index, afterSubIndex: subIndex) },
+                                    onFocusPreviousDriver: { focusPreviousSubDriver(parentIndex: index, beforeSubIndex: subIndex) },
+                                    focusedField: $focusedField
                                 )
                                 .padding(.leading, 24)
                                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -91,7 +100,12 @@ struct DriverOutlineView: View {
             }
             
             Button {
-                drivers.append(DriverDTO(title: ""))
+                let newDriver = DriverDTO(title: "")
+                drivers.append(newDriver)
+                // Focus the new driver's title field
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    focusedField = .title(newDriver.id)
+                }
             } label: {
                 Label("Add Assumption", systemImage: "plus.circle")
                     .font(.caption)
@@ -99,6 +113,49 @@ struct DriverOutlineView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.blue)
             .padding(.top, 4)
+        }
+    }
+    
+    // MARK: - Focus Navigation
+    
+    /// Focus the next driver's title field after completing the current driver's logic
+    private func focusNextDriver(after index: Int) {
+        let nextIndex = index + 1
+        if nextIndex < drivers.count {
+            focusedField = .title(drivers[nextIndex].id)
+        } else {
+            // No next driver, clear focus
+            focusedField = nil
+        }
+    }
+    
+    /// Focus the previous driver's logic field
+    private func focusPreviousDriver(before index: Int) {
+        let prevIndex = index - 1
+        if prevIndex >= 0 {
+            focusedField = .logic(drivers[prevIndex].id)
+        }
+    }
+    
+    /// Focus the next sub-driver's title or the next main driver if no more sub-drivers
+    private func focusNextSubDriver(parentIndex: Int, afterSubIndex: Int) {
+        let nextSubIndex = afterSubIndex + 1
+        if nextSubIndex < drivers[parentIndex].subDrivers.count {
+            focusedField = .title(drivers[parentIndex].subDrivers[nextSubIndex].id)
+        } else {
+            // Move to next main driver
+            focusNextDriver(after: parentIndex)
+        }
+    }
+    
+    /// Focus the previous sub-driver's logic or the parent driver's logic
+    private func focusPreviousSubDriver(parentIndex: Int, beforeSubIndex: Int) {
+        let prevSubIndex = beforeSubIndex - 1
+        if prevSubIndex >= 0 {
+            focusedField = .logic(drivers[parentIndex].subDrivers[prevSubIndex].id)
+        } else {
+            // Move to parent driver's logic
+            focusedField = .logic(drivers[parentIndex].id)
         }
     }
     
@@ -177,6 +234,7 @@ struct DriverDTO: Identifiable, Equatable {
     let id: UUID
     var title: String
     var description: String = ""
+    var logic: String = ""
     var subDrivers: [DriverDTO] = []
     var isExpanded: Bool = false
     var isSubDriver: Bool = false
@@ -185,6 +243,7 @@ struct DriverDTO: Identifiable, Equatable {
         id: UUID = UUID(),
         title: String,
         description: String = "",
+        logic: String = "",
         subDrivers: [DriverDTO] = [],
         isExpanded: Bool = false,
         isSubDriver: Bool = false
@@ -192,10 +251,19 @@ struct DriverDTO: Identifiable, Equatable {
         self.id = id
         self.title = title
         self.description = description
+        self.logic = logic
         self.subDrivers = subDrivers
         self.isExpanded = isExpanded
         self.isSubDriver = isSubDriver
     }
+}
+
+// MARK: - Driver Row Focus Field
+
+/// Enum to track which field is focused in a driver row
+enum DriverRowField: Hashable {
+    case title(UUID)
+    case logic(UUID)
 }
 
 // MARK: - Driver Row View
@@ -208,29 +276,46 @@ struct DriverRowView: View {
     var onMoveDown: (() -> Void)?
     var isSubDriver: Bool = false
     
+    /// Callback to focus the next driver's title field (for Enter key navigation)
+    var onFocusNextDriver: (() -> Void)?
+    /// Callback to focus the previous driver's logic field (for Shift+Tab navigation)
+    var onFocusPreviousDriver: (() -> Void)?
+    
+    /// Focus state binding from parent for coordinated keyboard navigation
+    var focusedField: FocusState<DriverRowField?>.Binding?
+    
     @State private var isHovering = false
+    @State private var isLogicExpanded = false
+    
+    /// Whether the logic section should be visible (expanded or has content)
+    private var showLogicField: Bool {
+        isLogicExpanded || !driver.logic.isEmpty
+    }
     
     var body: some View {
         VStack(spacing: 0) {
+            // Main row with title
             HStack(spacing: 8) {
-                // Expand/collapse or sub-driver indicator
-                if !isSubDriver {
-                    Button {
-                        driver.isExpanded.toggle()
-                    } label: {
-                        Image(systemName: "chevron.right")
-                            .rotationEffect(.degrees(driver.isExpanded ? 90 : 0))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 12)
-                            .animation(.easeInOut(duration: 0.2), value: driver.isExpanded)
+                // Expand/collapse for logic field
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isLogicExpanded.toggle()
                     }
-                    .buttonStyle(.borderless)
-                    .opacity(driver.subDrivers.isEmpty ? 0.3 : 1.0)
-                } else {
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .rotationEffect(.degrees(showLogicField ? 90 : 0))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 12)
+                        .animation(.easeInOut(duration: 0.2), value: showLogicField)
+                }
+                .buttonStyle(.borderless)
+                .help("Expand to add logic")
+                
+                // Sub-driver indicator
+                if isSubDriver {
                     Image(systemName: "arrow.turn.down.right")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
-                        .padding(.leading, 4)
                 }
                 
                 // Drag handle (visible on hover for non-sub-drivers)
@@ -242,13 +327,20 @@ struct DriverRowView: View {
                         .frame(width: 16)
                 }
                 
-                // Title field - direct binding to driver.title
-                TextField(isSubDriver ? "Sub-assumption..." : "Main assumption...", text: $driver.title)
-                    .textFieldStyle(.roundedBorder)
+                // Title field with focus and keyboard handling
+                titleField
+                
+                // Logic indicator when collapsed but has content
+                if !showLogicField && !driver.logic.isEmpty {
+                    Image(systemName: "text.alignleft")
+                        .font(.caption2)
+                        .foregroundStyle(.blue)
+                        .help("Has logic defined")
+                }
                 
                 // Action buttons grouped tightly
                 HStack(spacing: 4) {
-                    // Move up/down buttons (visible on hover, but always reserve space to prevent layout jitter)
+                    // Move up/down buttons
                     HStack(spacing: 0) {
                         Button {
                             onMoveUp?()
@@ -302,7 +394,76 @@ struct DriverRowView: View {
             .onHover { hovering in
                 isHovering = hovering
             }
+            
+            // Expandable logic field
+            if showLogicField {
+                logicField
+                    .padding(.leading, isSubDriver ? 36 : 28)
+                    .padding(.trailing, 4)
+                    .padding(.bottom, 8)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
+    }
+    
+    // MARK: - Title Field
+    
+    @ViewBuilder
+    private var titleField: some View {
+        if let focusBinding = focusedField {
+            TextField(isSubDriver ? "Sub-assumption..." : "Main assumption...", text: $driver.title)
+                .textFieldStyle(.roundedBorder)
+                .focused(focusBinding, equals: .title(driver.id))
+                .onSubmit {
+                    // Enter key: expand and focus logic field
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isLogicExpanded = true
+                    }
+                    focusBinding.wrappedValue = .logic(driver.id)
+                }
+        } else {
+            TextField(isSubDriver ? "Sub-assumption..." : "Main assumption...", text: $driver.title)
+                .textFieldStyle(.roundedBorder)
+        }
+    }
+    
+    // MARK: - Logic Field
+    
+    @ViewBuilder
+    private var logicField: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Logic")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            
+            if let focusBinding = focusedField {
+                TextField("Why must this be true?", text: $driver.logic, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                    .lineLimit(1...4)
+                    .focused(focusBinding, equals: .logic(driver.id))
+                    .onSubmit {
+                        // Enter key: collapse and move to next driver
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isLogicExpanded = false
+                        }
+                        onFocusNextDriver?()
+                    }
+            } else {
+                TextField("Why must this be true?", text: $driver.logic, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                    .lineLimit(1...4)
+            }
+        }
+    }
+    
+    // MARK: - Public Methods
+    
+    /// Expands the logic field and requests focus
+    func expandAndFocusLogic() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            isLogicExpanded = true
+        }
+        focusedField?.wrappedValue = .logic(driver.id)
     }
 }
 
@@ -365,11 +526,15 @@ struct SourceTypeChip: View {
 #Preview("Driver Outline") {
     struct PreviewWrapper: View {
         @State private var drivers: [DriverDTO] = [
-            DriverDTO(title: "AI demand continues growing", subDrivers: [
-                DriverDTO(title: "Training compute demand", isSubDriver: true),
-                DriverDTO(title: "Inference workloads expand", isSubDriver: true)
-            ]),
-            DriverDTO(title: "NVIDIA maintains hardware lead"),
+            DriverDTO(
+                title: "AI demand continues growing",
+                logic: "Enterprise AI adoption is accelerating, with major cloud providers reporting 50%+ growth in AI workloads.",
+                subDrivers: [
+                    DriverDTO(title: "Training compute demand", logic: "Foundation model training requires exponentially more compute each generation.", isSubDriver: true),
+                    DriverDTO(title: "Inference workloads expand", logic: "As models deploy to production, inference demand scales with users.", isSubDriver: true)
+                ]
+            ),
+            DriverDTO(title: "NVIDIA maintains hardware lead", logic: "H100/B100 architecture provides 3x performance advantage over competitors."),
             DriverDTO(title: "Software moat (CUDA) defensible")
         ]
         
@@ -379,7 +544,7 @@ struct SourceTypeChip: View {
                 prompt: "What assumptions must be true?"
             )
             .padding()
-            .frame(width: 500)
+            .frame(width: 600, height: 500)
         }
     }
     
