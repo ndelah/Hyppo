@@ -181,7 +181,7 @@ struct ResearchQuestionDetailView: View {
             // Tab content
             tabContent
         }
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -197,7 +197,7 @@ struct ResearchQuestionDetailView: View {
             }
             Spacer()
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
     
@@ -580,6 +580,7 @@ struct ResearchQuestionDetailView: View {
     
     private var timelineSection: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // Timeline header with slightly different coloring
             HStack {
                 Text("Timeline")
                     .font(.headline)
@@ -626,6 +627,10 @@ struct ResearchQuestionDetailView: View {
                 }
                 .buttonStyle(.borderless)
             }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             
             if filteredLogEntries.isEmpty {
                 EmptyStateView(
@@ -676,17 +681,18 @@ struct ResearchQuestionDetailView: View {
             HStack(spacing: 4) {
                 Image(systemName: researchQuestion.status.iconName)
                     .font(.caption)
+                    .foregroundColor(statusColor)
                 Text(researchQuestion.status.displayName)
                     .font(.caption)
                     .fontWeight(.medium)
+                    .foregroundColor(statusColor)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .background(statusColor.opacity(0.15))
-            .foregroundStyle(statusColor)
             .clipShape(Capsule())
         }
-        .menuStyle(.borderlessButton)
+        .buttonStyle(.plain)
         .help("Change status")
     }
     
@@ -777,7 +783,7 @@ private struct CollapsibleSection<Content: View>: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header (always visible, clickable)
+            // Header (always visible, clickable) - slightly different coloring
             Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isExpanded.toggle()
@@ -815,6 +821,8 @@ private struct CollapsibleSection<Content: View>: View {
             }
             .buttonStyle(.plain)
             .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
             
             // Content (collapsible)
             if isExpanded {
@@ -822,12 +830,15 @@ private struct CollapsibleSection<Content: View>: View {
                     .padding(.leading, 24)
                     .padding(.top, 8)
                     .padding(.bottom, 4)
+                    .padding(.horizontal, 12)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+        )
     }
 }
 
@@ -842,7 +853,7 @@ private struct DescriptionSection<Content: View>: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header (always visible, not clickable)
+            // Header (always visible, not clickable) - slightly different coloring
             HStack(spacing: 8) {
                 Image(systemName: iconName)
                     .font(.subheadline)
@@ -867,17 +878,22 @@ private struct DescriptionSection<Content: View>: View {
                 Spacer()
             }
             .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
             
             // Content (always visible)
             content()
                 .padding(.leading, 24)
                 .padding(.top, 8)
                 .padding(.bottom, 4)
+                .padding(.horizontal, 12)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+        )
     }
 }
 
@@ -1003,8 +1019,12 @@ private struct CompactDriverRow: View {
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
-        .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+        )
     }
     
     private var statusIconName: String {
@@ -1176,7 +1196,7 @@ private struct DriverDescriptionCard: View {
             }
         }
         .padding(12)
-        .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -1419,11 +1439,11 @@ struct LogEntryCard: View {
             }
         }
         .padding(density == .compact ? 10 : 16)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: density == .compact ? 8 : 10))
         .overlay(
             RoundedRectangle(cornerRadius: density == .compact ? 8 : 10)
-                .stroke(logEntry.driver != nil ? Color.blue.opacity(0.3) : Color(nsColor: .separatorColor), lineWidth: 1)
+                .stroke(logEntry.driver != nil ? Color.blue.opacity(0.3) : Color(nsColor: .separatorColor).opacity(0.5), lineWidth: 1)
         )
     }
     
@@ -1676,6 +1696,10 @@ struct EvidenceRow: View {
         .padding(10)
         .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+        )
     }
 }
 

@@ -473,7 +473,7 @@ struct AllTasksListView: View {
     }
     
     private var emptyStateTitle: String {
-        if showInboxOnly {
+        if config.activeShowInboxOnly {
             return "Inbox Empty"
         } else if !searchText.isEmpty {
             return "No Matching Tasks"
@@ -483,7 +483,7 @@ struct AllTasksListView: View {
     }
     
     private var emptyStateDescription: String {
-        if showInboxOnly {
+        if config.activeShowInboxOnly {
             return "Tasks without a project or driver will appear here."
         } else if !searchText.isEmpty {
             return "Try a different search term or clear filters."
@@ -610,142 +610,142 @@ struct TodoistTaskRow: View {
     private let hideInboxThreshold: CGFloat = 450
     
     var body: some View {
-        GeometryReader { geometry in
-            HStack(spacing: 12) {
-                // Checkbox
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        task.toggleCompletion()
+        HStack(spacing: 12) {
+            // Checkbox
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    task.toggleCompletion()
+                }
+            } label: {
+                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 14 * textSizeMultiplier))
+                    .foregroundStyle(task.isCompleted ? .green : .secondary)
+            }
+            .buttonStyle(.plain)
+            
+            // Task text (editable with @ and # mention support)
+            if isEditing {
+                EditableTaskField(
+                    task: task,
+                    onSave: {
+                        isEditing = false
+                    },
+                    onCancel: {
+                        isEditing = false
                     }
-                } label: {
-                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 14 * textSizeMultiplier))
-                        .foregroundStyle(task.isCompleted ? .green : .secondary)
-                }
-                .buttonStyle(.plain)
-                
-                // Task text (editable with @ and # mention support)
-                if isEditing {
-                    EditableTaskField(
-                        task: task,
-                        onSave: {
-                            isEditing = false
-                        },
-                        onCancel: {
-                            isEditing = false
-                        }
-                    )
-                } else {
-                    Text(task.text)
-                        .font(.system(size: 14 * textSizeMultiplier))
-                        .strikethrough(task.isCompleted)
-                        .foregroundStyle(task.isCompleted ? .secondary : .primary)
-                        .lineLimit(2)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            startEditing()
-                        }
-                }
-                
-                Spacer()
-                
-                // Badges and metadata (responsive) - hide when editing
-                if !isEditing {
-                    HStack(spacing: 8) {
-                        // Research question badge (always shown - most important)
-                        if let question = task.effectiveResearchQuestion {
-                            Button {
-                                onNavigateToQuestion()
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "at")
-                                        .font(.system(size: 10 * textSizeMultiplier))
-                                    Text(questionBadgeText(question))
-                                        .font(.system(size: 11 * textSizeMultiplier))
-                                }
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 3)
-                                .background(Color.blue.opacity(0.12))
-                                .foregroundStyle(.blue)
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                            }
-                            .buttonStyle(.plain)
-                            .help(question.questionText)
-                        }
-                        
-                        // Driver badge (hidden at narrow widths)
-                        if let driver = task.driver, rowWidth >= hideDriverThreshold {
+                )
+            } else {
+                Text(task.text)
+                    .font(.system(size: 14 * textSizeMultiplier))
+                    .strikethrough(task.isCompleted)
+                    .foregroundStyle(task.isCompleted ? .secondary : .primary)
+                    .lineLimit(2)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        startEditing()
+                    }
+            }
+            
+            Spacer()
+            
+            // Badges and metadata (responsive) - hide when editing
+            if !isEditing {
+                HStack(spacing: 8) {
+                    // Research question badge (always shown - most important)
+                    if let question = task.effectiveResearchQuestion {
+                        Button {
+                            onNavigateToQuestion()
+                        } label: {
                             HStack(spacing: 4) {
-                                Image(systemName: "number")
+                                Image(systemName: "at")
                                     .font(.system(size: 10 * textSizeMultiplier))
-                                Text(driverBadgeText(driver))
+                                Text(questionBadgeText(question))
                                     .font(.system(size: 11 * textSizeMultiplier))
                             }
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
-                            .background(Color.orange.opacity(0.12))
-                            .foregroundStyle(.orange)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                            .help(driver.title)
-                        }
-                        
-                        // Inbox indicator (hidden at narrow widths)
-                        if task.isInbox && rowWidth >= hideInboxThreshold {
-                            HStack(spacing: 4) {
-                                Image(systemName: "tray")
-                                    .font(.system(size: 10 * textSizeMultiplier))
-                                Text("Inbox")
-                                    .font(.system(size: 11 * textSizeMultiplier))
-                            }
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(Color.purple.opacity(0.12))
-                            .foregroundStyle(.purple)
+                            .background(Color.blue.opacity(0.12))
+                            .foregroundStyle(.blue)
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                         }
-                        
-                        // Date (hidden at very narrow widths)
-                        if rowWidth >= hideDateThreshold {
-                            Text(dateText)
+                        .buttonStyle(.plain)
+                        .help(question.questionText)
+                    }
+                    
+                    // Driver badge (hidden at narrow widths)
+                    if let driver = task.driver, rowWidth >= hideDriverThreshold {
+                        HStack(spacing: 4) {
+                            Image(systemName: "number")
+                                .font(.system(size: 10 * textSizeMultiplier))
+                            Text(driverBadgeText(driver))
                                 .font(.system(size: 11 * textSizeMultiplier))
-                                .foregroundStyle(.tertiary)
-                                .frame(minWidth: 50, alignment: .trailing)
                         }
-                        
-                        // Delete button (visible on hover)
-                        if isHovering {
-                            Button {
-                                onDelete()
-                            } label: {
-                                Image(systemName: "trash")
-                                    .font(.system(size: 11 * textSizeMultiplier))
-                                    .foregroundStyle(.red.opacity(0.7))
-                            }
-                            .buttonStyle(.plain)
-                            .transition(.opacity)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.orange.opacity(0.12))
+                        .foregroundStyle(.orange)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .help(driver.title)
+                    }
+                    
+                    // Inbox indicator (hidden at narrow widths)
+                    if task.isInbox && rowWidth >= hideInboxThreshold {
+                        HStack(spacing: 4) {
+                            Image(systemName: "tray")
+                                .font(.system(size: 10 * textSizeMultiplier))
+                            Text("Inbox")
+                                .font(.system(size: 11 * textSizeMultiplier))
                         }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.purple.opacity(0.12))
+                        .foregroundStyle(.purple)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    
+                    // Date (hidden at very narrow widths)
+                    if rowWidth >= hideDateThreshold {
+                        Text(dateText)
+                            .font(.system(size: 11 * textSizeMultiplier))
+                            .foregroundStyle(.tertiary)
+                            .frame(minWidth: 50, alignment: .trailing)
+                    }
+                    
+                    // Delete button (visible on hover)
+                    if isHovering {
+                        Button {
+                            onDelete()
+                        } label: {
+                            Image(systemName: "trash")
+                                .font(.system(size: 11 * textSizeMultiplier))
+                                .foregroundStyle(.red.opacity(0.7))
+                        }
+                        .buttonStyle(.plain)
+                        .transition(.opacity)
                     }
                 }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(isHovering || isEditing ? Color(nsColor: .controlBackgroundColor).opacity(0.5) : Color.clear)
-            )
-            .onHover { hovering in
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    isHovering = hovering
-                }
-            }
-            .onAppear {
-                rowWidth = geometry.size.width
-            }
-            .onChange(of: geometry.size.width) { _, newWidth in
-                rowWidth = newWidth
             }
         }
-        .frame(height: isEditing ? 54 : 44) // Slightly taller when editing to accommodate badges
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            GeometryReader { geometry in
+                Color.clear
+                    .onAppear { rowWidth = geometry.size.width }
+                    .onChange(of: geometry.size.width) { _, newWidth in
+                        rowWidth = newWidth
+                    }
+            }
+        )
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isHovering || isEditing ? Color(nsColor: .controlBackgroundColor).opacity(0.5) : Color.clear)
+        )
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovering = hovering
+            }
+        }
     }
     
     // MARK: - Helpers
