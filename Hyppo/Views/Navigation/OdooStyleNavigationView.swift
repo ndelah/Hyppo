@@ -144,10 +144,10 @@ struct OdooStyleNavigationView: View {
             AllTasksListView(navigationPath: $navigationPath)
             
         case .reporting:
-            ComingSoonView(title: "Reporting", description: "Analytics and reporting features coming soon")
+            AnalyticsDashboardView()
             
         case .configuration:
-            ComingSoonView(title: "Configuration", description: "Settings and configuration options coming soon")
+            SettingsView()
         }
     }
 }

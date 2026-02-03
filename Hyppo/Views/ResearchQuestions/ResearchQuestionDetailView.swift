@@ -376,27 +376,46 @@ struct ResearchQuestionDetailView: View {
     
     private var questionHeader: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Title and status
-            HStack {
-                Image(systemName: researchQuestion.status.iconName)
-                    .font(.title2)
-                    .foregroundStyle(statusColor)
+            // Title row with ticker badge and status
+            HStack(alignment: .top, spacing: 12) {
+                // Ticker badge (prominent display)
+                if let asset = researchQuestion.asset {
+                    VStack(spacing: 2) {
+                        Text(asset.ticker)
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.purple)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
                 
-                Text(researchQuestion.questionText)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                Spacer()
-                
-                // Status badge
-                statusBadge
-            }
-            
-            // Asset reference
-            if let asset = researchQuestion.asset {
-                Text("Asset: \(asset.ticker) - \(asset.name)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                // Question title and status
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Image(systemName: researchQuestion.status.iconName)
+                            .font(.title3)
+                            .foregroundStyle(statusColor)
+                        
+                        Text(researchQuestion.questionText)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Spacer()
+                        
+                        // Status badge
+                        statusBadge
+                    }
+                    
+                    // Asset name (secondary info below title)
+                    if let asset = researchQuestion.asset {
+                        Text(asset.name)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             
             // Metadata row

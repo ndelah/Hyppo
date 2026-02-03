@@ -19,6 +19,7 @@ struct ResearchWizardView: View {
     // MARK: - Queries
     
     @Query(sort: \Asset.ticker) private var allAssets: [Asset]
+    @Query(sort: \Tag.name) private var allTags: [Tag]
     
     // MARK: - Properties
     
@@ -52,6 +53,14 @@ struct ResearchWizardView: View {
     /// Confidence level for the research question (1-5 scale)
     @State private var confidence: Int? = nil
     
+    /// Selected tags for the research question
+    @State private var selectedTags: [Tag] = []
+    
+    /// State for creating new tags
+    @State private var showingTagCreation = false
+    @State private var newTagName = ""
+    @State private var newTagColor: TagColor = .blue
+    
     // MARK: - Initialization
     
     init(asset: Asset?, existingQuestion: ResearchQuestion? = nil, onSave: @escaping (ResearchQuestion) -> Void) {
@@ -84,6 +93,9 @@ struct ResearchWizardView: View {
             if !dtos.isEmpty {
                 _drivers = State(initialValue: dtos)
             }
+            
+            // Pre-populate tags
+            _selectedTags = State(initialValue: question.tags ?? [])
         }
     }
     
@@ -364,7 +376,139 @@ struct ResearchWizardView: View {
                     }
                 }
             }
+            
+            // Tags
+            tagsSection
         }
+    }
+    
+    // MARK: - Tags Section
+    
+    private var tagsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Tags")
+                    .font(.headline)
+                Text("(optional)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Text("Categorize this research for easy filtering later.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                if allTags.isEmpty && selectedTags.isEmpty {
+                    HStack {
+                        Text("No tags yet")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                        
+                        Button("Create tag") {
+                            showingTagCreation = true
+                        }
+                        .font(.caption)
+                    }
+                } else {
+                    FlowLayout(spacing: 6) {
+                        ForEach(allTags) { tag in
+                            WizardTagToggleChip(
+                                tag: tag,
+                                isSelected: selectedTags.contains(where: { $0.tagId == tag.tagId })
+                            ) {
+                                toggleTag(tag)
+                            }
+                        }
+                        
+                        // Add tag button
+                        Button {
+                            showingTagCreation = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "plus")
+                                    .font(.caption2)
+                                Text("New")
+                                    .font(.caption)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(Color(nsColor: .controlBackgroundColor))
+                            .foregroundStyle(.secondary)
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .popover(isPresented: $showingTagCreation) {
+                VStack(spacing: 12) {
+                    Text("Create Tag")
+                        .font(.headline)
+                    
+                    TextField("Tag name", text: $newTagName)
+                        .textFieldStyle(.roundedBorder)
+                    
+                    Picker("Color", selection: $newTagColor) {
+                        ForEach(TagColor.allCases) { color in
+                            HStack {
+                                Circle()
+                                    .fill(color.color)
+                                    .frame(width: 12, height: 12)
+                                Text(color.displayName)
+                            }
+                            .tag(color)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    
+                    HStack {
+                        Button("Cancel") {
+                            newTagName = ""
+                            showingTagCreation = false
+                        }
+                        
+                        Spacer()
+                        
+                        Button("Create") {
+                            createTag()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(newTagName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+                .padding()
+                .frame(width: 250)
+            }
+        }
+    }
+    
+    private func toggleTag(_ tag: Tag) {
+        if let index = selectedTags.firstIndex(where: { $0.tagId == tag.tagId }) {
+            selectedTags.remove(at: index)
+        } else {
+            selectedTags.append(tag)
+        }
+    }
+    
+    private func createTag() {
+        let tag = Tag(name: newTagName, colorName: newTagColor.rawValue)
+        modelContext.insert(tag)
+        selectedTags.append(tag)
+        newTagName = ""
+        showingTagCreation = false
+    }
+    
+    private func tagColor(for tag: Tag) -> Color {
+        guard let colorName = tag.colorName,
+              let color = TagColor(rawValue: colorName) else {
+            return .blue
+        }
+        return color.color
     }
     
     // MARK: - Asset Selection Section
@@ -556,6 +700,51 @@ struct ResearchWizardView: View {
             
             // Summary Card
             VStack(alignment: .leading, spacing: 20) {
+                // Asset / Ticker (if applicable)
+                if let existingAsset = asset {
+                    reviewSection(icon: "chart.line.uptrend.xyaxis", title: "Asset", color: .purple) {
+                        HStack(spacing: 8) {
+                            Text(existingAsset.ticker)
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.purple.opacity(0.15))
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                            Text(existingAsset.name)
+                                .font(.subheadline)
+                        }
+                    }
+                } else if let selected = selectedAsset {
+                    reviewSection(icon: "chart.line.uptrend.xyaxis", title: "Asset", color: .purple) {
+                        HStack(spacing: 8) {
+                            Text(selected.ticker)
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.purple.opacity(0.15))
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                            Text(selected.name)
+                                .font(.subheadline)
+                        }
+                    }
+                } else if isCreatingNewAsset && !newAssetTicker.isEmpty && !newAssetName.isEmpty {
+                    reviewSection(icon: "chart.line.uptrend.xyaxis", title: "New Asset (will be created)", color: .blue) {
+                        HStack(spacing: 8) {
+                            Text(newAssetTicker.uppercased())
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.15))
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                            Text(newAssetName)
+                                .font(.subheadline)
+                        }
+                    }
+                }
+                
                 // Thesis & Context
                 VStack(alignment: .leading, spacing: 12) {
                     reviewSection(icon: "lightbulb.fill", title: "Investment Thesis", color: .blue) {
@@ -624,6 +813,30 @@ struct ResearchWizardView: View {
                     }
                 }
                 
+                // Tags
+                if !selectedTags.isEmpty {
+                    Divider()
+                    
+                    reviewSection(icon: "tag.fill", title: "Tags (\(selectedTags.count))", color: .purple) {
+                        FlowLayout(spacing: 6) {
+                            ForEach(selectedTags) { tag in
+                                HStack(spacing: 4) {
+                                    Circle()
+                                        .fill(tagColor(for: tag))
+                                        .frame(width: 8, height: 8)
+                                    Text(tag.name)
+                                        .font(.caption)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(tagColor(for: tag).opacity(0.15))
+                                .foregroundStyle(tagColor(for: tag))
+                                .clipShape(Capsule())
+                            }
+                        }
+                    }
+                }
+                
             }
             .padding()
             .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
@@ -653,6 +866,11 @@ struct ResearchWizardView: View {
         validDriversForDesign.filter { !$0.logic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
     }
     
+    /// Whether an asset is configured (selected, provided, or being created)
+    private var hasAssetConfigured: Bool {
+        asset != nil || selectedAsset != nil || (isCreatingNewAsset && !newAssetTicker.isEmpty && !newAssetName.isEmpty)
+    }
+    
     private var readinessChecklist: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Readiness Checklist")
@@ -660,6 +878,7 @@ struct ResearchWizardView: View {
                 .fontWeight(.medium)
             
             HStack(spacing: 12) {
+                checklistItem(passed: hasAssetConfigured, text: "Asset/ticker linked")
                 checklistItem(passed: !investmentThesis.isEmpty, text: "Investment thesis defined")
                 checklistItem(passed: !validDriversForDesign.isEmpty, text: "Assumptions added")
                 checklistItem(passed: driversWithLogicCount > 0, text: "Logic defined (\(driversWithLogicCount)/\(validDriversForDesign.count))")
@@ -759,6 +978,21 @@ struct ResearchWizardView: View {
         let trimmedThesis = investmentThesis.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedContext = whyThisMatters.trimmingCharacters(in: .whitespacesAndNewlines)
         
+        // Determine the final asset to use
+        var finalAsset: Asset? = asset ?? selectedAsset
+        
+        // Create new asset if needed
+        if finalAsset == nil && isCreatingNewAsset {
+            let trimmedTicker = newAssetTicker.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedName = newAssetName.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            if !trimmedTicker.isEmpty && !trimmedName.isEmpty {
+                let newAsset = Asset(ticker: trimmedTicker, name: trimmedName)
+                modelContext.insert(newAsset)
+                finalAsset = newAsset
+            }
+        }
+        
         if let existing = existingQuestion {
             // Update existing
             // Note: thesis maps to both questionText (for backwards compat/title) and thesisStatement
@@ -772,6 +1006,9 @@ struct ResearchWizardView: View {
             // Clear existing drivers
             existing.drivers?.forEach { modelContext.delete($0) }
             
+            // Update tags
+            existing.tags = selectedTags.isEmpty ? nil : selectedTags
+            
             rq = existing
         } else {
             // Create new
@@ -782,9 +1019,13 @@ struct ResearchWizardView: View {
                 thesisStatement: trimmedThesis,
                 confidence: confidence
             )
-            if let asset = asset {
-                rq.asset = asset
+            // Assign the final asset (either provided, selected, or newly created)
+            if let assetToAssign = finalAsset {
+                rq.asset = assetToAssign
             }
+            
+            // Assign tags
+            rq.tags = selectedTags.isEmpty ? nil : selectedTags
         }
         
         // Save drivers and sub-drivers
@@ -822,9 +1063,49 @@ struct ResearchWizardView: View {
     }
 }
 
+// MARK: - Wizard Tag Toggle Chip
+
+/// A toggleable chip for tag selection in the wizard
+private struct WizardTagToggleChip: View {
+    let tag: Tag
+    let isSelected: Bool
+    let action: () -> Void
+    
+    private var tagColor: Color {
+        guard let colorName = tag.colorName,
+              let color = TagColor(rawValue: colorName) else {
+            return .blue
+        }
+        return color.color
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(tagColor)
+                    .frame(width: 8, height: 8)
+                Text(tag.name)
+                    .font(.caption)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(isSelected ? tagColor.opacity(0.2) : Color(nsColor: .controlBackgroundColor))
+            .foregroundStyle(isSelected ? tagColor : .primary)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(isSelected ? tagColor : Color(nsColor: .separatorColor), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: - Preview
 
 #Preview("New Research") {
     let asset = Asset(ticker: "NVDA", name: "NVIDIA Corporation")
     return ResearchWizardView(asset: asset) { _ in }
+        .modelContainer(for: [Asset.self, ResearchQuestion.self, Driver.self, Tag.self], inMemory: true)
 }

@@ -63,7 +63,6 @@ struct LogEntryFormView: View {
     @State private var bodyText: String = ""
     @State private var entryType: LogEntryType = .observation
     @State private var occurredAt: Date = Date()
-    @State private var selectedTags: [Tag] = []
     @State private var validationErrors: [String] = []
     
     // MARK: - State (McKinsey Framework - Evidence Linkage)
@@ -85,7 +84,6 @@ struct LogEntryFormView: View {
             _bodyText = State(initialValue: logEntry.body)
             _entryType = State(initialValue: logEntry.entryType)
             _occurredAt = State(initialValue: logEntry.occurredAt)
-            _selectedTags = State(initialValue: logEntry.tags ?? [])
             _selectedDriver = State(initialValue: logEntry.driver)
             _sentiment = State(initialValue: logEntry.sentiment ?? .neutral)
             _sourceType = State(initialValue: logEntry.sourceType ?? .other)
@@ -205,15 +203,6 @@ struct LogEntryFormView: View {
                     // McKinsey Framework Section - Driver Linkage
                     if showDriverSection {
                         driverLinkageSection
-                    }
-                    
-                    // Tags
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Tags (Optional)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        TagPickerView(selectedTags: $selectedTags)
                     }
                     
                     // Validation errors
@@ -398,8 +387,6 @@ struct LogEntryFormView: View {
                 occurredAt: occurredAt,
                 isSystemGenerated: false
             )
-            newLogEntry.tags = selectedTags.isEmpty ? nil : selectedTags
-            
             // Set McKinsey framework fields
             newLogEntry.driver = selectedDriver
             newLogEntry.sentiment = selectedDriver != nil ? sentiment : nil
@@ -427,8 +414,6 @@ struct LogEntryFormView: View {
                 entryType: entryType,
                 occurredAt: occurredAt
             )
-            logEntry.tags = selectedTags.isEmpty ? nil : selectedTags
-            
             // Update McKinsey framework fields
             let previousDriver = logEntry.driver
             logEntry.driver = selectedDriver
@@ -497,162 +482,6 @@ struct LogEntryFormView: View {
         evidence.driver = driver
         evidence.logEntry = logEntry
         return evidence
-    }
-}
-
-// MARK: - Tag Picker View
-
-/// A view for selecting tags from available tags
-struct TagPickerView: View {
-    @Binding var selectedTags: [Tag]
-    
-    @Query(sort: \Tag.name) private var allTags: [Tag]
-    @State private var showingTagCreation = false
-    @State private var newTagName = ""
-    @State private var newTagColor: TagColor = .blue
-    
-    @Environment(\.modelContext) private var modelContext
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if allTags.isEmpty {
-                HStack {
-                    Text("No tags yet")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                    
-                    Button("Create tag") {
-                        showingTagCreation = true
-                    }
-                    .font(.caption)
-                }
-            } else {
-                FlowLayout(spacing: 6) {
-                    ForEach(allTags) { tag in
-                        TagToggleChip(
-                            tag: tag,
-                            isSelected: selectedTags.contains(where: { $0.tagId == tag.tagId })
-                        ) {
-                            toggleTag(tag)
-                        }
-                    }
-                    
-                    // Add tag button
-                    Button {
-                        showingTagCreation = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "plus")
-                                .font(.caption2)
-                            Text("New")
-                                .font(.caption)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(Color(nsColor: .controlBackgroundColor))
-                        .foregroundStyle(.secondary)
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .popover(isPresented: $showingTagCreation) {
-            VStack(spacing: 12) {
-                Text("Create Tag")
-                    .font(.headline)
-                
-                TextField("Tag name", text: $newTagName)
-                    .textFieldStyle(.roundedBorder)
-                
-                Picker("Color", selection: $newTagColor) {
-                    ForEach(TagColor.allCases) { color in
-                        HStack {
-                            Circle()
-                                .fill(color.color)
-                                .frame(width: 12, height: 12)
-                            Text(color.displayName)
-                        }
-                        .tag(color)
-                    }
-                }
-                .pickerStyle(.menu)
-                
-                HStack {
-                    Button("Cancel") {
-                        newTagName = ""
-                        showingTagCreation = false
-                    }
-                    
-                    Spacer()
-                    
-                    Button("Create") {
-                        createTag()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(newTagName.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
-            .padding()
-            .frame(width: 250)
-        }
-    }
-    
-    private func toggleTag(_ tag: Tag) {
-        if let index = selectedTags.firstIndex(where: { $0.tagId == tag.tagId }) {
-            selectedTags.remove(at: index)
-        } else {
-            selectedTags.append(tag)
-        }
-    }
-    
-    private func createTag() {
-        let tag = Tag(name: newTagName, colorName: newTagColor.rawValue)
-        modelContext.insert(tag)
-        selectedTags.append(tag)
-        newTagName = ""
-        showingTagCreation = false
-    }
-}
-
-/// A toggleable chip for tag selection
-private struct TagToggleChip: View {
-    let tag: Tag
-    let isSelected: Bool
-    let action: () -> Void
-    
-    private var tagColor: Color {
-        guard let colorName = tag.colorName,
-              let color = TagColor(rawValue: colorName) else {
-            return .blue
-        }
-        return color.color
-    }
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(tagColor)
-                    .frame(width: 8, height: 8)
-                Text(tag.name)
-                    .font(.caption)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(isSelected ? tagColor.opacity(0.2) : Color(nsColor: .controlBackgroundColor))
-            .foregroundStyle(isSelected ? tagColor : .primary)
-            .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(isSelected ? tagColor : Color(nsColor: .separatorColor), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
     }
 }
 
