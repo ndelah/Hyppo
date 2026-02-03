@@ -34,6 +34,10 @@ struct RecordCardGridView: View {
         [GridItem(.adaptive(minimum: cardMinWidth, maximum: cardMaxWidth), spacing: spacing)]
     }
     
+    // MARK: - Layout Constants
+    
+    private let maxContentWidth: CGFloat = 1000
+    
     // MARK: - Body
     
     var body: some View {
@@ -42,14 +46,19 @@ struct RecordCardGridView: View {
         } else {
             GeometryReader { geometry in
                 ScrollView {
-                    VStack(spacing: 24) {
-                        if config.groupByColumn == .none {
-                            // No grouping - flat grid
-                            flatCardGrid
-                        } else {
-                            // Grouped with section headers
-                            groupedCardGrid
+                    HStack {
+                        Spacer(minLength: 0)
+                        VStack(spacing: 24) {
+                            if config.groupByColumn == .none {
+                                // No grouping - flat grid
+                                flatCardGrid
+                            } else {
+                                // Grouped with section headers
+                                groupedCardGrid
+                            }
                         }
+                        .frame(maxWidth: maxContentWidth)
+                        Spacer(minLength: 0)
                     }
                     .padding()
                     .frame(minWidth: geometry.size.width)

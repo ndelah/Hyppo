@@ -213,10 +213,10 @@ enum RecordColumn: String, CaseIterable, Identifiable {
     /// Content alignment for this column
     var alignment: Alignment {
         switch self {
-        case .drivers, .scenarios, .logEntries:
-            return .center
-        case .question, .assetName, .status, .confidence, .tags, .created, .updated:
+        case .question:
             return .leading
+        case .assetName, .status, .confidence, .drivers, .scenarios, .logEntries, .tags, .created, .updated:
+            return .center
         }
     }
 }

@@ -33,9 +33,11 @@ struct RecordRowView: View {
                 let width = columnWidths?[column] ?? column.suggestedWidth
                 
                 HStack(spacing: 0) {
+                    // Add extra leading padding for left-aligned columns so text doesn't stick to divider
                     columnCell(for: column)
-                        .frame(width: width - 8, alignment: column.alignment)
-                        .padding(.horizontal, 8)
+                        .frame(width: width - 16, alignment: column.alignment)
+                        .padding(.leading, column.alignment == .leading ? 12 : 8)
+                        .padding(.trailing, 8)
                         .padding(.vertical, 10)
                     
                     if column != columns.last {

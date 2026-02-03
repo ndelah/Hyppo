@@ -238,27 +238,19 @@ struct RecordListView: View {
     
     private var toolbar: some View {
         HStack(spacing: 12) {
-            // Left: New button with dropdown styling like Odoo
-            Menu {
-                Button {
-                    showingAddQuestion = true
-                } label: {
-                    Label("New Research Question", systemImage: "questionmark.circle")
-                }
+            // Left: New button - directly opens creation wizard
+            Button {
+                showingAddQuestion = true
             } label: {
-                HStack(spacing: 4) {
-                    Text("New")
-                        .fontWeight(.medium)
-                    Image(systemName: "chevron.down")
-                        .font(.caption2)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color.accentColor)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                Text("New")
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.accentColor)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
             }
-            .menuStyle(.borderlessButton)
+            .buttonStyle(.plain)
             
             // Title
             Text("Research Questions")

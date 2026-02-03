@@ -80,31 +80,13 @@ struct OdooStyleNavigationView: View {
     
     private var topNavigationBar: some View {
         HStack(spacing: 0) {
-            // App logo/name section
-            HStack(spacing: 12) {
-                // Logo icon
-                Image(systemName: "brain.head.profile")
-                    .font(.title2)
-                    .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(Color.accentColor)
-                    )
-                
-                Text("Hyppo")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-            }
-            .padding(.leading, 16)
-            
             // Navigation tabs
             HStack(spacing: 4) {
                 ForEach(AppNavigationTab.allCases) { tab in
                     tabButton(for: tab)
                 }
             }
-            .padding(.leading, 24)
+            .padding(.leading, 16)
             
             Spacer()
         }

@@ -213,8 +213,8 @@ struct ResearchQuestionDetailView: View {
                     .font(.subheadline)
                     .fontWeight(selectedTab == tab ? .semibold : .regular)
                     .foregroundStyle(selectedTab == tab ? .primary : .secondary)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                 
                 // Active indicator
                 Rectangle()
@@ -247,17 +247,29 @@ struct ResearchQuestionDetailView: View {
     
     /// Description tab content - shows thesis summary, context, drivers, subdrivers, and logic
     private var descriptionTabContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Thesis Statement (collapsible)
+        VStack(alignment: .leading, spacing: 20) {
+            // Thesis Statement (collapsible) - with prominent quote styling
             if let thesis = researchQuestion.thesisStatement, !thesis.isEmpty {
                 CollapsibleSection(
                     title: "Thesis Statement",
                     iconName: "text.quote",
                     isExpanded: $isThesisStatementExpanded
                 ) {
-                    Text(thesis)
-                        .font(.subheadline)
-                        .foregroundStyle(.primary)
+                    HStack(spacing: 0) {
+                        // Left accent border
+                        Rectangle()
+                            .fill(Color.accentColor)
+                            .frame(width: 3)
+                        
+                        Text(thesis)
+                            .font(.body)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
+                            .padding(.leading, 12)
+                            .padding(.vertical, 8)
+                    }
+                    .background(Color.accentColor.opacity(0.05))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
             }
             
@@ -269,8 +281,12 @@ struct ResearchQuestionDetailView: View {
                     isExpanded: .constant(true)
                 ) {
                     Text(context)
-                        .font(.caption)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(nsColor: .textBackgroundColor).opacity(0.5))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
             }
             
@@ -279,9 +295,10 @@ struct ResearchQuestionDetailView: View {
                 CollapsibleSection(
                     title: "Key Assumptions",
                     iconName: "target",
-                    isExpanded: $isKeyDriversExpanded
+                    isExpanded: $isKeyDriversExpanded,
+                    itemCount: researchQuestion.drivers?.count
                 ) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 10) {
                         ForEach(researchQuestion.topLevelDrivers) { driver in
                             CompactDriverRow(driver: driver)
                         }
@@ -297,7 +314,7 @@ struct ResearchQuestionDetailView: View {
                     isExpanded: $isScenariosExpanded,
                     itemCount: researchQuestion.scenarios.count
                 ) {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 8) {
                         ForEach(researchQuestion.scenarios.sorted { $0.scenarioType.sortOrder < $1.scenarioType.sortOrder }) { scenario in
                             ScenarioRow(scenario: scenario)
                         }
@@ -312,19 +329,25 @@ struct ResearchQuestionDetailView: View {
                     iconName: "flag.checkered",
                     isExpanded: $isConclusionExpanded
                 ) {
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 10) {
                         Text(conclusion)
-                            .font(.subheadline)
+                            .font(.body)
+                            .foregroundStyle(.primary)
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.green.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
                         
                         // Driver resolution summary
                         if researchQuestion.allDriversResolved {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 12) {
                                 Label("\(researchQuestion.confirmedDriversCount) confirmed", systemImage: "checkmark.seal.fill")
                                     .foregroundStyle(.green)
                                 Label("\(researchQuestion.discardedDriversCount) discarded", systemImage: "xmark.seal.fill")
                                     .foregroundStyle(.red)
                             }
-                            .font(.caption2)
+                            .font(.caption)
+                            .fontWeight(.medium)
                         }
                     }
                 }
@@ -332,20 +355,21 @@ struct ResearchQuestionDetailView: View {
             
             // Empty state
             if researchQuestion.thesisStatement == nil && researchQuestion.context == nil && (researchQuestion.drivers?.isEmpty ?? true) {
-                VStack(spacing: 8) {
+                VStack(spacing: 12) {
                     Image(systemName: "doc.text")
-                        .font(.title)
+                        .font(.system(size: 40))
                         .foregroundStyle(.tertiary)
                     Text("No description yet")
-                        .font(.subheadline)
+                        .font(.headline)
                         .foregroundStyle(.secondary)
                     Text("Add a thesis statement, context, and assumptions to describe your investment thesis.")
-                        .font(.caption)
+                        .font(.subheadline)
                         .foregroundStyle(.tertiary)
                         .multilineTextAlignment(.center)
+                        .frame(maxWidth: 300)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 24)
+                .padding(.vertical, 32)
             }
         }
     }
@@ -724,17 +748,33 @@ private struct ScenarioRow: View {
     let scenario: SimpleScenario
     
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 10) {
+            // Type icon with background
             Image(systemName: scenario.scenarioType.iconName)
-                .font(.caption2)
-                .foregroundStyle(typeColor)
-                .frame(width: 12)
-            
-            Text(scenario.title)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(typeColor)
+                .frame(width: 20, height: 20)
+                .background(typeColor.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+            
+            // Scenario type label
+            Text(scenario.scenarioType.rawValue.capitalized)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(typeColor)
+                .frame(width: 50, alignment: .leading)
+            
+            // Scenario title
+            Text(scenario.title)
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+            
+            Spacer()
         }
-        .padding(.vertical, 1)
+        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .background(typeColor.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
     
     private var typeColor: Color {
@@ -765,35 +805,51 @@ private struct CollapsibleSection<Content: View>: View {
                     isExpanded.toggle()
                 }
             } label: {
-                HStack(spacing: 4) {
+                HStack(spacing: 8) {
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .frame(width: 10)
-                    
-                    Label(title, systemImage: iconName)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
+                        .frame(width: 12)
+                    
+                    Image(systemName: iconName)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.accentColor)
+                    
+                    Text(title)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
                     
                     if let count = itemCount {
-                        Text("(\(count))")
+                        Text("\(count)")
                             .font(.caption)
-                            .foregroundStyle(.tertiary)
+                            .fontWeight(.medium)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.accentColor.opacity(0.1))
+                            .foregroundStyle(.accentColor)
+                            .clipShape(Capsule())
                     }
+                    
+                    Spacer()
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.vertical, 2)
+            .padding(.vertical, 8)
             
             // Content (collapsible)
             if isExpanded {
                 content()
-                    .padding(.leading, 18)
-                    .padding(.top, 2)
+                    .padding(.leading, 24)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
             }
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 4)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -840,9 +896,9 @@ private struct CompactDriverRow: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 8) {
             // Driver header row
-            HStack(spacing: 4) {
+            HStack(spacing: 8) {
                 // Disclosure indicator (only if has subdrivers)
                 if hasSubDrivers {
                     Button {
@@ -851,40 +907,60 @@ private struct CompactDriverRow: View {
                         }
                     } label: {
                         Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                            .frame(width: 10)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 14)
                     }
                     .buttonStyle(.plain)
                 } else {
                     // Empty space for alignment
                     Spacer()
-                        .frame(width: 10)
+                        .frame(width: 14)
                 }
                 
                 // Status indicator
                 Image(systemName: statusIconName)
-                    .font(.caption2)
+                    .font(.subheadline)
                     .foregroundStyle(statusColor)
-                    .frame(width: 12)
+                    .frame(width: 16)
                 
                 // Driver title
                 Text(driver.title)
-                    .font(.caption)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
                     .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
                     .strikethrough(driver.status == .discarded, color: .red)
+                
+                // Status badge for non-pending
+                if driver.status != .pending {
+                    Text(driver.status.displayName)
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(statusColor.opacity(0.15))
+                        .foregroundStyle(statusColor)
+                        .clipShape(Capsule())
+                }
+                
+                Spacer()
             }
             
             // Sub-drivers (collapsible)
             if hasSubDrivers && isExpanded {
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 6) {
                     ForEach(driver.subDrivers!.sorted(by: { $0.position < $1.position })) { subDriver in
                         CompactSubDriverRow(driver: subDriver)
                     }
                 }
-                .padding(.leading, 22)
+                .padding(.leading, 30)
+                .padding(.top, 4)
             }
         }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .background(Color(nsColor: .textBackgroundColor).opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
     }
     
     private var statusIconName: String {
@@ -920,19 +996,38 @@ private struct CompactSubDriverRow: View {
     }
     
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 8) {
+            // Arrow indicator
+            Text("→")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+            
             // Status indicator
             Image(systemName: statusIconName)
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(statusColor)
-                .frame(width: 12)
+                .frame(width: 14)
             
             // Sub-driver title
             Text(driver.title)
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(driver.status == .discarded ? .tertiary : .secondary)
                 .strikethrough(driver.status == .discarded, color: .red)
+            
+            // Status badge for non-pending
+            if driver.status != .pending {
+                Text(driver.status.displayName)
+                    .font(.caption2)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .background(statusColor.opacity(0.1))
+                    .foregroundStyle(statusColor)
+                    .clipShape(Capsule())
+            }
+            
+            Spacer()
         }
+        .padding(.vertical, 4)
     }
 }
 

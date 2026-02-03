@@ -20,6 +20,13 @@ struct RecordCardView: View {
     
     @AppStorage("textSizeMultiplier") private var textSizeMultiplier: Double = 1.0
     
+    // MARK: - Layout Constants
+    
+    /// Fixed card height for consistent grid layout
+    private var cardHeight: CGFloat {
+        isCompact ? 140 : 180
+    }
+    
     // MARK: - Body
     
     var body: some View {
@@ -27,19 +34,22 @@ struct RecordCardView: View {
             // Header with asset and status
             headerRow
             
-            // Question text
+            // Question text (truncated with ellipsis)
             Text(question.questionText)
                 .font(.system(size: (isCompact ? 13 : 15) * textSizeMultiplier, weight: .medium))
                 .lineLimit(isCompact ? 2 : 3)
-                .fixedSize(horizontal: false, vertical: true)
+                .truncationMode(.tail)
             
-            // Context preview (if not compact)
+            // Context preview (if not compact, truncated)
             if !isCompact, let context = question.context, !context.isEmpty {
                 Text(context)
                     .font(.system(size: 12 * textSizeMultiplier))
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+                    .truncationMode(.tail)
             }
+            
+            Spacer(minLength: 0)
             
             // Metrics row
             metricsRow
@@ -49,6 +59,7 @@ struct RecordCardView: View {
         }
         .padding(isCompact ? 12 : 16)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: cardHeight)
         .background(cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: isCompact ? 10 : 12))
         .overlay(

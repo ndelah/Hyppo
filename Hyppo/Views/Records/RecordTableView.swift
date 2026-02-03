@@ -20,6 +20,10 @@ struct RecordTableView: View {
     @Bindable var config: ViewConfiguration
     @Binding var showingColumnSettings: Bool
     
+    // MARK: - Layout Constants
+    
+    private let maxContentWidth: CGFloat = 1200
+    
     // MARK: - State
     
     @State private var draggedColumn: RecordColumn?
@@ -29,8 +33,13 @@ struct RecordTableView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Table header with resizable columns
-            tableHeader
+            // Table header with resizable columns (centered with max width)
+            HStack {
+                Spacer(minLength: 0)
+                tableHeader
+                    .frame(maxWidth: maxContentWidth)
+                Spacer(minLength: 0)
+            }
             
             Divider()
             
@@ -54,9 +63,11 @@ struct RecordTableView: View {
             ForEach(config.orderedVisibleColumns) { column in
                 HStack(spacing: 0) {
                     // Column header content
+                    // Add extra leading padding for left-aligned columns so text doesn't stick to divider
                     columnHeader(for: column)
-                        .frame(width: config.widthForColumn(column) - 8, alignment: column.alignment)
-                        .padding(.horizontal, 8)
+                        .frame(width: config.widthForColumn(column) - 16, alignment: column.alignment)
+                        .padding(.leading, column.alignment == .leading ? 12 : 8)
+                        .padding(.trailing, 8)
                         .padding(.vertical, 10)
                     
                     // Resizable divider (not on the last column)
@@ -127,26 +138,31 @@ struct RecordTableView: View {
     
     private var tableBody: some View {
         ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(sortedQuestions) { question in
-                    VStack(spacing: 0) {
-                        RecordRowView(
-                            question: question,
-                            columns: config.orderedVisibleColumns,
-                            columnWidths: columnWidthsDict,
-                            isSelected: false
-                        )
-                        .onTapGesture {
-                            navigationPath.append(question)
+            HStack {
+                Spacer(minLength: 0)
+                LazyVStack(spacing: 0) {
+                    ForEach(sortedQuestions) { question in
+                        VStack(spacing: 0) {
+                            RecordRowView(
+                                question: question,
+                                columns: config.orderedVisibleColumns,
+                                columnWidths: columnWidthsDict,
+                                isSelected: false
+                            )
+                            .onTapGesture {
+                                navigationPath.append(question)
+                            }
+                            .contextMenu {
+                                contextMenu(for: question)
+                            }
+                            
+                            Divider()
+                                .padding(.leading, 8)
                         }
-                        .contextMenu {
-                            contextMenu(for: question)
-                        }
-                        
-                        Divider()
-                            .padding(.leading, 8)
                     }
                 }
+                .frame(maxWidth: maxContentWidth)
+                Spacer(minLength: 0)
             }
         }
     }
