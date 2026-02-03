@@ -219,6 +219,50 @@ enum RecordColumn: String, CaseIterable, Identifiable {
             return .center
         }
     }
+    
+    /// Display priority for responsive hiding (lower = higher priority, won't be hidden first)
+    /// Columns with higher priority numbers are hidden first when space is tight
+    var displayPriority: Int {
+        switch self {
+        case .question: return 0      // Never hidden
+        case .status: return 1        // Critical info
+        case .assetName: return 2     // Important context
+        case .confidence: return 3    // Key metric
+        case .updated: return 4       // Useful timestamp
+        case .created: return 5       // Less critical timestamp
+        case .tags: return 6          // Nice to have
+        case .drivers: return 7       // Count info
+        case .logEntries: return 8    // Count info
+        case .scenarios: return 9     // Least critical
+        }
+    }
+    
+    /// Minimum width for this column (cannot be compressed below this)
+    /// These are set aggressively small to allow more columns to fit at medium widths
+    var minWidth: CGFloat {
+        switch self {
+        case .question: return 150
+        case .assetName: return 50
+        case .status: return 70
+        case .confidence: return 70
+        case .drivers: return 40
+        case .scenarios: return 50
+        case .logEntries: return 40
+        case .tags: return 60
+        case .created: return 70
+        case .updated: return 70
+        }
+    }
+    
+    /// Flex grow factor for proportional expansion (higher = takes more extra space)
+    var flexGrow: CGFloat {
+        switch self {
+        case .question: return 3.0    // Takes most extra space
+        case .tags: return 1.5        // Tags can benefit from extra space
+        case .assetName, .status, .confidence, .created, .updated: return 1.0
+        case .drivers, .scenarios, .logEntries: return 0.5  // Compact columns grow less
+        }
+    }
 }
 
 // MARK: - View Configuration
@@ -460,6 +504,77 @@ final class ViewConfiguration {
      */
     func resetColumnWidth(_ column: RecordColumn) {
         columnWidths.removeValue(forKey: column.rawValue)
+    }
+    
+    // MARK: - Responsive Width Methods
+    
+    /**
+     Calculates which columns should be visible based on available width.
+     Columns are hidden in order of their displayPriority (highest priority number hidden first).
+     
+     - Parameters:
+       - availableWidth: The total available width for the table
+       - horizontalPadding: Additional horizontal padding to account for (margins, settings button, etc.)
+     - Returns: Array of columns that fit within the available width, sorted by enum order
+     */
+    func responsiveVisibleColumns(for availableWidth: CGFloat, horizontalPadding: CGFloat = 44) -> [RecordColumn] {
+        let usableWidth = availableWidth - horizontalPadding
+        
+        // Start with all visible columns, sorted by display priority (lowest first = keep)
+        var candidateColumns = orderedVisibleColumns.sorted { $0.displayPriority < $1.displayPriority }
+        
+        // Calculate total minimum width needed
+        var totalMinWidth = candidateColumns.reduce(CGFloat(0)) { $0 + $1.minWidth }
+        
+        // Remove columns (highest priority number first) until we fit
+        while totalMinWidth > usableWidth && candidateColumns.count > 1 {
+            // Remove the last column (highest displayPriority)
+            if let removed = candidateColumns.popLast() {
+                totalMinWidth -= removed.minWidth
+            }
+        }
+        
+        // Return columns in their original enum order for consistent display
+        return RecordColumn.allCases.filter { candidateColumns.contains($0) }
+    }
+    
+    /**
+     Calculates proportional widths for columns based on available space.
+     Columns get their minimum width plus a proportional share of extra space based on flexGrow.
+     
+     - Parameters:
+       - columns: The columns to calculate widths for
+       - availableWidth: The total available width
+       - horizontalPadding: Additional horizontal padding to account for
+     - Returns: Dictionary mapping each column to its calculated width
+     */
+    func responsiveWidths(for columns: [RecordColumn], availableWidth: CGFloat, horizontalPadding: CGFloat = 44) -> [RecordColumn: CGFloat] {
+        let usableWidth = availableWidth - horizontalPadding
+        
+        // Calculate total minimum width and total flex grow
+        let totalMinWidth = columns.reduce(CGFloat(0)) { $0 + $1.minWidth }
+        let totalFlexGrow = columns.reduce(CGFloat(0)) { $0 + $1.flexGrow }
+        
+        // Calculate extra space to distribute
+        let extraSpace = max(0, usableWidth - totalMinWidth)
+        
+        var widths: [RecordColumn: CGFloat] = [:]
+        
+        for column in columns {
+            // Base width is minimum, plus proportional share of extra space
+            let flexShare = totalFlexGrow > 0 ? (column.flexGrow / totalFlexGrow) : 0
+            let columnWidth = column.minWidth + (extraSpace * flexShare)
+            
+            // Apply any user-customized width if it's larger than calculated
+            // This respects manual column resizing while still being responsive
+            if let customWidth = columnWidths[column.rawValue], customWidth > columnWidth {
+                widths[column] = customWidth
+            } else {
+                widths[column] = columnWidth
+            }
+        }
+        
+        return widths
     }
     
     // MARK: - Saved Search Methods

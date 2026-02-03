@@ -101,6 +101,9 @@ struct OdooStyleNavigationView: View {
     /// Individual navigation tab button
     private func tabButton(for tab: AppNavigationTab) -> some View {
         Button {
+            // Clear navigation path to pop back to root when switching tabs
+            navigationPath = NavigationPath()
+            
             // Respect reduce motion preference
             if reduceMotion {
                 selectedTab = tab

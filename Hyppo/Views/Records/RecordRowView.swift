@@ -30,7 +30,8 @@ struct RecordRowView: View {
                 .frame(width: 16)
             
             ForEach(columns) { column in
-                let width = columnWidths?[column] ?? column.suggestedWidth
+                // Use responsive width if provided, otherwise fall back to minimum width
+                let width = columnWidths?[column] ?? column.minWidth
                 
                 HStack(spacing: 0) {
                     // Add extra leading padding for left-aligned columns so text doesn't stick to divider

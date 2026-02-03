@@ -243,7 +243,7 @@ struct SimpleTaskRow: View {
     @FocusState private var isTextFieldFocused: Bool
     
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(alignment: .top, spacing: 10) {
             // Checkbox
             Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -302,6 +302,7 @@ struct SimpleTaskRow: View {
                         .foregroundStyle(.orange.opacity(0.8))
                     }
                 }
+                .fixedSize(horizontal: false, vertical: true)
             }
             
             Spacer()

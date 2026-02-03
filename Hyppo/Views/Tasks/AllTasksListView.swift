@@ -5,6 +5,7 @@
  - Always-visible task input field at the top with @ and # mention support
  - Flat list of tasks (not grouped by driver)
  - Tasks show @question and #driver badges
+ - Advanced search bar with filters, group by, and saved searches
  - Supports filtering, searching, and pagination
  - Click task to edit, click badges to navigate
  */
@@ -23,6 +24,8 @@ struct AllTasksListView: View {
     @Query(sort: \ResearchTask.createdAt, order: .reverse)
     private var allTasks: [ResearchTask]
     
+    @Query(sort: \Tag.name) private var allTags: [Tag]
+    
     // MARK: - Properties
     
     @Binding var navigationPath: NavigationPath
@@ -33,9 +36,9 @@ struct AllTasksListView: View {
     
     // MARK: - State
     
+    @State private var config = TaskViewConfiguration.shared
     @State private var searchText = ""
-    @State private var showCompletedTasks = false
-    @State private var showInboxOnly = false
+    @State private var showingSearchPopover = false
     @State private var currentPage = 0
     private let pageSize = 25
     
@@ -53,11 +56,28 @@ struct AllTasksListView: View {
     
     /// Filtered tasks based on search and filters
     private var filteredTasks: [ResearchTask] {
-        var result = showCompletedTasks ? allTasks : incompleteTasks
+        var result = config.activeShowCompletedTasks ? allTasks : incompleteTasks
         
         // Filter to inbox only
-        if showInboxOnly {
+        if config.activeShowInboxOnly {
             result = result.filter { $0.isInbox }
+        }
+        
+        // Filter by research question IDs
+        if !config.activeResearchQuestionIds.isEmpty {
+            result = result.filter { task in
+                guard let question = task.effectiveResearchQuestion else { return false }
+                return config.activeResearchQuestionIds.contains(question.questionId)
+            }
+        }
+        
+        // Filter by tag IDs (through research question tags)
+        if !config.activeTagIds.isEmpty {
+            result = result.filter { task in
+                guard let question = task.effectiveResearchQuestion,
+                      let questionTags = question.tags else { return false }
+                return questionTags.contains { config.activeTagIds.contains($0.tagId) }
+            }
         }
         
         // Filter by search text
@@ -72,6 +92,62 @@ struct AllTasksListView: View {
         }
         
         return result
+    }
+    
+    /// Group tasks based on the current group by setting
+    private var groupedTasks: [(String, [ResearchTask])] {
+        switch config.groupByColumn {
+        case .none:
+            return [("", pagedTasks)]
+            
+        case .researchQuestion:
+            let grouped = Dictionary(grouping: filteredTasks) { task -> String in
+                if let question = task.effectiveResearchQuestion {
+                    if let ticker = question.asset?.ticker {
+                        return ticker
+                    }
+                    let text = question.questionText
+                    return text.count > 30 ? String(text.prefix(27)) + "..." : text
+                }
+                return "Inbox"
+            }
+            return grouped.sorted { $0.key < $1.key }
+            
+        case .driver:
+            let grouped = Dictionary(grouping: filteredTasks) { task -> String in
+                if let driver = task.driver {
+                    return driver.title
+                }
+                return "No Driver"
+            }
+            return grouped.sorted { $0.key < $1.key }
+            
+        case .tags:
+            // Group by first tag of the research question
+            let grouped = Dictionary(grouping: filteredTasks) { task -> String in
+                if let question = task.effectiveResearchQuestion,
+                   let firstTag = question.tags?.first {
+                    return firstTag.name
+                }
+                return "Untagged"
+            }
+            return grouped.sorted { $0.key < $1.key }
+            
+        case .status:
+            let grouped = Dictionary(grouping: filteredTasks) { task -> String in
+                task.isCompleted ? "Completed" : "Incomplete"
+            }
+            // Show incomplete first
+            return grouped.sorted { $0.key > $1.key }
+            
+        case .createdDate:
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM d, yyyy"
+            let grouped = Dictionary(grouping: filteredTasks) { task -> String in
+                formatter.string(from: task.createdAt)
+            }
+            return grouped.sorted { $0.key > $1.key }
+        }
     }
     
     /// Total number of pages
@@ -102,28 +178,77 @@ struct AllTasksListView: View {
     }
     
     // Active filter tags for display
-    private var activeFilterTags: [ActiveFilterTag] {
-        var tags: [ActiveFilterTag] = []
+    private var activeFilterTags: [TaskActiveFilterTag] {
+        var tags: [TaskActiveFilterTag] = []
         
-        if showInboxOnly {
-            tags.append(ActiveFilterTag(
+        if config.activeShowInboxOnly {
+            tags.append(TaskActiveFilterTag(
                 id: "inbox",
                 label: "Inbox",
                 icon: "tray",
-                color: .purple
+                color: .purple,
+                filterType: .inbox
             ))
         }
         
-        if showCompletedTasks {
-            tags.append(ActiveFilterTag(
+        if config.activeShowCompletedTasks {
+            tags.append(TaskActiveFilterTag(
                 id: "completed",
                 label: "Including Completed",
                 icon: "checkmark.circle",
-                color: .green
+                color: .green,
+                filterType: .completed
+            ))
+        }
+        
+        // Research question filters
+        for questionId in config.activeResearchQuestionIds {
+            if let question = filteredTasks.first(where: { $0.effectiveResearchQuestion?.questionId == questionId })?.effectiveResearchQuestion {
+                let label = question.asset?.ticker ?? String(question.questionText.prefix(15))
+                tags.append(TaskActiveFilterTag(
+                    id: "question_\(questionId.uuidString)",
+                    label: label,
+                    icon: "doc.text.magnifyingglass",
+                    color: .blue,
+                    filterType: .researchQuestion(questionId)
+                ))
+            }
+        }
+        
+        // Tag filters
+        for tagId in config.activeTagIds {
+            if let tag = allTags.first(where: { $0.tagId == tagId }) {
+                tags.append(TaskActiveFilterTag(
+                    id: "tag_\(tagId.uuidString)",
+                    label: tag.name,
+                    icon: "tag",
+                    color: tagColor(for: tag),
+                    filterType: .tag(tagId)
+                ))
+            }
+        }
+        
+        // Group by
+        if config.groupByColumn != .none {
+            tags.append(TaskActiveFilterTag(
+                id: "groupby",
+                label: config.groupByColumn.displayName,
+                icon: "rectangle.3.group",
+                color: .purple,
+                filterType: .groupBy
             ))
         }
         
         return tags
+    }
+    
+    /// Get color for a tag
+    private func tagColor(for tag: Tag) -> Color {
+        guard let colorName = tag.colorName,
+              let tagColorEnum = TagColor(rawValue: colorName) else {
+            return .blue
+        }
+        return tagColorEnum.color
     }
     
     // MARK: - Body
@@ -135,15 +260,10 @@ struct AllTasksListView: View {
             
             Divider()
             
-            // Task input below search bar (centered with max width)
-            HStack {
-                Spacer(minLength: 0)
-                TaskInputField(
-                    placeholder: "Add a task... (@ for project, # for driver)"
-                )
-                .frame(maxWidth: 720)
-                Spacer(minLength: 0)
-            }
+            // Task input below search bar (full width)
+            TaskInputField(
+                placeholder: "Add a task... (@ for project, # for driver)"
+            )
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
             .background(Color(nsColor: .windowBackgroundColor))
@@ -172,7 +292,7 @@ struct AllTasksListView: View {
                 // Inbox badge
                 if inboxCount > 0 {
                     Button {
-                        showInboxOnly.toggle()
+                        config.activeShowInboxOnly.toggle()
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "tray")
@@ -182,8 +302,8 @@ struct AllTasksListView: View {
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(showInboxOnly ? Color.purple.opacity(0.2) : Color(nsColor: .controlBackgroundColor))
-                        .foregroundStyle(showInboxOnly ? .purple : .secondary)
+                        .background(config.activeShowInboxOnly ? Color.purple.opacity(0.2) : Color(nsColor: .controlBackgroundColor))
+                        .foregroundStyle(config.activeShowInboxOnly ? .purple : .secondary)
                         .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
@@ -193,70 +313,104 @@ struct AllTasksListView: View {
             
             Spacer()
             
-            // Search bar with filter tags
-            searchBarWithFilters
+            // Search bar with filter tags (Odoo-style popover)
+            searchBarWithFilterTags
             
             Spacer()
             
-            // Right side: Filters and pagination
-            HStack(spacing: 16) {
-                // Show completed toggle
-                Toggle("Completed", isOn: $showCompletedTasks)
-                    .toggleStyle(.checkbox)
-                    .font(.system(size: 11 * textSizeMultiplier))
-                
-                Divider()
-                    .frame(height: 16)
-                
-                // Pagination
-                paginationControls
-            }
+            // Right side: Pagination
+            paginationControls
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 8)
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
     }
     
-    // MARK: - Search Bar with Filter Tags
+    // MARK: - Search Bar with Filter Tags (Odoo-style)
     
-    private var searchBarWithFilters: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-                .font(.system(size: 11 * textSizeMultiplier))
-            
-            // Active filter tags
-            ForEach(activeFilterTags) { tag in
-                FilterTagView(tag: tag) {
-                    removeFilter(tag)
+    /// Search bar that displays active filters as rectangular tags and opens popover
+    private var searchBarWithFilterTags: some View {
+        Button {
+            showingSearchPopover = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                    .font(.system(size: 11 * textSizeMultiplier))
+                
+                // Active filter tags displayed inside the search bar
+                ForEach(activeFilterTags) { tag in
+                    TaskFilterTagView(tag: tag) {
+                        removeFilter(tag)
+                    }
                 }
-            }
-            
-            // Search field
-            TextField("Search tasks...", text: $searchText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13 * textSizeMultiplier))
-            
-            if !searchText.isEmpty {
-                Button {
-                    searchText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
+                
+                // Search text or placeholder
+                if !searchText.isEmpty {
+                    Text(searchText)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .font(.system(size: 13 * textSizeMultiplier))
+                    
+                    Button {
+                        searchText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                            .font(.system(size: 11 * textSizeMultiplier))
+                    }
+                    .buttonStyle(.plain)
+                } else if activeFilterTags.isEmpty {
+                    Text("Search...")
                         .foregroundStyle(.secondary)
-                        .font(.system(size: 11 * textSizeMultiplier))
+                        .font(.system(size: 13 * textSizeMultiplier))
                 }
-                .buttonStyle(.plain)
+                
+                Spacer(minLength: 0)
+                
+                Image(systemName: "chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .frame(minWidth: 300, maxWidth: 500)
+            .background(Color(nsColor: .textBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showingSearchPopover, arrowEdge: .bottom) {
+            VStack(spacing: 0) {
+                // Inline search field in popover
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(.secondary)
+                    
+                    TextField("Search tasks, projects...", text: $searchText)
+                        .textFieldStyle(.plain)
+                    
+                    if !searchText.isEmpty {
+                        Button {
+                            searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding()
+                .background(Color(nsColor: .controlBackgroundColor))
+                
+                Divider()
+                
+                TaskSearchPopoverView(config: config, searchText: $searchText)
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .frame(minWidth: 300, maxWidth: 450)
-        .background(Color(nsColor: .textBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-        )
     }
     
     // MARK: - Pagination Controls
@@ -342,9 +496,43 @@ struct AllTasksListView: View {
     
     private var tasksList: some View {
         ScrollView {
-            HStack {
-                Spacer(minLength: 0)
-                LazyVStack(spacing: 2) {
+            LazyVStack(spacing: 2) {
+                // Handle grouping
+                if config.groupByColumn != .none {
+                    ForEach(groupedTasks, id: \.0) { groupName, tasks in
+                        // Group header
+                        HStack {
+                            Text(groupName)
+                                .font(.system(size: 12 * textSizeMultiplier, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                            
+                            Text("(\(tasks.count))")
+                                .font(.system(size: 11 * textSizeMultiplier))
+                                .foregroundStyle(.tertiary)
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.top, 16)
+                        .padding(.bottom, 4)
+                        
+                        // Tasks in group
+                        ForEach(tasks) { task in
+                            TodoistTaskRow(
+                                task: task,
+                                onNavigateToQuestion: {
+                                    if let question = task.effectiveResearchQuestion {
+                                        navigationPath.append(question)
+                                    }
+                                },
+                                onDelete: {
+                                    deleteTask(task)
+                                }
+                            )
+                        }
+                    }
+                } else {
+                    // Flat list (no grouping)
                     ForEach(pagedTasks) { task in
                         TodoistTaskRow(
                             task: task,
@@ -359,8 +547,6 @@ struct AllTasksListView: View {
                         )
                     }
                 }
-                .frame(maxWidth: 720)
-                Spacer(minLength: 0)
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 24)
@@ -370,14 +556,18 @@ struct AllTasksListView: View {
     
     // MARK: - Actions
     
-    private func removeFilter(_ tag: ActiveFilterTag) {
-        switch tag.id {
-        case "inbox":
-            showInboxOnly = false
-        case "completed":
-            showCompletedTasks = false
-        default:
-            break
+    private func removeFilter(_ tag: TaskActiveFilterTag) {
+        switch tag.filterType {
+        case .inbox:
+            config.activeShowInboxOnly = false
+        case .completed:
+            config.activeShowCompletedTasks = false
+        case .researchQuestion(let questionId):
+            config.activeResearchQuestionIds.remove(questionId)
+        case .tag(let tagId):
+            config.activeTagIds.remove(tagId)
+        case .groupBy:
+            config.groupByColumn = .none
         }
     }
     
@@ -396,6 +586,8 @@ struct AllTasksListView: View {
 // MARK: - Todoist-Style Task Row
 
 /// A Todoist-inspired task row with checkbox, text, badges, and date
+/// Responsive: hides less important badges at narrow widths
+/// Supports @ and # mentions when editing
 struct TodoistTaskRow: View {
     @Bindable var task: ResearchTask
     let onNavigateToQuestion: () -> Void
@@ -406,134 +598,154 @@ struct TodoistTaskRow: View {
     
     @State private var isHovering = false
     @State private var isEditing = false
-    @State private var editText = ""
-    @FocusState private var isTextFieldFocused: Bool
+    @State private var rowWidth: CGFloat = 600
+    
+    // MARK: - Responsive Thresholds
+    
+    /// Width below which driver badge is hidden
+    private let hideDriverThreshold: CGFloat = 500
+    /// Width below which date is hidden
+    private let hideDateThreshold: CGFloat = 400
+    /// Width below which inbox badge is hidden
+    private let hideInboxThreshold: CGFloat = 450
     
     var body: some View {
-        HStack(spacing: 12) {
-            // Checkbox
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    task.toggleCompletion()
+        GeometryReader { geometry in
+            HStack(spacing: 12) {
+                // Checkbox
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        task.toggleCompletion()
+                    }
+                } label: {
+                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 14 * textSizeMultiplier))
+                        .foregroundStyle(task.isCompleted ? .green : .secondary)
                 }
-            } label: {
-                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 14 * textSizeMultiplier))
-                    .foregroundStyle(task.isCompleted ? .green : .secondary)
-            }
-            .buttonStyle(.plain)
-            
-            // Task text (editable)
-            if isEditing {
-                TextField("Task description", text: $editText)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 14 * textSizeMultiplier))
-                    .focused($isTextFieldFocused)
-                    .onSubmit {
-                        saveEdit()
-                    }
-                    .onExitCommand {
-                        cancelEdit()
-                    }
-            } else {
-                Text(task.text)
-                    .font(.system(size: 14 * textSizeMultiplier))
-                    .strikethrough(task.isCompleted)
-                    .foregroundStyle(task.isCompleted ? .secondary : .primary)
-                    .lineLimit(2)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        startEditing()
-                    }
-            }
-            
-            Spacer()
-            
-            // Badges and metadata
-            HStack(spacing: 8) {
-                // Research question badge
-                if let question = task.effectiveResearchQuestion {
-                    Button {
-                        onNavigateToQuestion()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "at")
-                                .font(.system(size: 10 * textSizeMultiplier))
-                            Text(questionBadgeText(question))
-                                .font(.system(size: 11 * textSizeMultiplier))
+                .buttonStyle(.plain)
+                
+                // Task text (editable with @ and # mention support)
+                if isEditing {
+                    EditableTaskField(
+                        task: task,
+                        onSave: {
+                            isEditing = false
+                        },
+                        onCancel: {
+                            isEditing = false
                         }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Color.blue.opacity(0.12))
-                        .foregroundStyle(.blue)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                    }
-                    .buttonStyle(.plain)
-                    .help(question.questionText)
+                    )
+                } else {
+                    Text(task.text)
+                        .font(.system(size: 14 * textSizeMultiplier))
+                        .strikethrough(task.isCompleted)
+                        .foregroundStyle(task.isCompleted ? .secondary : .primary)
+                        .lineLimit(2)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            startEditing()
+                        }
                 }
                 
-                // Driver badge
-                if let driver = task.driver {
-                    HStack(spacing: 4) {
-                        Image(systemName: "number")
-                            .font(.system(size: 10 * textSizeMultiplier))
-                        Text(driverBadgeText(driver))
-                            .font(.system(size: 11 * textSizeMultiplier))
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.orange.opacity(0.12))
-                    .foregroundStyle(.orange)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .help(driver.title)
-                }
+                Spacer()
                 
-                // Inbox indicator (no question or driver)
-                if task.isInbox {
-                    HStack(spacing: 4) {
-                        Image(systemName: "tray")
-                            .font(.system(size: 10 * textSizeMultiplier))
-                        Text("Inbox")
-                            .font(.system(size: 11 * textSizeMultiplier))
+                // Badges and metadata (responsive) - hide when editing
+                if !isEditing {
+                    HStack(spacing: 8) {
+                        // Research question badge (always shown - most important)
+                        if let question = task.effectiveResearchQuestion {
+                            Button {
+                                onNavigateToQuestion()
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "at")
+                                        .font(.system(size: 10 * textSizeMultiplier))
+                                    Text(questionBadgeText(question))
+                                        .font(.system(size: 11 * textSizeMultiplier))
+                                }
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.blue.opacity(0.12))
+                                .foregroundStyle(.blue)
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                            }
+                            .buttonStyle(.plain)
+                            .help(question.questionText)
+                        }
+                        
+                        // Driver badge (hidden at narrow widths)
+                        if let driver = task.driver, rowWidth >= hideDriverThreshold {
+                            HStack(spacing: 4) {
+                                Image(systemName: "number")
+                                    .font(.system(size: 10 * textSizeMultiplier))
+                                Text(driverBadgeText(driver))
+                                    .font(.system(size: 11 * textSizeMultiplier))
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.orange.opacity(0.12))
+                            .foregroundStyle(.orange)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .help(driver.title)
+                        }
+                        
+                        // Inbox indicator (hidden at narrow widths)
+                        if task.isInbox && rowWidth >= hideInboxThreshold {
+                            HStack(spacing: 4) {
+                                Image(systemName: "tray")
+                                    .font(.system(size: 10 * textSizeMultiplier))
+                                Text("Inbox")
+                                    .font(.system(size: 11 * textSizeMultiplier))
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.purple.opacity(0.12))
+                            .foregroundStyle(.purple)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                        }
+                        
+                        // Date (hidden at very narrow widths)
+                        if rowWidth >= hideDateThreshold {
+                            Text(dateText)
+                                .font(.system(size: 11 * textSizeMultiplier))
+                                .foregroundStyle(.tertiary)
+                                .frame(minWidth: 50, alignment: .trailing)
+                        }
+                        
+                        // Delete button (visible on hover)
+                        if isHovering {
+                            Button {
+                                onDelete()
+                            } label: {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 11 * textSizeMultiplier))
+                                    .foregroundStyle(.red.opacity(0.7))
+                            }
+                            .buttonStyle(.plain)
+                            .transition(.opacity)
+                        }
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.purple.opacity(0.12))
-                    .foregroundStyle(.purple)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
-                
-                // Date
-                Text(dateText)
-                    .font(.system(size: 11 * textSizeMultiplier))
-                    .foregroundStyle(.tertiary)
-                    .frame(minWidth: 50, alignment: .trailing)
-                
-                // Delete button (visible on hover)
-                if isHovering && !isEditing {
-                    Button {
-                        onDelete()
-                    } label: {
-                        Image(systemName: "trash")
-                            .font(.system(size: 11 * textSizeMultiplier))
-                            .foregroundStyle(.red.opacity(0.7))
-                    }
-                    .buttonStyle(.plain)
-                    .transition(.opacity)
                 }
             }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(isHovering || isEditing ? Color(nsColor: .controlBackgroundColor).opacity(0.5) : Color.clear)
-        )
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovering = hovering
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isHovering || isEditing ? Color(nsColor: .controlBackgroundColor).opacity(0.5) : Color.clear)
+            )
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    isHovering = hovering
+                }
+            }
+            .onAppear {
+                rowWidth = geometry.size.width
+            }
+            .onChange(of: geometry.size.width) { _, newWidth in
+                rowWidth = newWidth
             }
         }
+        .frame(height: isEditing ? 54 : 44) // Slightly taller when editing to accommodate badges
     }
     
     // MARK: - Helpers
@@ -569,66 +781,70 @@ struct TodoistTaskRow: View {
     // MARK: - Edit Actions
     
     private func startEditing() {
-        editText = task.text
         isEditing = true
-        isTextFieldFocused = true
-    }
-    
-    private func saveEdit() {
-        let trimmed = editText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty {
-            task.text = trimmed
-        }
-        isEditing = false
-    }
-    
-    private func cancelEdit() {
-        isEditing = false
-        editText = ""
     }
 }
 
-// MARK: - Active Filter Tag Model
+// MARK: - Task Active Filter Tag Model
+
+/// Filter type for task filters
+enum TaskFilterType {
+    case inbox
+    case completed
+    case researchQuestion(UUID)
+    case tag(UUID)
+    case groupBy
+}
 
 /// Represents an active filter displayed as a tag in the search bar
-struct ActiveFilterTag: Identifiable {
+struct TaskActiveFilterTag: Identifiable {
     let id: String
     let label: String
     let icon: String
     let color: Color
+    let filterType: TaskFilterType
 }
 
-// MARK: - Filter Tag View
+// MARK: - Task Filter Tag View
 
-/// Displays an active filter as a rectangular tag with icon, color, and remove button
-struct FilterTagView: View {
-    let tag: ActiveFilterTag
+/// Displays an active filter as a rectangular tag with icon, color, and remove button (Odoo-style)
+struct TaskFilterTagView: View {
+    let tag: TaskActiveFilterTag
     let onRemove: () -> Void
     
     @AppStorage("textSizeMultiplier") private var textSizeMultiplier: Double = 1.0
     
     var body: some View {
         HStack(spacing: 4) {
+            // Colored icon
             Image(systemName: tag.icon)
                 .font(.system(size: 10 * textSizeMultiplier))
+                .foregroundStyle(tag.color)
             
+            // Label
             Text(tag.label)
                 .font(.system(size: 11 * textSizeMultiplier))
+                .foregroundStyle(.primary)
                 .lineLimit(1)
             
+            // Remove button
             Button {
                 onRemove()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 8 * textSizeMultiplier, weight: .bold))
+                    .font(.system(size: 8 * textSizeMultiplier, weight: .semibold))
+                    .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(tag.color.opacity(0.15))
-        .foregroundStyle(tag.color)
+        .background(tag.color.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: 4))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(tag.color.opacity(0.3), lineWidth: 1)
+        )
     }
 }
 
