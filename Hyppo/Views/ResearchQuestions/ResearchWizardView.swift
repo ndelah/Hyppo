@@ -513,7 +513,7 @@ struct ResearchWizardView: View {
     
     // MARK: - Asset Selection Section
     
-    /// Section for selecting an existing asset or creating a new one
+    /// Section for selecting an existing asset or creating a new one (Notion-style tag input)
     private var assetSelectionSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -524,156 +524,29 @@ struct ResearchWizardView: View {
                     .foregroundStyle(.secondary)
             }
             
-            Text("Link this research to an asset or create a new one.")
+            Text("Type a ticker to search or create a new one.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
-            // Toggle between select existing or create new
-            Picker("", selection: $isCreatingNewAsset) {
-                Text("Select Existing").tag(false)
-                Text("Create New").tag(true)
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 240)
+            AssetTagField(
+                allAssets: allAssets,
+                selectedAsset: $selectedAsset,
+                isCreatingNew: $isCreatingNewAsset,
+                newTicker: $newAssetTicker,
+                newName: $newAssetName
+            )
             
-            if isCreatingNewAsset {
-                // Create new asset form
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 12) {
-                        // Ticker field
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Ticker")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            TextField("e.g. AAPL", text: $newAssetTicker)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 100)
-                                .textCase(.uppercase)
-                                .onChange(of: newAssetTicker) { _, newValue in
-                                    newAssetTicker = newValue.uppercased()
-                                }
-                        }
-                        
-                        // Company name field
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Company Name")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            TextField("e.g. Apple Inc.", text: $newAssetName)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(minWidth: 200)
-                        }
-                    }
-                    
-                    // Show validation hint
-                    if !newAssetTicker.isEmpty || !newAssetName.isEmpty {
-                        if newAssetTicker.isEmpty || newAssetName.isEmpty {
-                            HStack(spacing: 4) {
-                                Image(systemName: "exclamationmark.circle")
-                                    .foregroundStyle(.orange)
-                                Text("Both ticker and company name are required to create an asset")
-                                    .foregroundStyle(.orange)
-                            }
-                            .font(.caption)
-                        } else {
-                            HStack(spacing: 4) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(.green)
-                                Text("New asset will be created: \(newAssetTicker.uppercased()) - \(newAssetName)")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .font(.caption)
-                        }
+            // Quick stats for selected asset
+            if let selected = selectedAsset {
+                HStack(spacing: 12) {
+                    Label("\(selected.researchQuestionsCount) research questions", systemImage: "doc.text")
+                    if let exchange = selected.exchange {
+                        Label(exchange, systemImage: "building.columns")
                     }
                 }
-                .padding(12)
-                .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            } else {
-                // Select existing asset
-                if allAssets.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("No existing assets found.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Button {
-                            isCreatingNewAsset = true
-                        } label: {
-                            Label("Create your first asset", systemImage: "plus.circle")
-                                .font(.caption)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.blue)
-                    }
-                    .padding(12)
-                    .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                } else {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Menu {
-                            Button {
-                                selectedAsset = nil
-                            } label: {
-                                Text("No asset (skip)")
-                            }
-                            
-                            Divider()
-                            
-                            ForEach(allAssets) { assetOption in
-                                Button {
-                                    selectedAsset = assetOption
-                                } label: {
-                                    HStack {
-                                        Text(assetOption.ticker)
-                                            .fontWeight(.semibold)
-                                        Text("- \(assetOption.name)")
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                            }
-                        } label: {
-                            HStack {
-                                if let selected = selectedAsset {
-                                    HStack(spacing: 6) {
-                                        Text(selected.ticker)
-                                            .fontWeight(.semibold)
-                                            .foregroundStyle(.primary)
-                                        Text("- \(selected.name)")
-                                            .foregroundStyle(.secondary)
-                                    }
-                                } else {
-                                    Text("Select an asset...")
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Image(systemName: "chevron.down")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 8)
-                            .background(Color(nsColor: .textBackgroundColor))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                            )
-                        }
-                        .menuStyle(.borderlessButton)
-                        
-                        // Quick stats for selected asset
-                        if let selected = selectedAsset {
-                            HStack(spacing: 12) {
-                                Label("\(selected.researchQuestionsCount) research questions", systemImage: "doc.text")
-                                if let exchange = selected.exchange {
-                                    Label(exchange, systemImage: "building.columns")
-                                }
-                            }
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        }
-                    }
-                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
             }
         }
     }
