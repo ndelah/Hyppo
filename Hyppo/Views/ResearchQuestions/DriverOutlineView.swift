@@ -116,7 +116,6 @@ struct DriverOutlineView: View {
             onAddSubDriver: item.isSubDriver ? nil : { addSubDriver(to: item) },
             onMoveUp: canMoveUp(item) ? { moveItemUp(item) } : nil,
             onMoveDown: canMoveDown(item) ? { moveItemDown(item) } : nil,
-            isSubDriver: item.isSubDriver,
             onSetDriverType: { shouldBeSubDriver in
                 setDriverType(item: item, isSubDriver: shouldBeSubDriver)
             },
@@ -171,57 +170,16 @@ struct DriverOutlineView: View {
     // MARK: - Driver/SubDriver Conversion (d1/d2 inline shortcuts)
     
     /// Sets the driver type based on inline d1/d2 shortcut
+    /// Simply changes the isSubDriver flag - the pill will update immediately
     private func setDriverType(item: FlatDriverItem, isSubDriver: Bool) {
-        if isSubDriver && !item.isSubDriver {
-            // Convert to sub-driver (d2)
-            demoteToSubDriver(item)
-        } else if !isSubDriver && item.isSubDriver {
-            // Convert to driver (d1)
-            promoteToDriver(item)
-        }
-        // If already the correct type, do nothing
-    }
-    
-    /// Returns true if the item can become a sub-driver (not already a sub-driver, and has a driver above it)
-    private func canIndent(_ item: FlatDriverItem) -> Bool {
-        // Cannot indent if already a sub-driver
-        if item.isSubDriver { return false }
-        // Cannot indent the first driver (no parent above)
-        if item.driverIndex == 0 { return false }
-        return true
-    }
-    
-    /// Demotes the item to a sub-driver of the previous top-level driver (d2 shortcut)
-    private func demoteToSubDriver(_ item: FlatDriverItem) {
-        guard canIndent(item) else { return }
-        
-        withAnimation(.easeInOut(duration: 0.2)) {
-            // Find the previous top-level driver
-            let parentIndex = item.driverIndex - 1
-            
-            // Remove from top-level
-            let driverToMove = drivers.remove(at: item.driverIndex)
-            
-            // Add as sub-driver of the previous driver
-            var movedDriver = driverToMove
-            movedDriver.isSubDriver = true
-            drivers[parentIndex].subDrivers.append(movedDriver)
-            drivers[parentIndex].isExpanded = true
-        }
-    }
-    
-    /// Promotes the item to a top-level driver (d1 shortcut)
-    private func promoteToDriver(_ item: FlatDriverItem) {
-        guard item.isSubDriver, let subIndex = item.subDriverIndex else { return }
-        
-        withAnimation(.easeInOut(duration: 0.2)) {
-            // Remove from parent's sub-drivers
-            let subDriverToMove = drivers[item.driverIndex].subDrivers.remove(at: subIndex)
-            
-            // Insert as top-level driver after the parent
-            var movedDriver = subDriverToMove
-            movedDriver.isSubDriver = false
-            drivers.insert(movedDriver, at: item.driverIndex + 1)
+        withAnimation(.easeInOut(duration: 0.15)) {
+            if let subIndex = item.subDriverIndex {
+                // It's currently a sub-driver
+                drivers[item.driverIndex].subDrivers[subIndex].isSubDriver = isSubDriver
+            } else {
+                // It's a top-level driver
+                drivers[item.driverIndex].isSubDriver = isSubDriver
+            }
         }
     }
     
@@ -432,7 +390,6 @@ struct DriverRowView: View {
     let onAddSubDriver: (() -> Void)?
     var onMoveUp: (() -> Void)?
     var onMoveDown: (() -> Void)?
-    var isSubDriver: Bool = false
     
     /// Callback for changing driver type (from d1/d2 inline shortcut)
     var onSetDriverType: ((Bool) -> Void)?  // true = sub-driver, false = driver
@@ -464,6 +421,7 @@ struct DriverRowView: View {
                 .frame(width: 16)
             
             // Pill indicator for Driver vs Sub-driver (matching task view style)
+            // Uses driver.isSubDriver from binding so it updates when d1/d2 is processed
             hierarchyPill
             
             // Title field with inline shortcut highlighting
@@ -495,18 +453,20 @@ struct DriverRowView: View {
     // MARK: - Hierarchy Pill (Task View Style)
     
     /// Pill indicator matching the task view badge style
+    /// Uses driver.isSubDriver so it updates when d1/d2 shortcut is processed
     private var hierarchyPill: some View {
         HStack(spacing: 4) {
-            Image(systemName: isSubDriver ? "arrow.turn.down.right" : "number")
+            Image(systemName: driver.isSubDriver ? "arrow.turn.down.right" : "number")
                 .font(.caption2)
-            Text(isSubDriver ? "Sub" : "Driver")
+            Text(driver.isSubDriver ? "Sub" : "Driver")
                 .font(.caption)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(isSubDriver ? Color.indigo.opacity(0.12) : Color.orange.opacity(0.12))
-        .foregroundStyle(isSubDriver ? .indigo : .orange)
+        .background(driver.isSubDriver ? Color.indigo.opacity(0.12) : Color.orange.opacity(0.12))
+        .foregroundStyle(driver.isSubDriver ? .indigo : .orange)
         .clipShape(RoundedRectangle(cornerRadius: 4))
+        .animation(.easeInOut(duration: 0.15), value: driver.isSubDriver)
     }
     
     // MARK: - Title Field with Inline Shortcut Highlighting
@@ -573,10 +533,11 @@ struct DriverRowView: View {
     /// Process any detected shortcut and submit the driver
     private func processShortcutAndSubmit() {
         if let shortcut = detectedShortcut {
-            // Set the driver type based on shortcut
-            onSetDriverType?(shortcut.isSubDriver)
-            // Remove the shortcut from the title
+            // Remove the shortcut from the title first
             driver.title = shortcut.cleanedText
+            // Set the driver type based on shortcut (d1 = Driver, d2 = Sub-driver)
+            // This directly changes the current item's type - the pill will update
+            onSetDriverType?(shortcut.isSubDriver)
         }
         // Create sibling below
         onCreateSibling?()
