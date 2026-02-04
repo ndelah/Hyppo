@@ -7,8 +7,7 @@
  - Keyboard-first interaction (Todoist-style):
    - Enter: Confirm and create new driver below
    - Up/Down arrows: Navigate between drivers
-   - d1: Convert to Driver (when field is empty)
-   - d2: Convert to Sub-driver (when field is empty)
+   - Inline d1/d2: Type "d1" or "d2" anywhere in text, it highlights, then converts on Enter
  - Drag-and-drop reordering
  
  Used within the Research Wizard and Research Question forms.
@@ -118,8 +117,9 @@ struct DriverOutlineView: View {
             onMoveUp: canMoveUp(item) ? { moveItemUp(item) } : nil,
             onMoveDown: canMoveDown(item) ? { moveItemDown(item) } : nil,
             isSubDriver: item.isSubDriver,
-            onMakeDriver: item.isSubDriver ? { promoteToDriver(item) } : nil,
-            onMakeSubDriver: canIndent(item) ? { demoteToSubDriver(item) } : nil,
+            onSetDriverType: { shouldBeSubDriver in
+                setDriverType(item: item, isSubDriver: shouldBeSubDriver)
+            },
             onCreateSibling: { createSiblingBelow(item) },
             onFocusNextDriver: { focusNextItem(after: flatIndex) },
             onFocusPreviousDriver: { focusPreviousItem(before: flatIndex) },
@@ -168,7 +168,19 @@ struct DriverOutlineView: View {
         }
     }
     
-    // MARK: - Driver/SubDriver Conversion (d1/d2 shortcuts)
+    // MARK: - Driver/SubDriver Conversion (d1/d2 inline shortcuts)
+    
+    /// Sets the driver type based on inline d1/d2 shortcut
+    private func setDriverType(item: FlatDriverItem, isSubDriver: Bool) {
+        if isSubDriver && !item.isSubDriver {
+            // Convert to sub-driver (d2)
+            demoteToSubDriver(item)
+        } else if !isSubDriver && item.isSubDriver {
+            // Convert to driver (d1)
+            promoteToDriver(item)
+        }
+        // If already the correct type, do nothing
+    }
     
     /// Returns true if the item can become a sub-driver (not already a sub-driver, and has a driver above it)
     private func canIndent(_ item: FlatDriverItem) -> Bool {
@@ -422,10 +434,8 @@ struct DriverRowView: View {
     var onMoveDown: (() -> Void)?
     var isSubDriver: Bool = false
     
-    /// Callback for d1 key - make this a driver
-    var onMakeDriver: (() -> Void)?
-    /// Callback for d2 key - make this a sub-driver
-    var onMakeSubDriver: (() -> Void)?
+    /// Callback for changing driver type (from d1/d2 inline shortcut)
+    var onSetDriverType: ((Bool) -> Void)?  // true = sub-driver, false = driver
     /// Callback for Enter - create sibling below
     var onCreateSibling: (() -> Void)?
     
@@ -438,8 +448,11 @@ struct DriverRowView: View {
     var focusedField: FocusState<DriverRowField?>.Binding?
     
     @State private var isHovering = false
-    /// Tracks if 'd' was just pressed for d1/d2 shortcuts
-    @State private var pendingDKey = false
+    
+    /// Detected shortcut in the text (d1 or d2)
+    private var detectedShortcut: DriverShortcut? {
+        DriverShortcut.detect(in: driver.title)
+    }
     
     var body: some View {
         HStack(spacing: 8) {
@@ -453,8 +466,8 @@ struct DriverRowView: View {
             // Pill indicator for Driver vs Sub-driver (matching task view style)
             hierarchyPill
             
-            // Title field with keyboard handling
-            titleField
+            // Title field with inline shortcut highlighting
+            titleFieldWithHighlighting
             
             // Delete button (visible on hover)
             Button {
@@ -496,62 +509,130 @@ struct DriverRowView: View {
         .clipShape(RoundedRectangle(cornerRadius: 4))
     }
     
-    // MARK: - Title Field
+    // MARK: - Title Field with Inline Shortcut Highlighting
     
     @ViewBuilder
-    private var titleField: some View {
-        if let focusBinding = focusedField {
-            TextField("Assumption...", text: $driver.title)
-                .textFieldStyle(.plain)
-                .focused(focusBinding, equals: .title(driver.id))
-                .onKeyPress(.return, phases: .down) { _ in
-                    // Enter: confirm and create new driver below
-                    onCreateSibling?()
-                    return .handled
-                }
-                .onKeyPress(.downArrow, phases: .down) { _ in
-                    // Down arrow: go to next driver
-                    onFocusNextDriver?()
-                    return .handled
-                }
-                .onKeyPress(.upArrow, phases: .down) { _ in
-                    // Up arrow: go to previous driver
-                    onFocusPreviousDriver?()
-                    return .handled
-                }
-                .onKeyPress(phases: .down) { keyPress in
-                    // Handle d1/d2 shortcuts (Todoist style)
-                    let char = keyPress.characters.lowercased()
-                    
-                    if pendingDKey {
-                        pendingDKey = false
-                        if char == "1" {
-                            // d1: make it a Driver
-                            onMakeDriver?()
-                            return .handled
-                        } else if char == "2" {
-                            // d2: make it a Sub-driver
-                            onMakeSubDriver?()
-                            return .handled
-                        }
-                    }
-                    
-                    if char == "d" && driver.title.isEmpty {
-                        // Start d-key sequence only if field is empty
-                        pendingDKey = true
-                        // Reset after a short delay if no follow-up
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            pendingDKey = false
-                        }
+    private var titleFieldWithHighlighting: some View {
+        ZStack(alignment: .leading) {
+            // Highlighted text overlay (shows d1/d2 with background)
+            if let shortcut = detectedShortcut {
+                highlightedTextView(shortcut: shortcut)
+                    .allowsHitTesting(false)
+            }
+            
+            // Actual text field (transparent text when shortcut detected to show highlight)
+            if let focusBinding = focusedField {
+                TextField("Assumption...", text: $driver.title)
+                    .textFieldStyle(.plain)
+                    .foregroundStyle(detectedShortcut != nil ? .clear : .primary)
+                    .focused(focusBinding, equals: .title(driver.id))
+                    .onKeyPress(.return, phases: .down) { _ in
+                        // Enter: process shortcut if present, then create sibling
+                        processShortcutAndSubmit()
                         return .handled
                     }
-                    
-                    return .ignored
-                }
-        } else {
-            TextField("Assumption...", text: $driver.title)
-                .textFieldStyle(.plain)
+                    .onKeyPress(.downArrow, phases: .down) { _ in
+                        onFocusNextDriver?()
+                        return .handled
+                    }
+                    .onKeyPress(.upArrow, phases: .down) { _ in
+                        onFocusPreviousDriver?()
+                        return .handled
+                    }
+            } else {
+                TextField("Assumption...", text: $driver.title)
+                    .textFieldStyle(.plain)
+            }
         }
+    }
+    
+    /// Creates the highlighted text view showing d1/d2 with colored background
+    private func highlightedTextView(shortcut: DriverShortcut) -> some View {
+        HStack(spacing: 0) {
+            // Text before the shortcut
+            if !shortcut.textBefore.isEmpty {
+                Text(shortcut.textBefore)
+            }
+            
+            // The shortcut itself with highlight
+            Text(shortcut.shortcutText)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
+                .background(shortcut.isSubDriver ? Color.indigo.opacity(0.25) : Color.orange.opacity(0.25))
+                .foregroundStyle(shortcut.isSubDriver ? .indigo : .orange)
+                .clipShape(RoundedRectangle(cornerRadius: 3))
+            
+            // Text after the shortcut
+            if !shortcut.textAfter.isEmpty {
+                Text(shortcut.textAfter)
+            }
+        }
+        .font(.body)
+    }
+    
+    /// Process any detected shortcut and submit the driver
+    private func processShortcutAndSubmit() {
+        if let shortcut = detectedShortcut {
+            // Set the driver type based on shortcut
+            onSetDriverType?(shortcut.isSubDriver)
+            // Remove the shortcut from the title
+            driver.title = shortcut.cleanedText
+        }
+        // Create sibling below
+        onCreateSibling?()
+    }
+}
+
+// MARK: - Driver Shortcut Detection
+
+/// Represents a detected d1/d2 shortcut in text
+struct DriverShortcut {
+    let shortcutText: String      // "d1" or "d2"
+    let isSubDriver: Bool         // true for d2, false for d1
+    let range: Range<String.Index>
+    let textBefore: String
+    let textAfter: String
+    
+    /// The text with the shortcut removed
+    var cleanedText: String {
+        (textBefore + textAfter).trimmingCharacters(in: .whitespaces)
+    }
+    
+    /// Detects d1 or d2 in the given text (case insensitive)
+    static func detect(in text: String) -> DriverShortcut? {
+        let lowercased = text.lowercased()
+        
+        // Look for d1 or d2 (with word boundaries - space or start/end)
+        for pattern in ["d1", "d2"] {
+            if let range = lowercased.range(of: pattern) {
+                // Check if it's at a word boundary (space before or start of string)
+                let indexBefore = range.lowerBound
+                let isAtStart = indexBefore == lowercased.startIndex
+                let hasSpaceBefore = !isAtStart && lowercased[lowercased.index(before: indexBefore)] == " "
+                
+                // Check if there's space after or end of string
+                let indexAfter = range.upperBound
+                let isAtEnd = indexAfter == lowercased.endIndex
+                let hasSpaceAfter = !isAtEnd && lowercased[indexAfter] == " "
+                
+                if isAtStart || hasSpaceBefore || isAtEnd || hasSpaceAfter {
+                    // Convert range to original text indices
+                    let originalRange = text.index(text.startIndex, offsetBy: lowercased.distance(from: lowercased.startIndex, to: range.lowerBound))..<text.index(text.startIndex, offsetBy: lowercased.distance(from: lowercased.startIndex, to: range.upperBound))
+                    
+                    let before = String(text[..<originalRange.lowerBound])
+                    let after = String(text[originalRange.upperBound...])
+                    
+                    return DriverShortcut(
+                        shortcutText: String(text[originalRange]),
+                        isSubDriver: pattern == "d2",
+                        range: originalRange,
+                        textBefore: before,
+                        textAfter: after
+                    )
+                }
+            }
+        }
+        return nil
     }
 }
 
