@@ -330,4 +330,78 @@ extension LogEntry {
             isSystemGenerated: true
         )
     }
+    
+    /**
+     Creates a system-generated log entry for asset assignment changes.
+     
+     - Parameters:
+       - fromAsset: The previous asset (nil if none)
+       - toAsset: The new asset (nil if removing)
+     - Returns: A new system-generated log entry
+     */
+    static func createAssetChangeLog(
+        fromAsset: Asset?,
+        toAsset: Asset?
+    ) -> LogEntry {
+        let fromName = fromAsset?.ticker ?? "None"
+        let toName = toAsset?.ticker ?? "None"
+        
+        let title = "Asset: \(fromName) → \(toName)"
+        
+        var body: String
+        if fromAsset == nil && toAsset != nil {
+            body = "Research question assigned to \(toAsset!.ticker) (\(toAsset!.name))."
+        } else if fromAsset != nil && toAsset == nil {
+            body = "Research question unassigned from \(fromAsset!.ticker) (\(fromAsset!.name))."
+        } else if let from = fromAsset, let to = toAsset {
+            body = "Research question moved from \(from.ticker) (\(from.name)) to \(to.ticker) (\(to.name))."
+        } else {
+            body = "Asset assignment unchanged."
+        }
+        
+        return LogEntry(
+            title: title,
+            body: body,
+            entryType: .update,
+            isSystemGenerated: true
+        )
+    }
+    
+    /**
+     Creates a system-generated log entry for confidence level changes.
+     
+     - Parameters:
+       - fromConfidence: The previous confidence level (nil if none)
+       - toConfidence: The new confidence level (nil if removing)
+     - Returns: A new system-generated log entry
+     */
+    static func createConfidenceChangeLog(
+        fromConfidence: ConfidenceLevel?,
+        toConfidence: ConfidenceLevel?
+    ) -> LogEntry {
+        let fromLabel = fromConfidence?.displayName ?? "None"
+        let toLabel = toConfidence?.displayName ?? "None"
+        
+        let title = "Confidence: \(fromLabel) → \(toLabel)"
+        
+        var body: String
+        if fromConfidence == nil && toConfidence != nil {
+            body = "Confidence level set to \(toConfidence!.displayName) (\(toConfidence!.shortLabel))."
+        } else if fromConfidence != nil && toConfidence == nil {
+            body = "Confidence level removed (was \(fromConfidence!.displayName))."
+        } else if let from = fromConfidence, let to = toConfidence {
+            let direction = to.rawValue > from.rawValue ? "increased" : "decreased"
+            body = "Confidence level \(direction) from \(from.displayName) to \(to.displayName).\n\n\(from.shortLabel) → \(to.shortLabel)"
+        } else {
+            body = "Confidence level unchanged."
+        }
+        
+        return LogEntry(
+            title: title,
+            body: body,
+            entryType: .update,
+            confidence: toConfidence?.rawValue,
+            isSystemGenerated: true
+        )
+    }
 }
