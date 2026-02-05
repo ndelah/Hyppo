@@ -486,10 +486,9 @@ struct DriverRowView: View {
                     .textFieldStyle(.plain)
                     .foregroundStyle(detectedShortcut != nil ? .clear : .primary)
                     .focused(focusBinding, equals: .title(driver.id))
-                    .onKeyPress(.return, phases: .down) { _ in
+                    .onSubmit {
                         // Enter: process shortcut if present, then create sibling
                         processShortcutAndSubmit()
-                        return .handled
                     }
                     .onKeyPress(.downArrow, phases: .down) { _ in
                         onFocusNextDriver?()
@@ -502,6 +501,9 @@ struct DriverRowView: View {
             } else {
                 TextField("Assumption...", text: $driver.title)
                     .textFieldStyle(.plain)
+                    .onSubmit {
+                        processShortcutAndSubmit()
+                    }
             }
         }
     }

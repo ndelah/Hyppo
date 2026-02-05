@@ -61,6 +61,13 @@ struct ResearchWizardView: View {
     @State private var newTagName = ""
     @State private var newTagColor: TagColor = .blue
     
+    /// Focus state for tab navigation between text fields
+    enum FocusedField: Hashable {
+        case investmentThesis
+        case whyThisMatters
+    }
+    @FocusState private var focusedField: FocusedField?
+    
     // MARK: - Initialization
     
     init(asset: Asset?, existingQuestion: ResearchQuestion? = nil, onSave: @escaping (ResearchQuestion) -> Void) {
@@ -304,6 +311,11 @@ struct ResearchWizardView: View {
                     .background(Color(nsColor: .textBackgroundColor))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(nsColor: .separatorColor)))
+                    .focused($focusedField, equals: .investmentThesis)
+                    .onKeyPress(.tab) {
+                        focusedField = .whyThisMatters
+                        return .handled
+                    }
             }
             
             // Why This Matters
@@ -321,6 +333,12 @@ struct ResearchWizardView: View {
                     .background(Color(nsColor: .textBackgroundColor))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(nsColor: .separatorColor)))
+                    .focused($focusedField, equals: .whyThisMatters)
+                    .onKeyPress(.tab) {
+                        // Move focus out of text fields (to next section)
+                        focusedField = nil
+                        return .handled
+                    }
             }
             
             // Key Assumptions (Drivers)

@@ -105,6 +105,14 @@ struct AssetTagField: View {
                                 moveSelection(by: -1)
                                 return .handled
                             }
+                            .onKeyPress(.tab) {
+                                // Tab confirms the highlighted selection (same as Enter)
+                                if showSuggestions && totalSelectableItems > 0 {
+                                    handleSubmitWithHighlight()
+                                    return .handled
+                                }
+                                return .ignored
+                            }
                     }
                     
                     Spacer()
