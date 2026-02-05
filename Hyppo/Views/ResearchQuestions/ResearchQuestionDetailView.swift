@@ -14,6 +14,7 @@ import UniformTypeIdentifiers
 enum ResearchDetailTab: String, CaseIterable, Identifiable {
     case description = "Description"
     case health = "Health"
+    case decisions = "Decisions"
     case tasks = "Tasks"
     
     var id: String { rawValue }
@@ -64,6 +65,11 @@ struct ResearchQuestionDetailView: View {
     // Review wizard state
     @State private var showingReviewWizard = false
     
+    // Decision Layer state
+    @State private var showingDecisionForm = false
+    @State private var showingOutcomeForm = false
+    @State private var selectedDecision: Decision?
+    
     // MARK: - Body
     
     var body: some View {
@@ -87,6 +93,27 @@ struct ResearchQuestionDetailView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
+                // Record Decision button (prominent when actions available)
+                if !researchQuestion.validDecisionActions.isEmpty {
+                    Button {
+                        showingDecisionForm = true
+                    } label: {
+                        Label("Record Decision", systemImage: "checkmark.circle")
+                    }
+                    .help("Record an investment decision")
+                }
+                
+                // Record Outcome button (when awaiting outcome)
+                if researchQuestion.isAwaitingOutcome {
+                    Button {
+                        showingOutcomeForm = true
+                    } label: {
+                        Label("Record Outcome", systemImage: "flag.checkered")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .help("Record the outcome to complete this thesis")
+                }
+                
                 // Review wizard
                 Button {
                     showingReviewWizard = true
@@ -155,6 +182,37 @@ struct ResearchQuestionDetailView: View {
         }
         .sheet(isPresented: $showingReviewWizard) {
             ReviewWizardView(researchQuestion: researchQuestion) { }
+        }
+        .sheet(isPresented: $showingDecisionForm) {
+            DecisionFormView(
+                researchQuestion: researchQuestion,
+                onSave: { decision in
+                    modelContext.insert(decision)
+                    researchQuestion.recordDecision(decision)
+                    try? modelContext.save()
+                    
+                    // If this was an exit or abandon, prompt for outcome
+                    if researchQuestion.isAwaitingOutcome {
+                        showingOutcomeForm = true
+                    }
+                },
+                onExitWithOutcome: {
+                    showingOutcomeForm = true
+                }
+            )
+        }
+        .sheet(isPresented: $showingOutcomeForm) {
+            OutcomeFormView(
+                researchQuestion: researchQuestion,
+                onSave: { outcome in
+                    modelContext.insert(outcome)
+                    try? researchQuestion.recordOutcome(outcome)
+                    try? modelContext.save()
+                }
+            )
+        }
+        .sheet(item: $selectedDecision) { decision in
+            DecisionDetailView(decision: decision)
         }
     }
     
@@ -239,10 +297,178 @@ struct ResearchQuestionDetailView: View {
             healthTabContent
                 .padding()
                 .transition(.opacity)
+        case .decisions:
+            decisionsTabContent
+                .padding()
+                .transition(.opacity)
         case .tasks:
             tasksTabContent
                 .transition(.opacity)
         }
+    }
+    
+    /// Decisions tab content - shows decision timeline and actions
+    private var decisionsTabContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Investment phase header
+            investmentPhaseHeader
+            
+            // Awaiting outcome banner
+            if researchQuestion.isAwaitingOutcome {
+                awaitingOutcomeBanner
+            }
+            
+            // Outcome summary (if in PostMortem)
+            if let outcome = researchQuestion.outcome {
+                outcomeSummarySection(outcome)
+            }
+            
+            // Decision timeline
+            DecisionTimelineView(researchQuestion: researchQuestion) { decision in
+                selectedDecision = decision
+            }
+            
+            // Record decision button (if actions available)
+            if !researchQuestion.validDecisionActions.isEmpty {
+                Button {
+                    showingDecisionForm = true
+                } label: {
+                    Label("Record Decision", systemImage: "plus.circle.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+    }
+    
+    /// Investment phase header showing current lifecycle state
+    private var investmentPhaseHeader: some View {
+        HStack(spacing: 12) {
+            // Phase icon
+            ZStack {
+                Circle()
+                    .fill(Color(researchQuestion.investmentPhase.colorName).opacity(0.15))
+                    .frame(width: 40, height: 40)
+                
+                Image(systemName: researchQuestion.investmentPhase.iconName)
+                    .font(.title3)
+                    .foregroundStyle(Color(researchQuestion.investmentPhase.colorName))
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Investment Phase")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                Text(researchQuestion.investmentPhase.displayName)
+                    .font(.headline)
+                    .foregroundStyle(Color(researchQuestion.investmentPhase.colorName))
+            }
+            
+            Spacer()
+            
+            // Decision count
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(researchQuestion.decisionsCount)")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                Text("decisions")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding()
+        .background(Color(researchQuestion.investmentPhase.colorName).opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(researchQuestion.investmentPhase.colorName).opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    /// Banner shown when thesis is awaiting outcome recording
+    private var awaitingOutcomeBanner: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Outcome Required")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                Text("Record the outcome to complete this thesis and enable calibration tracking.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Spacer()
+            
+            Button("Record Now") {
+                showingOutcomeForm = true
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding()
+        .background(Color.orange.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+    
+    /// Outcome summary section for completed theses
+    private func outcomeSummarySection(_ outcome: Outcome) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "flag.checkered")
+                    .foregroundStyle(.purple)
+                Text("Outcome")
+                    .font(.headline)
+                Spacer()
+                Text(outcome.recordedAt.formatted(date: .abbreviated, time: .omitted))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Text(outcome.actualResult)
+                .font(.subheadline)
+            
+            HStack(spacing: 16) {
+                // Thesis assessment
+                HStack(spacing: 4) {
+                    Image(systemName: outcome.thesisAssessment.iconName)
+                        .foregroundStyle(Color(outcome.thesisAssessment.colorName))
+                    Text(outcome.thesisAssessment.displayName)
+                        .fontWeight(.medium)
+                }
+                .font(.caption)
+                
+                // Timing assessment
+                HStack(spacing: 4) {
+                    Image(systemName: outcome.timingAssessment.iconName)
+                        .foregroundStyle(Color(outcome.timingAssessment.colorName))
+                    Text(outcome.timingAssessment.displayName)
+                }
+                .font(.caption)
+            }
+            
+            if let lessons = outcome.lessonsLearned, !lessons.isEmpty {
+                Divider()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Lessons Learned")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(lessons)
+                        .font(.caption)
+                        .italic()
+                }
+            }
+        }
+        .padding()
+        .background(Color.purple.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.purple.opacity(0.2), lineWidth: 1)
+        )
     }
     
     /// Description tab content - shows context, drivers with logic, subdrivers, and scenarios
@@ -416,6 +642,19 @@ struct ResearchQuestionDetailView: View {
             
             // Metadata row
             HStack(spacing: 16) {
+                // Investment phase badge
+                HStack(spacing: 4) {
+                    Image(systemName: researchQuestion.investmentPhase.iconName)
+                    Text(researchQuestion.investmentPhase.displayName)
+                }
+                .font(.caption)
+                .fontWeight(.medium)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color(researchQuestion.investmentPhase.colorName).opacity(0.15))
+                .foregroundStyle(Color(researchQuestion.investmentPhase.colorName))
+                .clipShape(Capsule())
+                
                 if let confidence = researchQuestion.confidence {
                     Label(confidence.shortLabel, systemImage: "gauge")
                         .font(.caption)

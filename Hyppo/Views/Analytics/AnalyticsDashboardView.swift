@@ -14,6 +14,7 @@ import SwiftData
 /// Analytics section tabs
 enum AnalyticsSection: String, CaseIterable, Identifiable {
     case portfolio = "Portfolio Health"
+    case decisions = "Decisions"
     case evidence = "Evidence"
     case tasks = "Tasks"
     case drivers = "Drivers"
@@ -26,6 +27,7 @@ enum AnalyticsSection: String, CaseIterable, Identifiable {
     var iconName: String {
         switch self {
         case .portfolio: return "chart.pie.fill"
+        case .decisions: return "arrow.triangle.branch"
         case .evidence: return "doc.text.fill"
         case .tasks: return "checklist"
         case .drivers: return "target"
@@ -38,6 +40,7 @@ enum AnalyticsSection: String, CaseIterable, Identifiable {
     var iconColor: Color {
         switch self {
         case .portfolio: return .blue
+        case .decisions: return .indigo
         case .evidence: return .purple
         case .tasks: return .green
         case .drivers: return .orange
@@ -50,6 +53,7 @@ enum AnalyticsSection: String, CaseIterable, Identifiable {
     var description: String {
         switch self {
         case .portfolio: return "Overall health metrics"
+        case .decisions: return "Accuracy & calibration"
         case .evidence: return "Source analysis & freshness"
         case .tasks: return "Completion & backlog"
         case .drivers: return "Validation funnel"
@@ -181,6 +185,8 @@ struct AnalyticsDashboardView: View {
         switch selectedSection {
         case .portfolio:
             PortfolioHealthDashboardView()
+        case .decisions:
+            DecisionAnalyticsView()
         case .evidence:
             EvidenceAnalyticsView()
         case .tasks:
@@ -218,7 +224,9 @@ struct AnalyticsDashboardView: View {
             ResearchTask.self,
             LogEntry.self,
             ReviewReminder.self,
-            Tag.self
+            Tag.self,
+            Decision.self,
+            Outcome.self
         ], inMemory: true)
 }
 

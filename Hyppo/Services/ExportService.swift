@@ -42,6 +42,7 @@ struct ResearchQuestionExport: Codable {
     let scenarios: [SimpleScenarioExport]
     let confidence: Int?
     let status: String
+    let investmentPhase: String
     let conclusion: String?
     let versionNumber: Int
     let createdAt: Date
@@ -50,6 +51,8 @@ struct ResearchQuestionExport: Codable {
     let tags: [String]
     let logEntries: [LogEntryExport]
     let reviewReminder: ReviewReminderExport?
+    let decisions: [DecisionExport]
+    let outcome: OutcomeExport?
 }
 
 struct DriverExport: Codable {
@@ -99,6 +102,38 @@ struct ReviewReminderExport: Codable {
     let customIntervalDays: Int?
     let nextReviewDueAt: Date?
     let isEnabled: Bool
+}
+
+struct DecisionExport: Codable {
+    let id: String
+    let actionType: String
+    let rationale: String
+    let decidedAt: Date
+    let confidenceAtDecision: Int?
+    let driversConfirmedCount: Int
+    let driversPendingCount: Int
+    let driversDiscardedCount: Int
+    let expectedOutcome: String?
+    let expectedTimeframe: String?
+    let priceAtDecision: String?
+    let exitPlan: String?
+    let whatWouldChangeMyMind: String?
+    let createdAt: Date
+    let updatedAt: Date
+}
+
+struct OutcomeExport: Codable {
+    let id: String
+    let actualResult: String
+    let actualTimeframe: String?
+    let exitPrice: String?
+    let thesisAssessment: String
+    let timingAssessment: String
+    let lessonsLearned: String?
+    let whatWouldIDoDifferently: String?
+    let recordedAt: Date
+    let createdAt: Date
+    let updatedAt: Date
 }
 
 // MARK: - Export Service
@@ -193,6 +228,45 @@ final class ExportService {
                 
                 let driverExports = question.topLevelDrivers.map { exportDriver($0) }
                 
+                // Export decisions
+                let decisionExports = question.sortedDecisions.map { decision -> DecisionExport in
+                    DecisionExport(
+                        id: decision.decisionId.uuidString,
+                        actionType: decision.actionTypeRaw,
+                        rationale: decision.rationale,
+                        decidedAt: decision.decidedAt,
+                        confidenceAtDecision: decision.confidenceAtDecision,
+                        driversConfirmedCount: decision.driversConfirmedCount,
+                        driversPendingCount: decision.driversPendingCount,
+                        driversDiscardedCount: decision.driversDiscardedCount,
+                        expectedOutcome: decision.expectedOutcome,
+                        expectedTimeframe: decision.expectedTimeframe,
+                        priceAtDecision: decision.priceAtDecision,
+                        exitPlan: decision.exitPlan,
+                        whatWouldChangeMyMind: decision.whatWouldChangeMyMind,
+                        createdAt: decision.createdAt,
+                        updatedAt: decision.updatedAt
+                    )
+                }
+                
+                // Export outcome if present
+                var outcomeExport: OutcomeExport? = nil
+                if let outcome = question.outcome {
+                    outcomeExport = OutcomeExport(
+                        id: outcome.outcomeId.uuidString,
+                        actualResult: outcome.actualResult,
+                        actualTimeframe: outcome.actualTimeframe,
+                        exitPrice: outcome.exitPrice,
+                        thesisAssessment: outcome.thesisAssessmentRaw,
+                        timingAssessment: outcome.timingAssessmentRaw,
+                        lessonsLearned: outcome.lessonsLearned,
+                        whatWouldIDoDifferently: outcome.whatWouldIDoDifferently,
+                        recordedAt: outcome.recordedAt,
+                        createdAt: outcome.createdAt,
+                        updatedAt: outcome.updatedAt
+                    )
+                }
+                
                 return ResearchQuestionExport(
                     id: question.questionId.uuidString,
                     questionText: question.questionText,
@@ -202,6 +276,7 @@ final class ExportService {
                     scenarios: scenarioExports,
                     confidence: question.confidenceCurrent,
                     status: question.statusRaw,
+                    investmentPhase: question.investmentPhaseRaw,
                     conclusion: question.conclusion,
                     versionNumber: question.versionNumber,
                     createdAt: question.createdAt,
@@ -209,7 +284,9 @@ final class ExportService {
                     lastReviewedAt: question.lastReviewedAt,
                     tags: (question.tags ?? []).map { $0.name },
                     logEntries: logEntryExports,
-                    reviewReminder: reminderExport
+                    reviewReminder: reminderExport,
+                    decisions: decisionExports,
+                    outcome: outcomeExport
                 )
             }
             
@@ -325,6 +402,7 @@ final class ExportService {
                 )
                 researchQuestion.scenarios = importedScenarios
                 researchQuestion.statusRaw = questionExport.status
+                researchQuestion.investmentPhaseRaw = questionExport.investmentPhase
                 researchQuestion.conclusion = questionExport.conclusion
                 researchQuestion.versionNumber = questionExport.versionNumber
                 researchQuestion.createdAt = questionExport.createdAt
@@ -410,6 +488,50 @@ final class ExportService {
                         modelContext.insert(evidence)
                         result.evidenceImported += 1
                     }
+                }
+                
+                // Create decisions
+                for decisionExport in questionExport.decisions {
+                    let decision = Decision(
+                        actionType: DecisionAction(rawValue: decisionExport.actionType) ?? .pass,
+                        rationale: decisionExport.rationale,
+                        decidedAt: decisionExport.decidedAt
+                    )
+                    decision.confidenceAtDecision = decisionExport.confidenceAtDecision
+                    decision.driversConfirmedCount = decisionExport.driversConfirmedCount
+                    decision.driversPendingCount = decisionExport.driversPendingCount
+                    decision.driversDiscardedCount = decisionExport.driversDiscardedCount
+                    decision.expectedOutcome = decisionExport.expectedOutcome
+                    decision.expectedTimeframe = decisionExport.expectedTimeframe
+                    decision.priceAtDecision = decisionExport.priceAtDecision
+                    decision.exitPlan = decisionExport.exitPlan
+                    decision.whatWouldChangeMyMind = decisionExport.whatWouldChangeMyMind
+                    decision.createdAt = decisionExport.createdAt
+                    decision.updatedAt = decisionExport.updatedAt
+                    decision.researchQuestion = researchQuestion
+                    
+                    modelContext.insert(decision)
+                    result.decisionsImported += 1
+                }
+                
+                // Create outcome if present
+                if let outcomeExport = questionExport.outcome {
+                    let outcome = Outcome(
+                        actualResult: outcomeExport.actualResult,
+                        thesisAssessment: ThesisAssessment(rawValue: outcomeExport.thesisAssessment) ?? .inconclusive,
+                        timingAssessment: TimingAssessment(rawValue: outcomeExport.timingAssessment) ?? .notApplicable
+                    )
+                    outcome.actualTimeframe = outcomeExport.actualTimeframe
+                    outcome.exitPrice = outcomeExport.exitPrice
+                    outcome.lessonsLearned = outcomeExport.lessonsLearned
+                    outcome.whatWouldIDoDifferently = outcomeExport.whatWouldIDoDifferently
+                    outcome.recordedAt = outcomeExport.recordedAt
+                    outcome.createdAt = outcomeExport.createdAt
+                    outcome.updatedAt = outcomeExport.updatedAt
+                    outcome.researchQuestion = researchQuestion
+                    
+                    modelContext.insert(outcome)
+                    result.outcomesImported += 1
                 }
             }
         }
@@ -545,11 +667,87 @@ final class ExportService {
             }
         }
         
+        // Decision Timeline
+        let decisions = researchQuestion.sortedDecisions
+        if !decisions.isEmpty {
+            md += "---\n\n"
+            md += "## Decision Timeline\n\n"
+            md += "**Investment Phase:** \(researchQuestion.investmentPhase.displayName)\n\n"
+            
+            for decision in decisions {
+                let decisionDate = dateFormatter.string(from: decision.decidedAt)
+                let actionEmoji = decisionActionEmoji(decision.actionType)
+                
+                md += "### \(actionEmoji) \(decision.actionType.displayName)\n\n"
+                md += "**Date:** \(decisionDate)\n"
+                md += "**Rationale:** \(decision.rationale)\n"
+                
+                if let confidence = decision.confidenceAtDecision {
+                    md += "**Confidence at Decision:** \(confidence)/5\n"
+                }
+                
+                md += "**Driver Snapshot:** \(decision.driversConfirmedCount) confirmed, \(decision.driversPendingCount) pending, \(decision.driversDiscardedCount) discarded\n"
+                
+                if let expected = decision.expectedOutcome {
+                    md += "**Expected Outcome:** \(expected)\n"
+                }
+                if let timeframe = decision.expectedTimeframe {
+                    md += "**Expected Timeframe:** \(timeframe)\n"
+                }
+                if let price = decision.priceAtDecision {
+                    md += "**Price at Decision:** \(price)\n"
+                }
+                if let exitPlan = decision.exitPlan {
+                    md += "**Exit Plan:** \(exitPlan)\n"
+                }
+                if let changeMyMind = decision.whatWouldChangeMyMind {
+                    md += "**What Would Change My Mind:** \(changeMyMind)\n"
+                }
+                md += "\n"
+            }
+        }
+        
+        // Outcome
+        if let outcome = researchQuestion.outcome {
+            md += "---\n\n"
+            md += "## Outcome & PostMortem\n\n"
+            md += "**Recorded:** \(dateFormatter.string(from: outcome.recordedAt))\n"
+            md += "**Actual Result:** \(outcome.actualResult)\n"
+            md += "**Thesis Assessment:** \(outcome.thesisAssessment.displayName)\n"
+            md += "**Timing Assessment:** \(outcome.timingAssessment.displayName)\n"
+            
+            if let timeframe = outcome.actualTimeframe {
+                md += "**Actual Timeframe:** \(timeframe)\n"
+            }
+            if let price = outcome.exitPrice {
+                md += "**Exit Price:** \(price)\n"
+            }
+            if let lessons = outcome.lessonsLearned, !lessons.isEmpty {
+                md += "\n### Lessons Learned\n\n\(lessons)\n"
+            }
+            if let different = outcome.whatWouldIDoDifferently, !different.isEmpty {
+                md += "\n### What I Would Do Differently\n\n\(different)\n"
+            }
+            md += "\n"
+        }
+        
         // Footer
         md += "---\n\n"
         md += "*Exported from Hyppo on \(dateFormatter.string(from: Date()))*\n"
         
         return md
+    }
+    
+    private func decisionActionEmoji(_ action: DecisionAction) -> String {
+        switch action {
+        case .pass: return "⏳"
+        case .buy: return "📈"
+        case .abandon: return "🚫"
+        case .hold: return "✋"
+        case .add: return "➕"
+        case .trim: return "➖"
+        case .exit: return "🏁"
+        }
     }
     
     private func entryTypeEmoji(_ type: LogEntryType) -> String {
@@ -587,6 +785,8 @@ struct ImportResult {
     var researchQuestionsImported: Int = 0
     var logEntriesImported: Int = 0
     var evidenceImported: Int = 0
+    var decisionsImported: Int = 0
+    var outcomesImported: Int = 0
     var tagsCreated: Int = 0
     
     var summary: String {
@@ -596,6 +796,8 @@ struct ImportResult {
         if researchQuestionsImported > 0 { parts.append("\(researchQuestionsImported) research questions") }
         if logEntriesImported > 0 { parts.append("\(logEntriesImported) log entries") }
         if evidenceImported > 0 { parts.append("\(evidenceImported) evidence items") }
+        if decisionsImported > 0 { parts.append("\(decisionsImported) decisions") }
+        if outcomesImported > 0 { parts.append("\(outcomesImported) outcomes") }
         if tagsCreated > 0 { parts.append("\(tagsCreated) tags created") }
         return parts.isEmpty ? "No data imported" : parts.joined(separator: ", ")
     }

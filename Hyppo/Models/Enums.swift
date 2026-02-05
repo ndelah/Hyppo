@@ -401,3 +401,236 @@ enum DisplayDensity: String, Codable, CaseIterable, Identifiable {
         }
     }
 }
+
+// MARK: - Decision Layer Enums
+
+/**
+ Represents the type of investment decision being made.
+ 
+ Valid actions depend on the current investment phase:
+ - Watching phase: pass, buy, abandon
+ - Entered phase: hold, add, trim, exit
+ */
+enum DecisionAction: String, Codable, CaseIterable, Identifiable {
+    // Watching phase actions
+    case pass = "Pass"          // Reviewed, decided not to enter (stays Watching)
+    case buy = "Buy"            // Enter position (Watching → Entered)
+    case abandon = "Abandon"    // Stop pursuing thesis (Watching → Abandoned)
+    
+    // Entered phase actions
+    case hold = "Hold"          // Explicit decision to maintain (stays Entered)
+    case add = "Add"            // Increase position (stays Entered)
+    case trim = "Trim"          // Reduce position (stays Entered)
+    case exit = "Exit"          // Close position (Entered → Exited)
+    
+    var id: String { rawValue }
+    
+    /// Display label for the action
+    var displayName: String { rawValue }
+    
+    /// Icon name for visual representation
+    var iconName: String {
+        switch self {
+        case .pass: return "hand.raised"
+        case .buy: return "arrow.up.circle.fill"
+        case .abandon: return "xmark.circle"
+        case .hold: return "pause.circle.fill"
+        case .add: return "plus.circle.fill"
+        case .trim: return "minus.circle.fill"
+        case .exit: return "arrow.down.circle.fill"
+        }
+    }
+    
+    /// Color identifier for UI theming
+    var colorName: String {
+        switch self {
+        case .pass: return "gray"
+        case .buy: return "green"
+        case .abandon: return "red"
+        case .hold: return "blue"
+        case .add: return "green"
+        case .trim: return "orange"
+        case .exit: return "red"
+        }
+    }
+    
+    /// Whether this action is available in the Watching phase
+    var isWatchingAction: Bool {
+        switch self {
+        case .pass, .buy, .abandon: return true
+        case .hold, .add, .trim, .exit: return false
+        }
+    }
+    
+    /// Whether this action is available in the Entered phase
+    var isEnteredAction: Bool {
+        switch self {
+        case .hold, .add, .trim, .exit: return true
+        case .pass, .buy, .abandon: return false
+        }
+    }
+    
+    /// The phase transition this action causes (if any)
+    var resultingPhase: InvestmentPhase? {
+        switch self {
+        case .pass: return nil  // Stays in Watching
+        case .buy: return .entered
+        case .abandon: return .abandoned
+        case .hold, .add, .trim: return nil  // Stays in Entered
+        case .exit: return .exited
+        }
+    }
+}
+
+/**
+ Represents the investment lifecycle phase of a research question.
+ 
+ State transitions:
+ - Watching → Watching (Pass)
+ - Watching → Entered (Buy)
+ - Watching → Abandoned (Abandon)
+ - Entered → Entered (Hold, Add, Trim)
+ - Entered → Exited (Exit)
+ - Exited → PostMortem (Record Outcome)
+ - Abandoned → PostMortem (Record Outcome)
+ */
+enum InvestmentPhase: String, Codable, CaseIterable, Identifiable {
+    case watching = "Watching"      // Researching, no position
+    case entered = "Entered"        // Position is open
+    case exited = "Exited"          // Position closed, awaiting outcome
+    case abandoned = "Abandoned"    // Thesis abandoned, awaiting outcome
+    case postMortem = "PostMortem"  // Outcome recorded, thesis complete
+    
+    var id: String { rawValue }
+    
+    /// Display label for the phase
+    var displayName: String {
+        switch self {
+        case .watching: return "Watching"
+        case .entered: return "Position Open"
+        case .exited: return "Exited"
+        case .abandoned: return "Abandoned"
+        case .postMortem: return "Complete"
+        }
+    }
+    
+    /// Icon name for visual representation
+    var iconName: String {
+        switch self {
+        case .watching: return "eye"
+        case .entered: return "checkmark.circle.fill"
+        case .exited: return "arrow.uturn.down.circle"
+        case .abandoned: return "xmark.circle"
+        case .postMortem: return "flag.checkered"
+        }
+    }
+    
+    /// Color identifier for UI theming
+    var colorName: String {
+        switch self {
+        case .watching: return "blue"
+        case .entered: return "green"
+        case .exited: return "orange"
+        case .abandoned: return "red"
+        case .postMortem: return "gray"
+        }
+    }
+    
+    /// Whether the thesis is awaiting outcome recording
+    var isAwaitingOutcome: Bool {
+        self == .exited || self == .abandoned
+    }
+    
+    /// Whether the thesis has an open position
+    var hasOpenPosition: Bool {
+        self == .entered
+    }
+    
+    /// Whether the thesis lifecycle is complete
+    var isComplete: Bool {
+        self == .postMortem
+    }
+    
+    /// Valid decision actions for this phase
+    var validActions: [DecisionAction] {
+        switch self {
+        case .watching: return [.pass, .buy, .abandon]
+        case .entered: return [.hold, .add, .trim, .exit]
+        case .exited, .abandoned, .postMortem: return []
+        }
+    }
+}
+
+/**
+ Represents the accuracy assessment of whether the investment thesis was correct.
+ 
+ Used in the post-mortem phase to evaluate the quality of the original thesis.
+ */
+enum ThesisAssessment: String, Codable, CaseIterable, Identifiable {
+    case correct = "Correct"            // Thesis played out as expected
+    case partial = "Partial"            // Partially correct
+    case wrong = "Wrong"                // Thesis was incorrect
+    case inconclusive = "Inconclusive"  // Not enough data to assess
+    
+    var id: String { rawValue }
+    
+    /// Display label for the assessment
+    var displayName: String { rawValue }
+    
+    /// Icon name for visual representation
+    var iconName: String {
+        switch self {
+        case .correct: return "checkmark.seal.fill"
+        case .partial: return "checkmark.seal"
+        case .wrong: return "xmark.seal.fill"
+        case .inconclusive: return "questionmark.circle"
+        }
+    }
+    
+    /// Color identifier for UI theming
+    var colorName: String {
+        switch self {
+        case .correct: return "green"
+        case .partial: return "orange"
+        case .wrong: return "red"
+        case .inconclusive: return "gray"
+        }
+    }
+}
+
+/**
+ Represents the accuracy assessment of decision timing.
+ 
+ Used in the post-mortem phase to evaluate whether the entry/exit timing was optimal.
+ */
+enum TimingAssessment: String, Codable, CaseIterable, Identifiable {
+    case early = "Early"                    // Acted too soon
+    case onTime = "On Time"                 // Timing was appropriate
+    case late = "Late"                      // Acted too late
+    case notApplicable = "Not Applicable"   // For pass/abandon decisions
+    
+    var id: String { rawValue }
+    
+    /// Display label for the assessment
+    var displayName: String { rawValue }
+    
+    /// Icon name for visual representation
+    var iconName: String {
+        switch self {
+        case .early: return "clock.arrow.2.circlepath"
+        case .onTime: return "clock.badge.checkmark"
+        case .late: return "clock.badge.exclamationmark"
+        case .notApplicable: return "clock"
+        }
+    }
+    
+    /// Color identifier for UI theming
+    var colorName: String {
+        switch self {
+        case .early: return "orange"
+        case .onTime: return "green"
+        case .late: return "red"
+        case .notApplicable: return "gray"
+        }
+    }
+}

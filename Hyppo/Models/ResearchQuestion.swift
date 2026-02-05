@@ -126,6 +126,9 @@ final class ResearchQuestion {
     /// Raw status value for persistence
     var statusRaw: String
     
+    /// Raw investment phase value for persistence (Decision Layer)
+    var investmentPhaseRaw: String
+    
     /// Version number for tracking updates
     var versionNumber: Int
     
@@ -195,6 +198,14 @@ final class ResearchQuestion {
     /// Review reminder for this research question
     @Relationship(deleteRule: .cascade) var reviewReminder: ReviewReminder?
     
+    /// Decisions made on this research question (Decision Layer)
+    @Relationship(deleteRule: .cascade, inverse: \Decision.researchQuestion)
+    var decisions: [Decision]?
+    
+    /// Outcome of this research question after exit/abandon (Decision Layer)
+    @Relationship(deleteRule: .cascade, inverse: \Outcome.researchQuestion)
+    var outcome: Outcome?
+    
     // MARK: - Initialization
     
     /**
@@ -223,6 +234,7 @@ final class ResearchQuestion {
         self.thesisStatement = thesisStatement?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.confidenceCurrent = confidence
         self.statusRaw = ResearchQuestionStatus.active.rawValue
+        self.investmentPhaseRaw = InvestmentPhase.watching.rawValue
         self.versionNumber = 1
         self.createdAt = Date()
         self.updatedAt = Date()
@@ -238,6 +250,15 @@ final class ResearchQuestion {
         set {
             statusRaw = newValue.rawValue
             statusChangedAt = Date()
+            updatedAt = Date()
+        }
+    }
+    
+    /// Investment phase as enum (Decision Layer)
+    var investmentPhase: InvestmentPhase {
+        get { InvestmentPhase(rawValue: investmentPhaseRaw) ?? .watching }
+        set {
+            investmentPhaseRaw = newValue.rawValue
             updatedAt = Date()
         }
     }
@@ -490,6 +511,127 @@ final class ResearchQuestion {
             current[index].title = title
             scenarios = current
             updatedAt = Date()
+        }
+    }
+    
+    // MARK: - Decision Layer Properties
+    
+    /// Whether this thesis has an open position
+    var hasOpenPosition: Bool {
+        investmentPhase == .entered
+    }
+    
+    /// Whether this thesis is awaiting outcome recording
+    var isAwaitingOutcome: Bool {
+        investmentPhase == .exited || investmentPhase == .abandoned
+    }
+    
+    /// Whether this thesis lifecycle is complete
+    var isThesisComplete: Bool {
+        investmentPhase == .postMortem
+    }
+    
+    /// Valid decision actions for current phase
+    var validDecisionActions: [DecisionAction] {
+        investmentPhase.validActions
+    }
+    
+    /// Decisions sorted by date (oldest first)
+    var sortedDecisions: [Decision] {
+        decisions?.sorted { $0.decidedAt < $1.decidedAt } ?? []
+    }
+    
+    /// The entry decision (first Buy decision)
+    var entryDecision: Decision? {
+        decisions?.first { $0.actionType == .buy }
+    }
+    
+    /// The exit decision (if exited)
+    var exitDecision: Decision? {
+        decisions?.first { $0.actionType == .exit }
+    }
+    
+    /// Count of decisions made
+    var decisionsCount: Int {
+        decisions?.count ?? 0
+    }
+    
+    /// Count of Pass decisions (times reviewed but not entered)
+    var passDecisionsCount: Int {
+        decisions?.filter { $0.actionType == .pass }.count ?? 0
+    }
+    
+    // MARK: - Decision Layer Methods
+    
+    /**
+     Records a new decision and updates the investment phase accordingly.
+     
+     - Parameter decision: The decision to record
+     - Returns: The previous phase if changed, nil otherwise
+     */
+    @discardableResult
+    func recordDecision(_ decision: Decision) -> InvestmentPhase? {
+        // Add the decision
+        if decisions == nil {
+            decisions = []
+        }
+        decisions?.append(decision)
+        decision.researchQuestion = self
+        
+        // Update phase if needed
+        let previousPhase = investmentPhase
+        if let newPhase = decision.actionType.resultingPhase {
+            investmentPhase = newPhase
+        }
+        
+        updatedAt = Date()
+        return previousPhase != investmentPhase ? previousPhase : nil
+    }
+    
+    /**
+     Records an outcome and transitions to PostMortem phase.
+     
+     - Parameter outcome: The outcome to record
+     - Throws: If thesis is not in Exited or Abandoned phase
+     */
+    func recordOutcome(_ newOutcome: Outcome) throws {
+        guard isAwaitingOutcome else {
+            throw OutcomeError.notAwaitingOutcome
+        }
+        
+        self.outcome = newOutcome
+        newOutcome.researchQuestion = self
+        self.investmentPhase = .postMortem
+        self.updatedAt = Date()
+    }
+    
+    /// Display subtitle for investment phase
+    var investmentPhaseSubtitle: String {
+        var parts: [String] = [investmentPhase.displayName]
+        
+        if hasOpenPosition {
+            if let entry = entryDecision {
+                let formatter = DateFormatter()
+                formatter.dateStyle = .short
+                parts.append("since \(formatter.string(from: entry.decidedAt))")
+            }
+        } else if investmentPhase == .watching && passDecisionsCount > 0 {
+            parts.append("\(passDecisionsCount) pass\(passDecisionsCount == 1 ? "" : "es")")
+        }
+        
+        return parts.joined(separator: " • ")
+    }
+}
+
+// MARK: - Outcome Errors
+
+enum OutcomeError: Error, LocalizedError {
+    case notAwaitingOutcome
+    
+    var errorDescription: String? {
+        switch self {
+        case .notAwaitingOutcome:
+            return "Cannot record outcome - thesis must be in Exited or Abandoned phase"
         }
     }
 }

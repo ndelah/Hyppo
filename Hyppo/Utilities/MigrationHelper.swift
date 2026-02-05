@@ -4,24 +4,26 @@ import SwiftData
 // MARK: - Migration Status
 
 /**
- Tracks the status of data migration operations.
- */
-struct MigrationStatus {
-    var questionsProcessed: Int = 0
-    var driversCreated: Int = 0
-    var evidenceMigrated: Int = 0
-    var errors: [String] = []
-    
-    var summary: String {
-        """
-        Migration completed:
-        - Research questions processed: \(questionsProcessed)
-        - Drivers created: \(driversCreated)
-        - Evidence migrated: \(evidenceMigrated)
-        - Errors: \(errors.count)
-        """
+     Tracks the status of data migration operations.
+     */
+    struct MigrationStatus {
+        var questionsProcessed: Int = 0
+        var driversCreated: Int = 0
+        var evidenceMigrated: Int = 0
+        var investmentPhasesInitialized: Int = 0
+        var errors: [String] = []
+        
+        var summary: String {
+            """
+            Migration completed:
+            - Research questions processed: \(questionsProcessed)
+            - Drivers created: \(driversCreated)
+            - Evidence migrated: \(evidenceMigrated)
+            - Investment phases initialized: \(investmentPhasesInitialized)
+            - Errors: \(errors.count)
+            """
+        }
     }
-}
 
 // MARK: - Migration Helper
 
@@ -45,7 +47,8 @@ final class MigrationHelper {
     private let migrationVersionKey = "com.hyppo.migrationVersion"
     
     /// Current migration version
-    private let currentMigrationVersion = 2
+    /// v3: Initialize investmentPhaseRaw for Decision Layer feature
+    private let currentMigrationVersion = 3
     
     private init() {}
     
@@ -117,7 +120,20 @@ final class MigrationHelper {
                 status.errors.append(contentsOf: result.errors)
             }
             
-            // Step 2: Migrate orphaned evidence
+            // Step 2: Initialize investmentPhaseRaw for Decision Layer
+            for rq in questions {
+                if rq.investmentPhaseRaw.isEmpty {
+                    rq.investmentPhaseRaw = InvestmentPhase.watching.rawValue
+                    status.investmentPhasesInitialized += 1
+                    
+                    DebugLogger.info(
+                        location: "MigrationHelper:performMigration",
+                        message: "Initialized investment phase for question: \(rq.questionText.prefix(50))..."
+                    )
+                }
+            }
+            
+            // Step 3: Migrate orphaned evidence
             let evidenceDescriptor = FetchDescriptor<Evidence>()
             let allEvidence = try modelContext.fetch(evidenceDescriptor)
             
