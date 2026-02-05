@@ -7,8 +7,11 @@
  - Keyboard-first interaction (Todoist-style):
    - Enter: Confirm and create new driver below
    - Up/Down arrows: Navigate between drivers
+   - Cmd+Return: Delete current driver/sub-driver
+   - Cmd+Up/Cmd+Down: Move driver/sub-driver up or down
    - Inline d1/d2: Type "d1" or "d2" anywhere in text, it highlights, then converts on Enter
  - Drag-and-drop reordering
+ - Sub-drivers belong to the first driver above them in the list
  
  Used within the Research Wizard and Research Question forms.
  */
@@ -490,6 +493,7 @@ struct DriverRowView: View {
                         // Enter: process shortcut if present, then create sibling
                         processShortcutAndSubmit()
                     }
+                    // Plain arrow keys: navigate focus
                     .onKeyPress(.downArrow, phases: .down) { _ in
                         onFocusNextDriver?()
                         return .handled
@@ -498,12 +502,48 @@ struct DriverRowView: View {
                         onFocusPreviousDriver?()
                         return .handled
                     }
+                    // Cmd+Return: delete driver
+                    .onKeyPress(.return, phases: .down, action: { press in
+                        guard press.modifiers.contains(.command) else { return .ignored }
+                        onDelete()
+                        return .handled
+                    })
+                    // Cmd+Up: move driver up
+                    .onKeyPress(keys: [.upArrow], phases: .down, action: { press in
+                        guard press.modifiers.contains(.command) else { return .ignored }
+                        onMoveUp?()
+                        return .handled
+                    })
+                    // Cmd+Down: move driver down
+                    .onKeyPress(keys: [.downArrow], phases: .down, action: { press in
+                        guard press.modifiers.contains(.command) else { return .ignored }
+                        onMoveDown?()
+                        return .handled
+                    })
             } else {
                 TextField("Assumption...", text: $driver.title)
                     .textFieldStyle(.plain)
                     .onSubmit {
                         processShortcutAndSubmit()
                     }
+                    // Cmd+Return: delete driver
+                    .onKeyPress(.return, phases: .down, action: { press in
+                        guard press.modifiers.contains(.command) else { return .ignored }
+                        onDelete()
+                        return .handled
+                    })
+                    // Cmd+Up: move driver up
+                    .onKeyPress(keys: [.upArrow], phases: .down, action: { press in
+                        guard press.modifiers.contains(.command) else { return .ignored }
+                        onMoveUp?()
+                        return .handled
+                    })
+                    // Cmd+Down: move driver down
+                    .onKeyPress(keys: [.downArrow], phases: .down, action: { press in
+                        guard press.modifiers.contains(.command) else { return .ignored }
+                        onMoveDown?()
+                        return .handled
+                    })
             }
         }
     }

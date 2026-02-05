@@ -135,6 +135,46 @@ struct ResearchWizardView: View {
         drivers.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
     
+    /// Groups drivers with their subdrivers based on the isSubDriver flag.
+    /// Drivers marked with isSubDriver: true belong to the first non-subdriver above them in the list.
+    private var driversWithGroupedSubDrivers: [(driver: DriverDTO, subDrivers: [DriverDTO])] {
+        var result: [(driver: DriverDTO, subDrivers: [DriverDTO])] = []
+        var currentDriver: DriverDTO? = nil
+        var currentSubDrivers: [DriverDTO] = []
+        
+        for d in drivers {
+            let trimmedTitle = d.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedTitle.isEmpty else { continue }
+            
+            if d.isSubDriver {
+                // This is a subdriver - add to current parent's subdrivers
+                currentSubDrivers.append(d)
+            } else {
+                // This is a parent driver
+                // First, save the previous driver and its subdrivers
+                if let prevDriver = currentDriver {
+                    result.append((driver: prevDriver, subDrivers: currentSubDrivers))
+                }
+                // Start a new parent driver
+                currentDriver = d
+                // Include any nested subdrivers from the subDrivers array
+                currentSubDrivers = d.subDrivers.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            }
+        }
+        
+        // Don't forget the last driver
+        if let lastDriver = currentDriver {
+            result.append((driver: lastDriver, subDrivers: currentSubDrivers))
+        }
+        
+        return result
+    }
+    
+    /// Count of top-level drivers only (for validation display)
+    private var validTopLevelDriversCount: Int {
+        driversWithGroupedSubDrivers.count
+    }
+    
     // MARK: - Body
     
     var body: some View {
@@ -351,15 +391,22 @@ struct ResearchWizardView: View {
                     prompt: "What assumptions must be true for this thesis to hold?"
                 )
                 
-                // Status hint
-                let validCount = validDriversForDesign.count
-                if validCount > 0 {
+                // Status hint - show count of top-level drivers and total subdrivers
+                let topLevelCount = driversWithGroupedSubDrivers.count
+                let subDriverCount = driversWithGroupedSubDrivers.reduce(0) { $0 + $1.subDrivers.count }
+                if topLevelCount > 0 {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
-                        Text("\(validCount) assumption\(validCount == 1 ? "" : "s") defined")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        if subDriverCount > 0 {
+                            Text("\(topLevelCount) driver\(topLevelCount == 1 ? "" : "s"), \(subDriverCount) sub-driver\(subDriverCount == 1 ? "" : "s") defined")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("\(topLevelCount) assumption\(topLevelCount == 1 ? "" : "s") defined")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .padding(.top, 4)
                 }
@@ -654,36 +701,77 @@ struct ResearchWizardView: View {
                 Divider()
                 
                 // Assumptions
-                if !validDriversForDesign.isEmpty {
-                    reviewSection(icon: "target", title: "Key Assumptions (\(validDriversForDesign.count))", color: .green) {
+                if !driversWithGroupedSubDrivers.isEmpty {
+                    reviewSection(icon: "target", title: "Key Assumptions (\(driversWithGroupedSubDrivers.count))", color: .green) {
                         VStack(alignment: .leading, spacing: 12) {
-                            ForEach(Array(validDriversForDesign.enumerated()), id: \.element.id) { index, driver in
+                            ForEach(Array(driversWithGroupedSubDrivers.enumerated()), id: \.offset) { index, item in
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("\(index + 1). \(driver.title)")
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
+                                    // Main driver with "Driver" pill
+                                    HStack(spacing: 8) {
+                                        Text("\(index + 1).")
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundStyle(.secondary)
+                                        
+                                        // Driver pill
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "number")
+                                                .font(.caption2)
+                                            Text("Driver")
+                                                .font(.caption)
+                                        }
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.orange.opacity(0.12))
+                                        .foregroundStyle(.orange)
+                                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                                        
+                                        Text(item.driver.title)
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                    }
                                     
                                     // Logic if defined
-                                    if !driver.logic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                        Text(driver.logic)
+                                    if !item.driver.logic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        Text(item.driver.logic)
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                             .padding(.leading, 12)
                                     }
                                     
-                                    // Sub-drivers
-                                    ForEach(driver.subDrivers.filter { !$0.title.isEmpty }) { sub in
+                                    // Sub-drivers with "Sub" pill
+                                    ForEach(item.subDrivers.filter { !$0.title.isEmpty }) { sub in
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text("  → \(sub.title)")
-                                                .font(.caption)
-                                                .foregroundStyle(.tertiary)
+                                            HStack(spacing: 8) {
+                                                Text("→")
+                                                    .font(.caption)
+                                                    .foregroundStyle(.tertiary)
+                                                
+                                                // Sub-driver pill
+                                                HStack(spacing: 4) {
+                                                    Image(systemName: "arrow.turn.down.right")
+                                                        .font(.caption2)
+                                                    Text("Sub")
+                                                        .font(.caption)
+                                                }
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(Color.indigo.opacity(0.12))
+                                                .foregroundStyle(.indigo)
+                                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                                                
+                                                Text(sub.title)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                            .padding(.leading, 16)
                                             
                                             // Sub-driver logic if defined
                                             if !sub.logic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                                 Text(sub.logic)
                                                     .font(.caption2)
-                                                    .foregroundStyle(.quaternary)
-                                                    .padding(.leading, 24)
+                                                    .foregroundStyle(.tertiary)
+                                                    .padding(.leading, 40)
                                             }
                                         }
                                     }
@@ -752,9 +840,21 @@ struct ResearchWizardView: View {
         }
     }
     
-    /// Count of drivers that have logic defined
+    /// Count of drivers (including subdrivers) that have logic defined
     private var driversWithLogicCount: Int {
-        validDriversForDesign.filter { !$0.logic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
+        driversWithGroupedSubDrivers.reduce(0) { count, item in
+            var logicCount = 0
+            if !item.driver.logic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                logicCount += 1
+            }
+            logicCount += item.subDrivers.filter { !$0.logic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
+            return count + logicCount
+        }
+    }
+    
+    /// Total count of all drivers and subdrivers
+    private var totalDriversCount: Int {
+        driversWithGroupedSubDrivers.reduce(0) { $0 + 1 + $1.subDrivers.count }
     }
     
     /// Whether an asset is configured (selected, provided, or being created)
@@ -771,8 +871,8 @@ struct ResearchWizardView: View {
             HStack(spacing: 12) {
                 checklistItem(passed: hasAssetConfigured, text: "Asset/ticker linked")
                 checklistItem(passed: !investmentThesis.isEmpty, text: "Investment thesis defined")
-                checklistItem(passed: !validDriversForDesign.isEmpty, text: "Assumptions added")
-                checklistItem(passed: driversWithLogicCount > 0, text: "Logic defined (\(driversWithLogicCount)/\(validDriversForDesign.count))")
+                checklistItem(passed: !driversWithGroupedSubDrivers.isEmpty, text: "Assumptions added")
+                checklistItem(passed: driversWithLogicCount > 0, text: "Logic defined (\(driversWithLogicCount)/\(totalDriversCount))")
                 checklistItem(passed: confidence != nil, text: "Confidence set")
             }
         }
@@ -919,32 +1019,33 @@ struct ResearchWizardView: View {
             rq.tags = selectedTags.isEmpty ? nil : selectedTags
         }
         
-        // Save drivers and sub-drivers
-        for (index, d) in drivers.enumerated() {
-            let trimmedTitle = d.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmedTitle.isEmpty {
-                let trimmedLogic = d.logic.trimmingCharacters(in: .whitespacesAndNewlines)
-                let driver = Driver(
-                    title: trimmedTitle,
-                    driverDescription: d.description.isEmpty ? nil : d.description,
-                    logic: trimmedLogic.isEmpty ? nil : trimmedLogic,
-                    position: index
-                )
-                driver.researchQuestion = rq
-                
-                for (subIndex, sd) in d.subDrivers.enumerated() {
-                    let trimmedSubTitle = sd.title.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmedSubTitle.isEmpty {
-                        let trimmedSubLogic = sd.logic.trimmingCharacters(in: .whitespacesAndNewlines)
-                        let subDriver = Driver(
-                            title: trimmedSubTitle,
-                            driverDescription: sd.description.isEmpty ? nil : sd.description,
-                            logic: trimmedSubLogic.isEmpty ? nil : trimmedSubLogic,
-                            position: subIndex,
-                            parentDriver: driver
-                        )
-                        subDriver.researchQuestion = rq
-                    }
+        // Save drivers and sub-drivers using the grouped structure
+        // This ensures drivers marked with isSubDriver: true are properly saved with parent relationships
+        for (index, item) in driversWithGroupedSubDrivers.enumerated() {
+            let trimmedTitle = item.driver.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedLogic = item.driver.logic.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            let driver = Driver(
+                title: trimmedTitle,
+                driverDescription: item.driver.description.isEmpty ? nil : item.driver.description,
+                logic: trimmedLogic.isEmpty ? nil : trimmedLogic,
+                position: index
+            )
+            driver.researchQuestion = rq
+            
+            // Save all subdrivers (both from subDrivers array and isSubDriver flag)
+            for (subIndex, sd) in item.subDrivers.enumerated() {
+                let trimmedSubTitle = sd.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedSubTitle.isEmpty {
+                    let trimmedSubLogic = sd.logic.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let subDriver = Driver(
+                        title: trimmedSubTitle,
+                        driverDescription: sd.description.isEmpty ? nil : sd.description,
+                        logic: trimmedSubLogic.isEmpty ? nil : trimmedSubLogic,
+                        position: subIndex,
+                        parentDriver: driver
+                    )
+                    subDriver.researchQuestion = rq
                 }
             }
         }

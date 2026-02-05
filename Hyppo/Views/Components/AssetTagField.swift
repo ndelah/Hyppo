@@ -209,8 +209,8 @@ struct AssetTagField: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color.blue.opacity(0.15))
-        .foregroundStyle(Color.blue)
+        .background(Color.assetBackgroundColor)
+        .foregroundStyle(Color.assetColor)
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
     
@@ -259,14 +259,14 @@ struct AssetTagField: View {
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "plus.circle.fill")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.assetColor)
                         
                         Text("Create")
                             .foregroundStyle(.primary)
                         
                         Text(searchText.uppercased())
                             .fontWeight(.semibold)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.assetColor)
                         
                         Spacer()
                         
@@ -336,7 +336,7 @@ struct AssetTagField: View {
             }
         }
         .padding(12)
-        .background(Color.blue.opacity(0.05))
+        .background(Color.assetColor.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     

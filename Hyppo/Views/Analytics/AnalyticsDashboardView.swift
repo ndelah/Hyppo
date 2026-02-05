@@ -81,6 +81,7 @@ struct AnalyticsDashboardView: View {
             contentView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .navigationTitle("")
         .onAppear(perform: loadAlertCount)
     }
     

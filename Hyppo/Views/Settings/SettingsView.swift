@@ -42,6 +42,7 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .navigationTitle("")
         .frame(minWidth: 500, minHeight: 400)
         .background(Color(nsColor: .underPageBackgroundColor))
     }

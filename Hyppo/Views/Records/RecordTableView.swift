@@ -23,6 +23,9 @@ struct RecordTableView: View {
     @Bindable var config: ViewConfiguration
     @Binding var showingColumnSettings: Bool
     
+    /// Binding to expose selected question IDs to parent view
+    @Binding var selectedQuestionIDs: Set<PersistentIdentifier>
+    
     // MARK: - Environment
     
     @Environment(\.modelContext) private var modelContext
@@ -37,7 +40,10 @@ struct RecordTableView: View {
     @State private var showingColumnPopover = false
     @State private var availableWidth: CGFloat = 800
     @State private var currentPage = 0
-    @State private var selectedQuestionIDs: Set<PersistentIdentifier> = []
+    
+    /// Tracks the last clicked question ID for shift-click range selection
+    @State private var lastSelectedQuestionID: PersistentIdentifier?
+    
     private let pageSize = 50
     
     /// Width of the selection checkbox column
@@ -245,14 +251,14 @@ struct RecordTableView: View {
         Button {
             showingColumnPopover = true
         } label: {
-            Image(systemName: "slider.horizontal.3")
+            Image(systemName: "line.3.horizontal.decrease")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 12)
         .padding(.vertical, 14)
-        .help("Edit columns")
+        .help("Column visibility")
         .popover(isPresented: $showingColumnPopover, arrowEdge: .bottom) {
             ColumnVisibilityPopover(config: config)
         }
@@ -290,13 +296,63 @@ struct RecordTableView: View {
         }
     }
     
-    /// Toggles selection of a single question
-    private func toggleSelection(for question: ResearchQuestion) {
-        if selectedQuestionIDs.contains(question.persistentModelID) {
-            selectedQuestionIDs.remove(question.persistentModelID)
+    /**
+     Handles selection of a question, supporting shift-click for range selection.
+     
+     - Parameters:
+       - question: The question being clicked
+       - shiftHeld: Whether the Shift key was held during the click
+     */
+    private func handleSelection(for question: ResearchQuestion, shiftHeld: Bool) {
+        let questionID = question.persistentModelID
+        
+        if shiftHeld, let anchorID = lastSelectedQuestionID {
+            // Shift-click: select range from anchor to clicked question
+            selectRange(from: anchorID, to: questionID)
         } else {
-            selectedQuestionIDs.insert(question.persistentModelID)
+            // Regular click: toggle single selection and set new anchor
+            if selectedQuestionIDs.contains(questionID) {
+                selectedQuestionIDs.remove(questionID)
+                // Clear anchor when deselecting
+                if lastSelectedQuestionID == questionID {
+                    lastSelectedQuestionID = nil
+                }
+            } else {
+                selectedQuestionIDs.insert(questionID)
+                lastSelectedQuestionID = questionID
+            }
         }
+    }
+    
+    /**
+     Selects all questions in the range between two questions (inclusive).
+     Uses the current sorted order of questions on the page.
+     
+     - Parameters:
+       - fromID: The anchor question's persistent ID
+       - toID: The target question's persistent ID
+     */
+    private func selectRange(from fromID: PersistentIdentifier, to toID: PersistentIdentifier) {
+        // Find indices in the sorted (paged) questions list
+        guard let fromIndex = pagedQuestions.firstIndex(where: { $0.persistentModelID == fromID }),
+              let toIndex = pagedQuestions.firstIndex(where: { $0.persistentModelID == toID }) else {
+            // Fallback: if anchor is on different page, just select the clicked item
+            selectedQuestionIDs.insert(toID)
+            lastSelectedQuestionID = toID
+            return
+        }
+        
+        // Determine the range (works regardless of which direction the shift-click goes)
+        let rangeStart = min(fromIndex, toIndex)
+        let rangeEnd = max(fromIndex, toIndex)
+        
+        // Select all questions in the range
+        for index in rangeStart...rangeEnd {
+            selectedQuestionIDs.insert(pagedQuestions[index].persistentModelID)
+        }
+        
+        // Update anchor to the most recently clicked item
+        lastSelectedQuestionID = toID
     }
     
     /// Whether multiple questions are currently selected (enables bulk edit mode)
@@ -325,8 +381,8 @@ struct RecordTableView: View {
                             isSelected: isChecked,
                             isChecked: isChecked,
                             checkboxColumnWidth: checkboxColumnWidth,
-                            onToggleSelection: {
-                                toggleSelection(for: question)
+                            onToggleSelection: { shiftHeld in
+                                handleSelection(for: question, shiftHeld: shiftHeld)
                             },
                             onQuestionTap: {
                                 navigationPath.append(question)
@@ -709,6 +765,107 @@ private struct ColumnVisibilityPopover: View {
     }
 }
 
+// MARK: - Row Actions Popover
+
+/// Popover for actions on selected rows (duplicate, delete)
+struct RowActionsPopover: View {
+    let selectedCount: Int
+    let onDuplicate: () -> Void
+    let onDelete: () -> Void
+    
+    @State private var showingDeleteConfirmation = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header with selection count
+            HStack {
+                Image(systemName: "checklist")
+                    .foregroundStyle(.blue)
+                Text("Row Actions")
+                    .font(.headline)
+                Spacer()
+                Text("\(selectedCount) selected")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.blue.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            
+            Divider()
+            
+            VStack(spacing: 0) {
+                // Duplicate button
+                Button {
+                    onDuplicate()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.blue)
+                            .frame(width: 20)
+                        
+                        Text("Duplicate")
+                            .font(.system(size: 13))
+                        
+                        Spacer()
+                        
+                        Text("\(selectedCount)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                
+                Divider()
+                    .padding(.leading, 44)
+                
+                // Delete button
+                Button {
+                    showingDeleteConfirmation = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.red)
+                            .frame(width: 20)
+                        
+                        Text("Delete")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.red)
+                        
+                        Spacer()
+                        
+                        Text("\(selectedCount)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.vertical, 4)
+        }
+        .frame(width: 200)
+        .alert("Delete \(selectedCount) Question\(selectedCount == 1 ? "" : "s")?", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                onDelete()
+            }
+        } message: {
+            Text("This action cannot be undone.")
+        }
+    }
+}
+
 // MARK: - Bulk Edit Popovers
 
 /// Bulk asset picker popover for changing asset on multiple questions
@@ -794,7 +951,7 @@ private struct BulkAssetPickerPopover: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(asset.ticker)
                                         .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(.cyan)
+                                        .foregroundStyle(Color.assetColor)
                                     Text(asset.name)
                                         .font(.system(size: 11))
                                         .foregroundStyle(.secondary)
@@ -996,7 +1153,8 @@ private struct BulkConfidencePickerPopover: View {
         questions: [question1, question2],
         navigationPath: .constant(NavigationPath()),
         config: ViewConfiguration.shared,
-        showingColumnSettings: .constant(false)
+        showingColumnSettings: .constant(false),
+        selectedQuestionIDs: .constant([])
     )
     .frame(width: 800, height: 400)
 }

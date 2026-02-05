@@ -38,7 +38,9 @@ struct RecordListView: View {
     @State private var showingColumnSettings = false
     @State private var showingAddQuestion = false
     @State private var showingSearchPopover = false
+    @State private var showingRowActionsPopover = false
     @State private var currentPage = 0
+    @State private var selectedQuestionIDs: Set<PersistentIdentifier> = []
     private let pageSize = 25
     
     // MARK: - Computed Properties
@@ -256,16 +258,25 @@ struct RecordListView: View {
             Text("Research Questions")
                 .font(.headline)
             
-            // Gear icon for settings
+            // Gear icon for row actions (only in table view when rows are selected)
             if config.viewMode == .table {
                 Button {
-                    showingColumnSettings = true
+                    showingRowActionsPopover = true
                 } label: {
                     Image(systemName: "gearshape")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(selectedQuestionIDs.isEmpty ? .tertiary : .secondary)
                 }
                 .buttonStyle(.plain)
+                .disabled(selectedQuestionIDs.isEmpty)
+                .help(selectedQuestionIDs.isEmpty ? "Select rows to enable actions" : "Actions for selected rows")
+                .popover(isPresented: $showingRowActionsPopover, arrowEdge: .bottom) {
+                    RowActionsPopover(
+                        selectedCount: selectedQuestionIDs.count,
+                        onDuplicate: duplicateSelectedQuestions,
+                        onDelete: deleteSelectedQuestions
+                    )
+                }
             }
             
             Spacer()
@@ -436,6 +447,47 @@ struct RecordListView: View {
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
     
+    // MARK: - Row Actions
+    
+    /// Selected questions from the full list
+    private var selectedQuestions: [ResearchQuestion] {
+        allQuestions.filter { selectedQuestionIDs.contains($0.persistentModelID) }
+    }
+    
+    /**
+     Duplicates all selected questions.
+     Creates copies with " (Copy)" appended to the question text.
+     */
+    private func duplicateSelectedQuestions() {
+        for question in selectedQuestions {
+            let duplicate = ResearchQuestion(
+                questionText: question.questionText + " (Copy)",
+                context: question.context,
+                confidence: question.confidenceCurrent
+            )
+            duplicate.asset = question.asset
+            duplicate.status = question.status
+            duplicate.tags = question.tags
+            
+            modelContext.insert(duplicate)
+        }
+        
+        showingRowActionsPopover = false
+        selectedQuestionIDs.removeAll()
+    }
+    
+    /**
+     Deletes all selected questions from the model context.
+     */
+    private func deleteSelectedQuestions() {
+        for question in selectedQuestions {
+            modelContext.delete(question)
+        }
+        
+        showingRowActionsPopover = false
+        selectedQuestionIDs.removeAll()
+    }
+    
     // MARK: - Filter Removal
     
     private func removeFilter(_ tag: RecordFilterTag) {
@@ -461,7 +513,8 @@ struct RecordListView: View {
                 questions: pagedQuestions,
                 navigationPath: $navigationPath,
                 config: config,
-                showingColumnSettings: $showingColumnSettings
+                showingColumnSettings: $showingColumnSettings,
+                selectedQuestionIDs: $selectedQuestionIDs
             )
             
         case .kanban:

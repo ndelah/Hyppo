@@ -27,8 +27,8 @@ struct RecordRowView: View {
     /// Width of the checkbox column (should match header)
     var checkboxColumnWidth: CGFloat = 40
     
-    /// Callback when the checkbox is toggled
-    var onToggleSelection: (() -> Void)?
+    /// Callback when the checkbox is toggled. The Bool indicates if Shift was held.
+    var onToggleSelection: ((Bool) -> Void)?
     
     /// Callback when the question title is clicked (navigate to detail)
     var onQuestionTap: (() -> Void)?
@@ -80,7 +80,9 @@ struct RecordRowView: View {
             // Selection checkbox
             if let onToggle = onToggleSelection {
                 Button {
-                    onToggle()
+                    // Detect if Shift is held for range selection
+                    let shiftHeld = NSEvent.modifierFlags.contains(.shift)
+                    onToggle(shiftHeld)
                 } label: {
                     Image(systemName: isChecked ? "checkmark.square.fill" : "square")
                         .font(.system(size: 16))
@@ -190,7 +192,7 @@ struct RecordRowView: View {
                 if let asset = question.asset {
                     Text(asset.ticker)
                         .font(.system(size: 14 * textSizeMultiplier, weight: .semibold))
-                        .foregroundStyle(.cyan)
+                        .foregroundStyle(Color.assetColor)
                 } else {
                     Text("—")
                         .font(.system(size: 14 * textSizeMultiplier))
@@ -463,7 +465,7 @@ private struct AssetPickerPopover: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(asset.ticker)
                                         .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(.cyan)
+                                        .foregroundStyle(Color.assetColor)
                                     Text(asset.name)
                                         .font(.system(size: 11))
                                         .foregroundStyle(.secondary)

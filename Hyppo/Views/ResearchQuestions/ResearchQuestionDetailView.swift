@@ -266,7 +266,7 @@ struct ResearchQuestionDetailView: View {
                 DescriptionSection(
                     title: "Key Assumptions",
                     iconName: "target",
-                    itemCount: researchQuestion.drivers?.count
+                    itemCount: researchQuestion.topLevelDrivers.count
                 ) {
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(researchQuestion.topLevelDrivers) { driver in
@@ -388,7 +388,7 @@ struct ResearchQuestionDetailView: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
-                    .background(Color.cyan)
+                    .background(Color.assetColor)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
                 
@@ -977,6 +977,19 @@ private struct CompactDriverRow: View {
                         .frame(width: 14)
                 }
                 
+                // Driver type pill
+                HStack(spacing: 4) {
+                    Image(systemName: "number")
+                        .font(.caption2)
+                    Text("Driver")
+                        .font(.caption)
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.orange.opacity(0.12))
+                .foregroundStyle(.orange)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                
                 // Status indicator
                 Image(systemName: statusIconName)
                     .font(.subheadline)
@@ -1083,6 +1096,19 @@ private struct CompactSubDriverRow: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                 
+                // Sub-driver type pill
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.turn.down.right")
+                        .font(.caption2)
+                    Text("Sub")
+                        .font(.caption)
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.indigo.opacity(0.12))
+                .foregroundStyle(.indigo)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                
                 // Status indicator
                 Image(systemName: statusIconName)
                     .font(.caption)
@@ -1148,6 +1174,19 @@ private struct DriverDescriptionCard: View {
         VStack(alignment: .leading, spacing: 10) {
             // Driver header with status
             HStack(alignment: .top, spacing: 10) {
+                // Driver type pill
+                HStack(spacing: 4) {
+                    Image(systemName: "number")
+                        .font(.caption2)
+                    Text("Driver")
+                        .font(.caption)
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.orange.opacity(0.12))
+                .foregroundStyle(.orange)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                
                 // Status indicator
                 Image(systemName: driver.status.iconName)
                     .font(.body)
@@ -1240,6 +1279,19 @@ private struct SubDriverRow: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                 
+                // Sub-driver type pill
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.turn.down.right")
+                        .font(.caption2)
+                    Text("Sub")
+                        .font(.caption)
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.indigo.opacity(0.12))
+                .foregroundStyle(.indigo)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                
                 Image(systemName: driver.status.iconName)
                     .font(.caption)
                     .foregroundStyle(statusColor)
@@ -1290,6 +1342,26 @@ private struct DriverStatusRow: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
+            // Arrow for subdrivers
+            if isSubDriver {
+                Text("→")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            
+            // Driver/Sub-driver type pill
+            HStack(spacing: 4) {
+                Image(systemName: isSubDriver ? "arrow.turn.down.right" : "number")
+                    .font(.caption2)
+                Text(isSubDriver ? "Sub" : "Driver")
+                    .font(.caption)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(isSubDriver ? Color.indigo.opacity(0.12) : Color.orange.opacity(0.12))
+            .foregroundStyle(isSubDriver ? .indigo : .orange)
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+            
             // Status indicator icon
             Image(systemName: driver.status.iconName)
                 .font(.caption)
@@ -1297,18 +1369,11 @@ private struct DriverStatusRow: View {
                 .frame(width: 16)
             
             VStack(alignment: .leading, spacing: 2) {
-                // Driver title with sub-driver indicator
-                HStack(spacing: 4) {
-                    if isSubDriver {
-                        Text("→")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                    Text(driver.title)
-                        .font(.subheadline)
-                        .strikethrough(driver.status == .discarded, color: .red)
-                        .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
-                }
+                // Driver title
+                Text(driver.title)
+                    .font(.subheadline)
+                    .strikethrough(driver.status == .discarded, color: .red)
+                    .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
                 
                 // Status label (only show for non-pending)
                 if driver.status != .pending {
