@@ -118,11 +118,14 @@ Hyppo
 │   └── project.pbxproj
 └── docs
     ├── QuickCapture_Wireframe.md
+    ├── README.md
     ├── investor_research_workflow_validation.md
     ├── output.md
     ├── project_scope.md              # Primary spec: McKinsey Mind 5-step workflow
     ├── roadmap.md                    # Feature tracking with status
     ├── structure.md                  # This file
+    ├── user_journey_checklist.md
+    ├── user_journey_smoke_test.md
     ├── user_testing.md
     └── reference
         ├── competition_analysis.md

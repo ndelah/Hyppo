@@ -3,6 +3,8 @@
 build/
 DerivedData/
 **/DerivedData/
+.derivedData/
+**/.derivedData/
 
 # User-specific Xcode files
 xcuserdata/

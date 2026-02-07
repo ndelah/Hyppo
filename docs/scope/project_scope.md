@@ -6,6 +6,14 @@ Hyppo is a native macOS application for **hypothesis-driven investment research*
 
 Users track companies (assets), formulate research questions with explicit hypotheses, define **Drivers** (load-bearing assumptions that must be true), specify **Kill Criteria** (falsifiability conditions), and collect evidence linked directly to drivers. The result is a searchable, chronological record of what the user believed, why they believed it, what evidence supported or contradicted their thesis, and how their conviction evolved.
 
+Hyppo is positioned as a **lab notebook for investor conviction**: a logic management tool that captures reasoning and revisions to reduce hindsight bias, confirmation bias, and thesis drift. It is optimized for analytical and behavioral arbitrage, helping users reason better and review decisions with a trustworthy audit trail.
+
+### Strategic positioning and marketing pitch
+- **Logic management over data management:** Hyppo fills the gap between research platforms (document search) and note apps (unstructured text).
+- **Bias-resistant workflow:** Explicit hypotheses, drivers, and kill criteria create falsifiable research, supported by a review loop and revision logs.
+- **Mosaic-friendly capture:** Evidence is linked to drivers with sentiment to surface blind spots and balance, not just store snippets.
+- **Privacy-first by design:** Local-only storage with exports keeps sensitive reasoning fully on-device.
+
 ## 2. Objectives
 - [x] **Fast Capture:** Make research question and evidence capture fast enough for daily use.
 - [x] **Audit Trail:** Preserve a high-integrity audit trail of beliefs, evidence, and revisions (via timestamped Log Entries).
@@ -17,7 +25,9 @@ Users track companies (assets), formulate research questions with explicit hypot
 - [ ] **Premium Path:** Provide a premium upgrade path without bloating core workflows.
 
 ## 3. Target users and Pareto workflow
-Target users are research-driven retail investors and semi-pro analysts who take notes, read filings/news, and revisit decisions.
+Target users are research-driven retail investors and semi-pro/independent analysts who take notes, read filings/news, and revisit decisions. Secondary consumers include analysts at boutique funds or family offices who operate as individual contributors and want a lightweight, local-first research notebook.
+
+Pareto focus: the Setup Loop (hypothesis framing) and Capture Loop (evidence capture) drive most of the value. Capture friction is the primary adoption risk, so quick entry, driver tagging, and review readiness are prioritized.
 
 ### McKinsey Mind Investment Workflow (5 Steps)
 
@@ -327,7 +337,35 @@ To measure the effectiveness of Hyppo and validate the McKinsey Mind workflow:
 - **Copyright:** Store links and short snippets with attribution.
 - **Premium AI:** Additive and opt-in; never required for core.
 
-## 13. Parking Lot (Explicitly Deferred)
+## 13. Reference ideas (Not yet built)
+Ideas from early exploratory specs to consider for future iterations.
+
+### Setup loop ideas
+- Thesis document container with markdown, metadata, and history.
+- Scenario matrix for Bull/Base/Bear targets with probabilities and narratives.
+- Critical question builder with draft-only editing and stable IDs.
+- Conviction slider (0-100) stored with timestamps per thesis version.
+- Version commit/lock to freeze thesis snapshots.
+
+### Capture loop ideas
+- Evidence context linker that detects URLs and fetches metadata.
+- Question bucketing to tag evidence to active critical questions.
+- Three-state sentiment toggle (bearish, neutral, bullish) for fast tagging.
+- Email forwarding address per thesis for low-friction capture.
+- On-device NLP suggestions for scenario assignment and sentiment.
+
+### Update loop ideas
+- Split-screen workbench (thesis editor vs. evidence feed).
+- Semantic diff highlighting for thesis revisions.
+- Drift guardrail prompt when evidence shifts materially.
+- Re-commit workflow that requires a reason for updates.
+
+### Audit loop ideas
+- Conviction vs. price plot with cached market data.
+- Decision node expansion to inspect historical thesis snapshots.
+- Outcome categorization (process vs. outcome matrix).
+
+## 14. Parking Lot (Explicitly Deferred)
 - Logic tree visualization (external tools can be used).
 - Stock-specific news dashboard/feed (auto-ingested) tied to tracked theses.
 - Continuous automated internet "scouring" / research collector.
@@ -339,7 +377,7 @@ To measure the effectiveness of Hyppo and validate the McKinsey Mind workflow:
 - Multi-user teams/workspaces.
 - Multiple tickers per research question (many-to-many) — future enhancement.
 
-## 14. Next Steps
+## 15. Next Steps
 
 ### ✅ Completed (MVP 2.5 Views)
 1. **Driver Outline Editor** — Inline editing with drag-drop, move up/down, expand/collapse, research plan details.
