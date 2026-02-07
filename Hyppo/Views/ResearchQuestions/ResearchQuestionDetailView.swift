@@ -20,6 +20,54 @@ enum ResearchDetailTab: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+/// Timeline filter mode for showing narrative events vs all entries
+enum TimelineFilter: String, CaseIterable, Identifiable {
+    case narrative = "Narrative"  // Reviews + decisions only
+    case all = "All"              // Everything
+    
+    var id: String { rawValue }
+    
+    var displayName: String { rawValue }
+}
+
+/// Protocol for items that can appear in the timeline
+protocol TimelineItem {
+    var timelineDate: Date { get }
+    var timelineId: UUID { get }
+}
+
+/// Wrapper to make LogEntry conform to TimelineItem
+extension LogEntry: TimelineItem {
+    var timelineDate: Date { occurredAt }
+    var timelineId: UUID { logEntryId }
+}
+
+/// Wrapper to make Decision conform to TimelineItem
+extension Decision: TimelineItem {
+    var timelineDate: Date { decidedAt }
+    var timelineId: UUID { decisionId }
+}
+
+/// Type-erased wrapper for timeline items
+enum AnyTimelineItem: Identifiable {
+    case logEntry(LogEntry)
+    case decision(Decision)
+    
+    var id: UUID {
+        switch self {
+        case .logEntry(let entry): return entry.logEntryId
+        case .decision(let decision): return decision.decisionId
+        }
+    }
+    
+    var timelineDate: Date {
+        switch self {
+        case .logEntry(let entry): return entry.occurredAt
+        case .decision(let decision): return decision.decidedAt
+        }
+    }
+}
+
 /// Detail view for a selected research question showing all content and timeline
 struct ResearchQuestionDetailView: View {
     // MARK: - Environment
@@ -69,6 +117,9 @@ struct ResearchQuestionDetailView: View {
     @State private var showingDecisionForm = false
     @State private var showingOutcomeForm = false
     @State private var selectedDecision: Decision?
+    
+    // Timeline filter state
+    @State private var timelineFilter: TimelineFilter = .all
     
     // MARK: - Body
     
@@ -570,9 +621,13 @@ struct ResearchQuestionDetailView: View {
         }
     }
     
-    /// Health tab content - shows conviction health dashboard
+    /// Health tab content - shows conviction health dashboard and confidence chart
     private var healthTabContent: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // Confidence over time chart
+            ConfidenceChartView(researchQuestion: researchQuestion)
+            
+            // Conviction health dashboard
             if !(researchQuestion.drivers?.isEmpty ?? true) {
                 ConvictionHealthView(drivers: researchQuestion.drivers ?? [])
             } else {
@@ -832,6 +887,50 @@ struct ResearchQuestionDetailView: View {
         return entries
     }
     
+    /// Timeline items (log entries and decisions) filtered and sorted by date
+    private var timelineItems: [AnyTimelineItem] {
+        var items: [AnyTimelineItem] = []
+        
+        if timelineFilter == .narrative {
+            // Narrative mode: only reviews, decisions, and key system logs
+            
+            // Add review log entries
+            let reviewLogs = filteredLogEntries.filter { $0.entryType == .review }
+            items.append(contentsOf: reviewLogs.map { AnyTimelineItem.logEntry($0) })
+            
+            // Add status change logs (system-generated with "Status:" in title)
+            let statusLogs = filteredLogEntries.filter { 
+                $0.isSystemGenerated && $0.title.contains("Status:")
+            }
+            items.append(contentsOf: statusLogs.map { AnyTimelineItem.logEntry($0) })
+            
+            // Add confidence change logs (system-generated with "Confidence:" in title)
+            let confidenceLogs = filteredLogEntries.filter { 
+                $0.isSystemGenerated && $0.title.contains("Confidence:")
+            }
+            items.append(contentsOf: confidenceLogs.map { AnyTimelineItem.logEntry($0) })
+            
+            // Add decisions
+            let decisions = researchQuestion.sortedDecisions
+            items.append(contentsOf: decisions.map { AnyTimelineItem.decision($0) })
+        } else {
+            // All mode: all log entries
+            items.append(contentsOf: filteredLogEntries.map { AnyTimelineItem.logEntry($0) })
+            
+            // Also include decisions in all mode
+            let decisions = researchQuestion.sortedDecisions
+            items.append(contentsOf: decisions.map { AnyTimelineItem.decision($0) })
+        }
+        
+        // Sort by date (most recent first)
+        return items.sorted { $0.timelineDate > $1.timelineDate }
+    }
+    
+    /// Count of items in the filtered timeline
+    private var timelineItemsCount: Int {
+        timelineItems.count
+    }
+    
     private var timelineSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Timeline header with slightly different coloring
@@ -840,17 +939,30 @@ struct ResearchQuestionDetailView: View {
                     .font(.headline)
                 
                 // Show count with filter indicator
-                Text("(\(filteredLogEntries.count))")
+                Text("(\(timelineItemsCount))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
-                if !showSystemLogs && researchQuestion.sortedLogEntries.count != filteredLogEntries.count {
+                if timelineFilter == .narrative {
+                    Text("• narrative")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                } else if !showSystemLogs && researchQuestion.sortedLogEntries.count != filteredLogEntries.count {
                     Text("• filtered")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
                 
                 Spacer()
+                
+                // Timeline filter toggle
+                Picker("Filter", selection: $timelineFilter) {
+                    ForEach(TimelineFilter.allCases) { filter in
+                        Text(filter.displayName).tag(filter)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 150)
                 
                 // Density indicator
                 Menu {
@@ -886,29 +998,41 @@ struct ResearchQuestionDetailView: View {
             .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
             .clipShape(RoundedRectangle(cornerRadius: 8))
             
-            if filteredLogEntries.isEmpty {
+            if timelineItems.isEmpty {
                 EmptyStateView(
                     iconName: "note.text",
-                    title: researchQuestion.sortedLogEntries.isEmpty ? "No Log Entries" : "No Visible Entries",
-                    description: researchQuestion.sortedLogEntries.isEmpty
-                        ? "Start documenting your research by adding log entries."
-                        : "System-generated logs are hidden. Enable them in Settings.",
-                    actionTitle: "Add Log Entry"
+                    title: timelineFilter == .narrative ? "No Narrative Events" : (researchQuestion.sortedLogEntries.isEmpty ? "No Log Entries" : "No Visible Entries"),
+                    description: timelineFilter == .narrative
+                        ? "Narrative mode shows reviews and decisions. Switch to 'All' to see all log entries."
+                        : (researchQuestion.sortedLogEntries.isEmpty
+                            ? "Start documenting your research by adding log entries."
+                            : "System-generated logs are hidden. Enable them in Settings."),
+                    actionTitle: timelineFilter == .narrative ? nil : "Add Log Entry"
                 ) {
-                    showingAddLogEntry = true
+                    if timelineFilter != .narrative {
+                        showingAddLogEntry = true
+                    }
                 }
                 .frame(height: 200)
             } else {
                 LazyVStack(spacing: displayDensity == .compact ? 8 : 12) {
-                    ForEach(filteredLogEntries) { logEntry in
-                        LogEntryCard(logEntry: logEntry, density: displayDensity) {
-                            logEntryForEvidence = logEntry
-                        }
-                        .onTapGesture {
-                            selectedLogEntry = logEntry
-                        }
-                        .contextMenu {
-                            logEntryContextMenu(for: logEntry)
+                    ForEach(timelineItems) { item in
+                        switch item {
+                        case .logEntry(let logEntry):
+                            LogEntryCard(logEntry: logEntry, density: displayDensity) {
+                                logEntryForEvidence = logEntry
+                            }
+                            .onTapGesture {
+                                selectedLogEntry = logEntry
+                            }
+                            .contextMenu {
+                                logEntryContextMenu(for: logEntry)
+                            }
+                            
+                        case .decision(let decision):
+                            DecisionTimelineCard(decision: decision, density: displayDensity) {
+                                selectedDecision = decision
+                            }
                         }
                     }
                 }
@@ -1812,6 +1936,126 @@ struct LogEntryCard: View {
             return .blue
         }
         return tagColor.color
+    }
+}
+
+// MARK: - Decision Timeline Card
+
+/// Card view for displaying a decision in the timeline
+struct DecisionTimelineCard: View {
+    let decision: Decision
+    var density: DisplayDensity = .comfortable
+    let onTap: () -> Void
+    
+    private var actionColor: Color {
+        Color(decision.actionType.colorName)
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: density == .compact ? 4 : 8) {
+            // Header row
+            HStack {
+                // Action icon
+                Image(systemName: decision.actionType.iconName)
+                    .foregroundStyle(actionColor)
+                    .font(density == .compact ? .caption : .body)
+                
+                Text(decision.actionType.displayName)
+                    .font(density == .compact ? .subheadline : .headline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(actionColor)
+                
+                // Compact: show action badge inline
+                if density == .compact {
+                    Text("Decision")
+                        .font(.caption2)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(actionColor.opacity(0.15))
+                        .foregroundStyle(actionColor)
+                        .clipShape(Capsule())
+                }
+                
+                Spacer()
+                
+                // Date
+                Text(decision.decidedAt.formatted(date: .abbreviated, time: density == .compact ? .omitted : .shortened))
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            
+            // Rationale preview
+            Text(rationalePreview)
+                .font(density == .compact ? .caption : .subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(density.bodyPreviewLines)
+            
+            // Metadata row (hide in compact mode)
+            if density.showMetadataRow {
+                HStack(spacing: 12) {
+                    // Action type badge (not in compact, shown in header)
+                    if density != .compact {
+                        Text("Decision")
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(actionColor.opacity(0.15))
+                            .foregroundStyle(actionColor)
+                            .clipShape(Capsule())
+                    }
+                    
+                    // Confidence at decision
+                    if let confidence = decision.confidenceLevel {
+                        Label(confidence.shortLabel, systemImage: "star.fill")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    // Price
+                    if let price = decision.priceAtDecision, !price.isEmpty {
+                        Label(price, systemImage: "dollarsign.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    // Expectations indicator
+                    if decision.hasExpectations {
+                        Label("Expectations", systemImage: "target")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    // Exit plan indicator
+                    if decision.hasExitPlan {
+                        Label("Exit Plan", systemImage: "door.left.hand.open")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Spacer()
+                }
+            }
+        }
+        .padding(density == .compact ? 10 : 16)
+        .background(actionColor.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: density == .compact ? 8 : 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: density == .compact ? 8 : 10)
+                .stroke(actionColor.opacity(0.3), lineWidth: 1.5)
+        )
+        .onTapGesture {
+            onTap()
+        }
+    }
+    
+    /// Rationale preview text with density-appropriate truncation
+    private var rationalePreview: String {
+        let text = decision.rationale
+        let maxLength = density == .compact ? 80 : (density == .comfortable ? 150 : 300)
+        if text.count <= maxLength {
+            return text
+        }
+        return String(text.prefix(maxLength)) + "..."
     }
 }
 
