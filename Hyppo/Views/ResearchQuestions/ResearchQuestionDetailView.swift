@@ -1768,6 +1768,16 @@ struct LogEntryCard: View {
                     .foregroundStyle(typeColor)
                     .font(density == .compact ? .caption : .body)
                 
+                // Type pill (directly after icon)
+                Text(logEntry.entryType.displayName)
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(typeColor.opacity(0.15))
+                    .foregroundStyle(typeColor)
+                    .clipShape(Capsule())
+                
                 Text(logEntry.title)
                     .font(density == .compact ? .subheadline : .headline)
                     .lineLimit(1)
@@ -1778,20 +1788,16 @@ struct LogEntryCard: View {
                         .foregroundStyle(.orange)
                 }
                 
-                // Compact: show type badge inline
-                if density == .compact {
-                    Text(logEntry.entryType.displayName)
-                        .font(.caption2)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(typeColor.opacity(0.15))
-                        .foregroundStyle(typeColor)
-                        .clipShape(Capsule())
-                }
-                
                 // Show sentiment badge if linked to driver
                 if let sentiment = logEntry.sentiment {
                     sentimentBadge(sentiment)
+                }
+                
+                // Link indicator if log entry has source URL
+                if let sourceUrl = logEntry.sourceUrl, !sourceUrl.isEmpty {
+                    Image(systemName: "link")
+                        .font(.caption2)
+                        .foregroundStyle(.blue)
                 }
                 
                 Spacer()
@@ -1802,8 +1808,8 @@ struct LogEntryCard: View {
                     .foregroundStyle(.tertiary)
             }
             
-            // Driver linkage indicator (show in non-compact mode)
-            if density != .compact, let driver = logEntry.driver {
+            // Driver linkage indicator
+            if let driver = logEntry.driver {
                 HStack(spacing: 4) {
                     Image(systemName: "target")
                         .font(.caption2)
@@ -1823,23 +1829,28 @@ struct LogEntryCard: View {
                     .lineLimit(density.bodyPreviewLines)
             }
             
+            // Evidence section - show evidence items in timeline
+            if !logEntry.sortedEvidence.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(logEntry.sortedEvidence.prefix(density == .compact ? 1 : 3)) { evidence in
+                        EvidenceTimelineRow(evidence: evidence, density: density)
+                    }
+                    if logEntry.evidenceCount > (density == .compact ? 1 : 3) {
+                        Text("+\(logEntry.evidenceCount - (density == .compact ? 1 : 3)) more")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .italic()
+                    }
+                }
+                .padding(.top, 4)
+            }
+            
             // Metadata row (hide in compact mode)
             if density.showMetadataRow {
                 HStack(spacing: 12) {
-                    // Entry type badge (not in compact, shown in header)
-                    if density != .compact {
-                        Text(logEntry.entryType.displayName)
-                            .font(.caption2)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(typeColor.opacity(0.15))
-                            .foregroundStyle(typeColor)
-                            .clipShape(Capsule())
-                    }
-                    
-                    // Evidence count
-                    if logEntry.evidenceCount > 0 {
-                        Label("\(logEntry.evidenceCount)", systemImage: "link")
+                    // Evidence count (if not shown above)
+                    if logEntry.evidenceCount > (density == .compact ? 1 : 3) {
+                        Label("\(logEntry.evidenceCount) evidence", systemImage: "link")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -1886,7 +1897,7 @@ struct LogEntryCard: View {
         .clipShape(RoundedRectangle(cornerRadius: density == .compact ? 8 : 10))
         .overlay(
             RoundedRectangle(cornerRadius: density == .compact ? 8 : 10)
-                .stroke(logEntry.driver != nil ? Color.blue.opacity(0.3) : Color(nsColor: .separatorColor).opacity(0.5), lineWidth: 1)
+                .stroke(logEntry.driver != nil ? Color.blue.opacity(0.3) : Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
         )
     }
     
@@ -1948,7 +1959,7 @@ struct DecisionTimelineCard: View {
     let onTap: () -> Void
     
     private var actionColor: Color {
-        Color(decision.actionType.colorName)
+        Color.fromName(decision.actionType.colorName)
     }
     
     var body: some View {
@@ -1960,21 +1971,20 @@ struct DecisionTimelineCard: View {
                     .foregroundStyle(actionColor)
                     .font(density == .compact ? .caption : .body)
                 
+                // Decision pill (directly after icon)
+                Text("Decision")
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(actionColor.opacity(0.15))
+                    .foregroundStyle(actionColor)
+                    .clipShape(Capsule())
+                
                 Text(decision.actionType.displayName)
                     .font(density == .compact ? .subheadline : .headline)
                     .fontWeight(.semibold)
                     .foregroundStyle(actionColor)
-                
-                // Compact: show action badge inline
-                if density == .compact {
-                    Text("Decision")
-                        .font(.caption2)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(actionColor.opacity(0.15))
-                        .foregroundStyle(actionColor)
-                        .clipShape(Capsule())
-                }
                 
                 Spacer()
                 
@@ -1993,17 +2003,6 @@ struct DecisionTimelineCard: View {
             // Metadata row (hide in compact mode)
             if density.showMetadataRow {
                 HStack(spacing: 12) {
-                    // Action type badge (not in compact, shown in header)
-                    if density != .compact {
-                        Text("Decision")
-                            .font(.caption2)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(actionColor.opacity(0.15))
-                            .foregroundStyle(actionColor)
-                            .clipShape(Capsule())
-                    }
-                    
                     // Confidence at decision
                     if let confidence = decision.confidenceLevel {
                         Label(confidence.shortLabel, systemImage: "star.fill")
@@ -2037,11 +2036,11 @@ struct DecisionTimelineCard: View {
             }
         }
         .padding(density == .compact ? 10 : 16)
-        .background(actionColor.opacity(0.05))
+        .background(actionColor.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: density == .compact ? 8 : 10))
         .overlay(
             RoundedRectangle(cornerRadius: density == .compact ? 8 : 10)
-                .stroke(actionColor.opacity(0.3), lineWidth: 1.5)
+                .stroke(actionColor.opacity(0.25), lineWidth: 1)
         )
         .onTapGesture {
             onTap()
@@ -2078,18 +2077,21 @@ struct LogEntryDetailSheet: View {
                     // Header
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Image(systemName: logEntry.entryType.iconName)
-                                .foregroundStyle(typeColor)
-                            Text(logEntry.entryType.displayName)
-                                .font(.caption)
+                            Image(systemName: "note.text")
                                 .foregroundStyle(.secondary)
-                            
-                            Spacer()
                             
                             // Show sentiment badge if linked to driver
                             if let sentiment = logEntry.sentiment {
                                 sentimentBadge(sentiment)
                             }
+                            
+                            // Link indicator if has source URL
+                            if let sourceUrl = logEntry.sourceUrl, !sourceUrl.isEmpty {
+                                Image(systemName: "link")
+                                    .foregroundStyle(.blue)
+                            }
+                            
+                            Spacer()
                         }
                         
                         Text(logEntry.title)
@@ -2189,16 +2191,6 @@ struct LogEntryDetailSheet: View {
         }
     }
     
-    private var typeColor: Color {
-        switch logEntry.entryType {
-        case .observation: return .blue
-        case .update: return .purple
-        case .risk: return .red
-        case .catalyst: return .orange
-        case .review: return .green
-        }
-    }
-    
     private func sentimentBadge(_ sentiment: EvidenceSentiment) -> some View {
         HStack(spacing: 4) {
             Image(systemName: sentiment.iconName)
@@ -2218,6 +2210,54 @@ struct LogEntryDetailSheet: View {
         case .contradicting: return .red
         case .neutral: return .gray
         }
+    }
+}
+
+// MARK: - Evidence Timeline Row
+
+/// Compact evidence row for timeline display
+struct EvidenceTimelineRow: View {
+    let evidence: Evidence
+    var density: DisplayDensity = .comfortable
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            // Evidence type icon
+            Image(systemName: evidence.evidenceType.iconName)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .frame(width: 12)
+            
+            // Link icon if has URL
+            if evidence.urlRaw != nil && !evidence.urlRaw!.isEmpty {
+                Image(systemName: "link")
+                    .font(.caption2)
+                    .foregroundStyle(.blue)
+            }
+            
+            // Driver indicator if linked
+            if evidence.driver != nil {
+                Image(systemName: "target")
+                    .font(.caption2)
+                    .foregroundStyle(.blue)
+            }
+            
+            // Title
+            Text(evidence.effectiveTitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(evidence.driver != nil ? Color.blue.opacity(0.05) : Color(nsColor: .windowBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(evidence.driver != nil ? Color.blue.opacity(0.2) : Color.clear, lineWidth: 1)
+        )
     }
 }
 
@@ -2242,6 +2282,22 @@ struct EvidenceRow: View {
                 Spacer()
             }
             
+            // Show linked driver if evidence is linked to a driver
+            if let driver = evidence.driver {
+                HStack(spacing: 4) {
+                    Image(systemName: "target")
+                        .font(.caption2)
+                        .foregroundStyle(.blue)
+                    Text("Linked to:")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(driver.title)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.blue)
+                }
+            }
+            
             if let url = evidence.urlRaw {
                 Text(url)
                     .font(.caption)
@@ -2261,7 +2317,7 @@ struct EvidenceRow: View {
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .overlay(
             RoundedRectangle(cornerRadius: 6)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+                .stroke(evidence.driver != nil ? Color.blue.opacity(0.3) : Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
         )
     }
 }

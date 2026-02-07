@@ -172,7 +172,7 @@ struct ConfidenceChartView: View {
                         )
                         .symbol {
                             Circle()
-                                .fill(Color(marker.actionType.colorName))
+                                .fill(Color.fromName(marker.actionType.colorName))
                                 .frame(width: 10, height: 10)
                                 .overlay(
                                     Circle()
@@ -180,7 +180,7 @@ struct ConfidenceChartView: View {
                                         .frame(width: 10, height: 10)
                                 )
                         }
-                        .foregroundStyle(Color(marker.actionType.colorName))
+                        .foregroundStyle(Color.fromName(marker.actionType.colorName))
                     }
                 }
                 .chartXAxis {
@@ -218,7 +218,7 @@ struct ConfidenceChartView: View {
                         ForEach(Array(Set(decisionMarkers.map { $0.actionType })), id: \.self) { action in
                             HStack(spacing: 4) {
                                 Circle()
-                                    .fill(Color(action.colorName))
+                                    .fill(Color.fromName(action.colorName))
                                     .frame(width: 8, height: 8)
                                 Text(action.displayName)
                                     .font(.caption2)

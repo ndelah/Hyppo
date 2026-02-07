@@ -4,7 +4,7 @@ Generated from `/Users/ndelahou/Documents/Programming/apps/Hyppo`.
 
 Notes:
 - `.git` (and similar metadata/build folders) are intentionally excluded from this view to keep it readable.
-- Last updated: January 2026 (MVP 2.5 McKinsey Mind Framework views complete)
+- Last updated: February 2026 (Odoo-style navigation, Analytics, Decisions & Tasks modules)
 
 ```
 Hyppo
@@ -17,29 +17,48 @@ Hyppo
 │   │   └── Contents.json
 │   ├── Models
 │   │   ├── Asset.swift
-│   │   ├── Driver.swift              # 🆕 McKinsey: Load-bearing assumptions
-│   │   ├── Enums.swift               # Updated: EvidenceSentiment, SourceType
-│   │   ├── Evidence.swift            # Updated: Driver linkage, sentiment
-│   │   ├── KillCriteria.swift        # 🆕 McKinsey: Falsifiability conditions
+│   │   ├── Decision.swift              # 🆕 Decision journal entries
+│   │   ├── Driver.swift                # McKinsey: Load-bearing assumptions
+│   │   ├── Enums.swift                 # EvidenceSentiment, SourceType, etc.
+│   │   ├── Evidence.swift              # Driver linkage, sentiment
 │   │   ├── LogEntry.swift
-│   │   ├── ResearchQuestion.swift    # Updated: Driver/KillCriteria relationships
+│   │   ├── Outcome.swift               # 🆕 Decision outcome tracking
+│   │   ├── ResearchQuestion.swift      # Driver/KillCriteria relationships
+│   │   ├── ResearchTask.swift          # 🆕 Actionable research tasks
 │   │   ├── ReviewReminder.swift
-│   │   └── Tag.swift
+│   │   ├── Tag.swift
+│   │   ├── TaskViewConfiguration.swift # 🆕 Task view display settings
+│   │   └── ViewConfiguration.swift     # 🆕 Generic view configuration
 │   ├── Services
+│   │   ├── AnalyticsService.swift      # 🆕 Portfolio & research analytics
 │   │   ├── ClipboardDetector.swift
 │   │   ├── ExportService.swift
 │   │   ├── NotificationService.swift
-│   │   └── QuickCaptureService.swift # Updated: Driver destination support
+│   │   └── QuickCaptureService.swift   # Driver destination support
 │   ├── Utilities
+│   │   ├── AccessibilityHelper.swift   # 🆕 Accessibility utilities
+│   │   ├── AppColors.swift             # 🆕 Centralized color palette
 │   │   ├── DebugLogger.swift
-│   │   ├── MigrationHelper.swift     # 🆕 Data migration for schema changes
+│   │   ├── MigrationHelper.swift       # Data migration for schema changes
 │   │   └── SwiftDataStoreReset.swift
 │   ├── Views
-│   │   ├── Assets
-│   │   │   ├── AssetDetailView.swift
-│   │   │   └── AssetFormView.swift
+│   │   ├── Analytics                           # 🆕 Full analytics module
+│   │   │   ├── AnalyticsDashboardView.swift    # Top-level analytics dashboard
+│   │   │   ├── DecisionAnalyticsView.swift     # Decision-specific metrics
+│   │   │   ├── DriverAnalyticsView.swift       # Driver coverage analytics
+│   │   │   ├── EvidenceAnalyticsView.swift     # Evidence breakdown analytics
+│   │   │   ├── PortfolioHealthDashboardView.swift # Portfolio-wide health overview
+│   │   │   ├── ReviewAnalyticsView.swift       # Review cadence analytics
+│   │   │   ├── RiskAlertsDashboardView.swift   # Risk & blind-spot alerts
+│   │   │   └── TaskAnalyticsView.swift         # Task completion analytics
 │   │   ├── Components
+│   │   │   ├── AssetTagField.swift             # 🆕 Reusable asset/tag input
 │   │   │   └── EmptyStateView.swift
+│   │   ├── Decisions                           # 🆕 Decision journal module
+│   │   │   ├── DecisionDetailView.swift
+│   │   │   ├── DecisionFormView.swift
+│   │   │   ├── DecisionTimelineView.swift
+│   │   │   └── OutcomeFormView.swift
 │   │   ├── Evidence
 │   │   │   └── EvidenceFormView.swift
 │   │   ├── Export
@@ -47,30 +66,40 @@ Hyppo
 │   │   ├── LogEntries
 │   │   │   └── LogEntryFormView.swift
 │   │   ├── Navigation
-│   │   │   ├── MainNavigationView.swift
-│   │   │   └── SidebarView.swift
+│   │   │   └── OdooStyleNavigationView.swift   # 🆕 Replaced MainNavigationView + SidebarView
 │   │   ├── QuickCapture
 │   │   │   ├── DestinationPicker.swift
 │   │   │   └── QuickCaptureHUD.swift
+│   │   ├── Records                             # 🆕 Generic record display module
+│   │   │   ├── RecordCardGridView.swift
+│   │   │   ├── RecordCardView.swift
+│   │   │   ├── RecordKanbanView.swift
+│   │   │   ├── RecordListView.swift
+│   │   │   ├── RecordRowView.swift
+│   │   │   └── RecordTableView.swift
 │   │   ├── ResearchQuestions
-│   │   │   ├── ConvictionHealthView.swift      # 🆕 McKinsey: Evidence balance dashboard
-│   │   │   ├── DriverOutlineView.swift         # 🆕 McKinsey: Collapsible driver hierarchy
-│   │   │   ├── ResearchPlanTableView.swift     # 🆕 McKinsey: Flat research plan table
+│   │   │   ├── ConfidenceChartView.swift       # 🆕 Confidence over time chart
+│   │   │   ├── ConvictionHealthView.swift      # Evidence balance dashboard
+│   │   │   ├── DriverOutlineView.swift         # Collapsible driver hierarchy
 │   │   │   ├── ResearchQuestionDetailView.swift
 │   │   │   ├── ResearchQuestionFormView.swift
-│   │   │   └── ResearchWizardView.swift        # 🆕 McKinsey: Guided Frame+Design wizard
+│   │   │   ├── ResearchTasksView.swift         # 🆕 Task list for a research question
+│   │   │   └── ResearchWizardView.swift        # Guided Frame+Design wizard
 │   │   ├── Reviews
 │   │   │   ├── ReviewReminderView.swift
 │   │   │   └── ReviewWizardView.swift
-│   │   ├── Scenarios
-│   │   │   └── (empty - scenarios deprecated in favor of drivers)
 │   │   ├── Search
-│   │   │   └── GlobalSearchView.swift
+│   │   │   ├── GlobalSearchView.swift
+│   │   │   └── SearchPopoverView.swift         # 🆕 Popover-based quick search
 │   │   ├── Settings
 │   │   │   └── SettingsView.swift
-│   │   └── Tags
-│   │       └── TagManagementView.swift
-│   ├── ContentView.swift
+│   │   └── Tasks                               # 🆕 Task management module
+│   │       ├── AllTasksListView.swift
+│   │       ├── EditableTaskField.swift
+│   │       ├── MentionPopover.swift
+│   │       ├── QuickAddTaskPopover.swift
+│   │       ├── TaskInputField.swift
+│   │       └── TaskSearchPopoverView.swift
 │   ├── HyppoApp.swift
 │   └── Version.swift
 ├── Hyppo.xcodeproj
@@ -90,6 +119,7 @@ Hyppo
 └── docs
     ├── QuickCapture_Wireframe.md
     ├── investor_research_workflow_validation.md
+    ├── output.md
     ├── project_scope.md              # Primary spec: McKinsey Mind 5-step workflow
     ├── roadmap.md                    # Feature tracking with status
     ├── structure.md                  # This file
@@ -102,19 +132,45 @@ Hyppo
         └── fictional_nvda_research_question.md
 ```
 
-## Key Architecture Changes (MVP 2.5)
+## Key Architecture Changes (since MVP 2.5)
 
 ### New Models
-- **Driver**: 2-level hierarchy of load-bearing assumptions with validation questions, data sources, and thresholds
-- **KillCriteria**: Falsifiability conditions that would invalidate a thesis
+- **Decision**: Decision journal entries with rationale, context, and linked assets
+- **Outcome**: Tracks actual outcomes against prior decisions for post-mortem analysis
+- **ResearchTask**: Actionable tasks tied to research questions/drivers
+- **TaskViewConfiguration / ViewConfiguration**: Persisted display preferences (sort, filter, grouping)
 
-### Updated Models
-- **Evidence**: Now links to Driver (not just ResearchQuestion), includes sentiment and sourceType
-- **ResearchQuestion**: Relationships to Drivers and KillCriteria; deprecated old keyDrivers/invalidationRules arrays
+### New Services
+- **AnalyticsService**: Aggregates portfolio health, evidence coverage, task completion, and risk metrics
 
-### New Views (Complete)
-- **DriverOutlineView**: Collapsible outline editor with drag-and-drop reordering
-- **ResearchWizardView**: 3-step guided wizard (Frame → Design → Review)
-- **ResearchPlanTableView**: Flat tabular view with inline editing
-- **ConvictionHealthView**: Evidence balance dashboard with blind spot alerts
+### New Utilities
+- **AccessibilityHelper**: Centralised accessibility label and trait helpers
+- **AppColors**: Shared color palette used across the app
 
+### New View Modules
+- **Analytics** (8 views): Full analytics dashboard covering decisions, drivers, evidence, portfolio health, reviews, risk alerts, and tasks
+- **Decisions** (4 views): Decision journal with detail, form, timeline, and outcome recording
+- **Records** (6 views): Generic multi-layout record display (list, table, card grid, kanban)
+- **Tasks** (6 views): Task management with quick-add, inline editing, mentions, and search
+
+### Navigation Overhaul
+- **OdooStyleNavigationView** replaces the previous `MainNavigationView` + `SidebarView` with an Odoo-inspired app-bar navigation pattern
+
+### Removed
+- `ContentView.swift` (replaced by `OdooStyleNavigationView`)
+- `Views/Assets/` (asset management folded into Records module)
+- `Views/Scenarios/` (deprecated in favor of Drivers)
+- `Views/Tags/TagManagementView.swift` (tags now managed inline via `AssetTagField`)
+- `Models/KillCriteria.swift` (merged into Driver model)
+- `Views/ResearchQuestions/ResearchPlanTableView.swift` (superseded by Records table view)
+
+### Existing Models — Updated
+- **Driver**: Now incorporates kill-criteria fields directly
+- **ResearchQuestion**: Relationships to ResearchTask; driver/kill-criteria handling streamlined
+- **Evidence**: Unchanged from MVP 2.5
+
+### New Components
+- **AssetTagField**: Reusable tag/asset autocomplete input component
+- **SearchPopoverView**: Lightweight popover for quick global search
+- **ConfidenceChartView**: Conviction confidence plotted over time
+- **ResearchTasksView**: Per-question task checklist

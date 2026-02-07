@@ -246,7 +246,9 @@ struct DecisionFormView: View {
     }
     
     private func actionButton(_ action: DecisionAction) -> some View {
-        Button {
+        let actionColor = Color.fromName(action.colorName)
+        
+        return Button {
             selectedAction = action
         } label: {
             HStack(spacing: 4) {
@@ -258,12 +260,12 @@ struct DecisionFormView: View {
             .padding(.vertical, 8)
             .background(
                 selectedAction == action
-                    ? Color(action.colorName).opacity(0.2)
+                    ? actionColor.opacity(0.2)
                     : Color(nsColor: .windowBackgroundColor)
             )
             .foregroundStyle(
                 selectedAction == action
-                    ? Color(action.colorName)
+                    ? actionColor
                     : .primary
             )
             .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -271,7 +273,7 @@ struct DecisionFormView: View {
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(
                         selectedAction == action
-                            ? Color(action.colorName)
+                            ? actionColor
                             : Color.clear,
                         lineWidth: 1
                     )

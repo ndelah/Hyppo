@@ -4,11 +4,12 @@
  Features:
  - Flat vertical list - all items at same indentation level
  - Pill indicators show "Driver" vs "Sub" hierarchy (matching task view badge style)
- - Keyboard-first interaction (Todoist-style):
-   - Enter: Confirm and create new driver below
-   - Up/Down arrows: Navigate between drivers
-   - Cmd+Return: Delete current driver/sub-driver
-   - Cmd+Up/Cmd+Down: Move driver/sub-driver up or down
+ - Keyboard-first interaction (two-mode: edit + selected):
+   - Enter (editing): Validate current driver, exit to selected mode
+   - Enter (selected): Create new driver below
+   - Backspace (selected): Delete current driver/sub-driver
+   - Up/Down arrows: Navigate between drivers (both modes)
+   - Cmd+Up/Cmd+Down: Move driver/sub-driver up or down (both modes)
    - Inline d1/d2: Type "d1" or "d2" anywhere in text, it highlights, then converts on Enter
  - Drag-and-drop reordering
  - Sub-drivers belong to the first driver above them in the list
@@ -125,6 +126,8 @@ struct DriverOutlineView: View {
             onCreateSibling: { createSiblingBelow(item) },
             onFocusNextDriver: { focusNextItem(after: flatIndex) },
             onFocusPreviousDriver: { focusPreviousItem(before: flatIndex) },
+            onSelectNextDriver: { selectNextItem(after: flatIndex) },
+            onSelectPreviousDriver: { selectPreviousItem(before: flatIndex) },
             focusedField: $focusedField
         )
         // No indentation - all items at same level, pill indicator shows hierarchy
@@ -167,6 +170,24 @@ struct DriverOutlineView: View {
         let prevIndex = flatIndex - 1
         if prevIndex >= 0 {
             focusedField = .title(items[prevIndex].id)
+        }
+    }
+    
+    /// Select the next item without entering edit mode (selected-mode navigation)
+    private func selectNextItem(after flatIndex: Int) {
+        let items = flattenedDrivers
+        let nextIndex = flatIndex + 1
+        if nextIndex < items.count {
+            focusedField = .selected(items[nextIndex].id)
+        }
+    }
+    
+    /// Select the previous item without entering edit mode (selected-mode navigation)
+    private func selectPreviousItem(before flatIndex: Int) {
+        let items = flattenedDrivers
+        let prevIndex = flatIndex - 1
+        if prevIndex >= 0 {
+            focusedField = .selected(items[prevIndex].id)
         }
     }
     
@@ -380,9 +401,12 @@ struct DriverDTO: Identifiable, Equatable {
 
 // MARK: - Driver Row Focus Field
 
-/// Enum to track which field is focused in a driver row
+/// Enum to track focus state in the driver outline.
+/// - `title`: Text field is focused (editing mode — cursor visible, typing active).
+/// - `selected`: Row is focused but not editing (selected mode — structural keys active).
 enum DriverRowField: Hashable {
-    case title(UUID)
+    case title(UUID)     // Editing the text field
+    case selected(UUID)  // Row is selected, not editing
 }
 
 // MARK: - Driver Row View
@@ -399,10 +423,15 @@ struct DriverRowView: View {
     /// Callback for Enter - create sibling below
     var onCreateSibling: (() -> Void)?
     
-    /// Callback to focus the next driver's title field (down arrow)
+    /// Callback to focus the next driver's title field (edit-mode arrow navigation)
     var onFocusNextDriver: (() -> Void)?
-    /// Callback to focus the previous driver's title field (up arrow)
+    /// Callback to focus the previous driver's title field (edit-mode arrow navigation)
     var onFocusPreviousDriver: (() -> Void)?
+    
+    /// Callback to select the next driver without editing (selected-mode navigation)
+    var onSelectNextDriver: (() -> Void)?
+    /// Callback to select the previous driver without editing (selected-mode navigation)
+    var onSelectPreviousDriver: (() -> Void)?
     
     /// Focus state binding from parent for coordinated keyboard navigation
     var focusedField: FocusState<DriverRowField?>.Binding?
@@ -414,7 +443,50 @@ struct DriverRowView: View {
         DriverShortcut.detect(in: driver.title)
     }
     
+    /// Whether this row is currently in selected (non-editing) mode
+    private var isSelected: Bool {
+        focusedField?.wrappedValue == .selected(driver.id)
+    }
+    
     var body: some View {
+        if let focusBinding = focusedField {
+            baseRow
+                .focusable()
+                .focused(focusBinding, equals: .selected(driver.id))
+                // Selected-mode: arrow keys with Cmd check for move vs navigate
+                .onKeyPress(keys: [.downArrow], phases: .down) { press in
+                    if press.modifiers.contains(.command) {
+                        onMoveDown?()
+                    } else {
+                        onSelectNextDriver?()
+                    }
+                    return .handled
+                }
+                .onKeyPress(keys: [.upArrow], phases: .down) { press in
+                    if press.modifiers.contains(.command) {
+                        onMoveUp?()
+                    } else {
+                        onSelectPreviousDriver?()
+                    }
+                    return .handled
+                }
+                // Selected-mode: Enter creates sibling below
+                .onKeyPress(.return, phases: .down) { _ in
+                    onCreateSibling?()
+                    return .handled
+                }
+                // Selected-mode: Backspace deletes driver
+                .onKeyPress(.delete, phases: .down) { _ in
+                    onDelete()
+                    return .handled
+                }
+        } else {
+            baseRow
+        }
+    }
+    
+    /// Base row content shared between selected and non-focusable modes
+    private var baseRow: some View {
         HStack(spacing: 8) {
             // Drag handle (visible on hover)
             Image(systemName: "line.3.horizontal")
@@ -446,8 +518,14 @@ struct DriverRowView: View {
         .padding(.horizontal, 4)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(isHovering ? Color(nsColor: .quaternarySystemFill) : Color.clear)
+                .fill(isSelected ? Color.accentColor.opacity(0.06) :
+                      (isHovering ? Color(nsColor: .quaternarySystemFill) : Color.clear))
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(isSelected ? Color.accentColor.opacity(0.4) : Color.clear, lineWidth: 1.5)
+        )
+        .animation(.easeInOut(duration: 0.12), value: isSelected)
         .onHover { hovering in
             isHovering = hovering
         }
@@ -490,60 +568,32 @@ struct DriverRowView: View {
                     .foregroundStyle(detectedShortcut != nil ? .clear : .primary)
                     .focused(focusBinding, equals: .title(driver.id))
                     .onSubmit {
-                        // Enter: process shortcut if present, then create sibling
+                        // Enter: process shortcut if present, exit to selected mode
                         processShortcutAndSubmit()
                     }
-                    // Plain arrow keys: navigate focus
-                    .onKeyPress(.downArrow, phases: .down) { _ in
-                        onFocusNextDriver?()
+                    // Arrow keys: navigate between drivers (with Cmd check for move)
+                    .onKeyPress(keys: [.downArrow], phases: .down) { press in
+                        if press.modifiers.contains(.command) {
+                            onMoveDown?()
+                        } else {
+                            onFocusNextDriver?()
+                        }
                         return .handled
                     }
-                    .onKeyPress(.upArrow, phases: .down) { _ in
-                        onFocusPreviousDriver?()
+                    .onKeyPress(keys: [.upArrow], phases: .down) { press in
+                        if press.modifiers.contains(.command) {
+                            onMoveUp?()
+                        } else {
+                            onFocusPreviousDriver?()
+                        }
                         return .handled
                     }
-                    // Cmd+Return: delete driver
-                    .onKeyPress(.return, phases: .down, action: { press in
-                        guard press.modifiers.contains(.command) else { return .ignored }
-                        onDelete()
-                        return .handled
-                    })
-                    // Cmd+Up: move driver up
-                    .onKeyPress(keys: [.upArrow], phases: .down, action: { press in
-                        guard press.modifiers.contains(.command) else { return .ignored }
-                        onMoveUp?()
-                        return .handled
-                    })
-                    // Cmd+Down: move driver down
-                    .onKeyPress(keys: [.downArrow], phases: .down, action: { press in
-                        guard press.modifiers.contains(.command) else { return .ignored }
-                        onMoveDown?()
-                        return .handled
-                    })
             } else {
                 TextField("Assumption...", text: $driver.title)
                     .textFieldStyle(.plain)
                     .onSubmit {
                         processShortcutAndSubmit()
                     }
-                    // Cmd+Return: delete driver
-                    .onKeyPress(.return, phases: .down, action: { press in
-                        guard press.modifiers.contains(.command) else { return .ignored }
-                        onDelete()
-                        return .handled
-                    })
-                    // Cmd+Up: move driver up
-                    .onKeyPress(keys: [.upArrow], phases: .down, action: { press in
-                        guard press.modifiers.contains(.command) else { return .ignored }
-                        onMoveUp?()
-                        return .handled
-                    })
-                    // Cmd+Down: move driver down
-                    .onKeyPress(keys: [.downArrow], phases: .down, action: { press in
-                        guard press.modifiers.contains(.command) else { return .ignored }
-                        onMoveDown?()
-                        return .handled
-                    })
             }
         }
     }
@@ -572,17 +622,18 @@ struct DriverRowView: View {
         .font(.body)
     }
     
-    /// Process any detected shortcut and submit the driver
+    /// Process any detected shortcut and exit to selected mode.
+    /// Enter in edit mode validates the content and transitions to selected mode
+    /// without creating a new sibling. A second Enter (in selected mode) creates one.
     private func processShortcutAndSubmit() {
         if let shortcut = detectedShortcut {
             // Remove the shortcut from the title first
             driver.title = shortcut.cleanedText
             // Set the driver type based on shortcut (d1 = Driver, d2 = Sub-driver)
-            // This directly changes the current item's type - the pill will update
             onSetDriverType?(shortcut.isSubDriver)
         }
-        // Create sibling below
-        onCreateSibling?()
+        // Exit edit mode → enter selected mode (driver stays highlighted)
+        focusedField?.wrappedValue = .selected(driver.id)
     }
 }
 

@@ -100,12 +100,17 @@ struct ReviewWizardView: View {
     @State private var driverAssessments: [DriverAssessment] = []
     @State private var selectedOutcome: ReviewOutcome = .reinforce
     @State private var newConfidence: Int = 3
-    @State private var overallNotes: String = ""
+    @State private var reviewNotes: String = ""
     @State private var showingConfirmation = false
     
-    // Conclusion state (shown when all drivers resolved)
-    @State private var conclusionText: String = ""
-    @State private var shouldArchiveAfterConclusion = false
+    // Decision state (required)
+    @State private var selectedAction: DecisionAction
+    @State private var decisionRationale: String = ""
+    @State private var expectedOutcome: String = ""
+    @State private var expectedTimeframe: String = ""
+    @State private var priceAtDecision: String = ""
+    @State private var exitPlan: String = ""
+    @State private var whatWouldChangeMyMind: String = ""
     
     // Revision prompt state
     @State private var showingRevisionPrompt = false
@@ -117,13 +122,15 @@ struct ReviewWizardView: View {
         case overview = 0
         case drivers = 1
         case outcome = 2
-        case summary = 3
+        case decision = 3
+        case summary = 4
         
         var title: String {
             switch self {
             case .overview: return "Review Overview"
             case .drivers: return "Check Key Drivers"
             case .outcome: return "Select Outcome"
+            case .decision: return "Record Decision"
             case .summary: return "Review Summary"
             }
         }
@@ -133,9 +140,21 @@ struct ReviewWizardView: View {
             case .overview: return "doc.text.magnifyingglass"
             case .drivers: return "arrow.up.forward"
             case .outcome: return "questionmark.circle"
+            case .decision: return "checkmark.circle.fill"
             case .summary: return "checkmark.circle"
             }
         }
+    }
+    
+    // MARK: - Initialization
+    
+    init(researchQuestion: ResearchQuestion, onComplete: @escaping () -> Void) {
+        self.researchQuestion = researchQuestion
+        self.onComplete = onComplete
+        
+        // Initialize decision action to first valid action for current phase
+        let validActions = researchQuestion.validDecisionActions
+        _selectedAction = State(initialValue: validActions.first ?? .pass)
     }
     
     // MARK: - Body
@@ -170,7 +189,7 @@ struct ReviewWizardView: View {
                 completeReview()
             }
         } message: {
-            Text("This will create a review log entry and update the research question. Continue?")
+            Text("This will create a decision and update the research question. Continue?")
         }
         .sheet(isPresented: $showingRevisionPrompt) {
             RevisionPromptSheet(
@@ -251,6 +270,8 @@ struct ReviewWizardView: View {
             driversStep
         case .outcome:
             outcomeStep
+        case .decision:
+            decisionStep
         case .summary:
             summaryStep
         }
@@ -305,7 +326,8 @@ struct ReviewWizardView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     reviewProcessItem(number: 1, text: "Check if each key driver is still valid")
                     reviewProcessItem(number: 2, text: "Decide on an outcome: Reinforce, Revise, or Invalidate")
-                    reviewProcessItem(number: 3, text: "Add notes and confirm your review")
+                    reviewProcessItem(number: 3, text: "Record your decision based on the review")
+                    reviewProcessItem(number: 4, text: "Review summary and complete")
                 }
             }
             
@@ -458,25 +480,6 @@ struct ReviewWizardView: View {
                 }
             }
             
-            Divider()
-            
-            // Overall notes
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Additional Notes")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                
-                TextEditor(text: $overallNotes)
-                    .font(.body)
-                    .frame(height: 80)
-                    .padding(8)
-                    .background(Color(nsColor: .textBackgroundColor))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                    )
-            }
         }
     }
     
@@ -538,20 +541,24 @@ struct ReviewWizardView: View {
                         isWarning: true
                     )
                 }
+                
+                // Decision action
+                summaryRow(
+                    label: "Decision",
+                    value: selectedAction.displayName,
+                    isWarning: false
+                )
             }
             
-            // Research Completion Section (shown when all drivers resolved)
-            if willAllDriversBeResolved {
-                researchCompletionSection
-            }
+            Divider()
             
-            // Generated log preview
+            // Decision rationale preview
             VStack(alignment: .leading, spacing: 8) {
-                Text("Log Entry Preview")
+                Text("Decision Rationale Preview")
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 
-                Text(generateLogBody())
+                Text(decisionRationale)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding()
@@ -559,42 +566,152 @@ struct ReviewWizardView: View {
                     .background(Color(nsColor: .textBackgroundColor))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
+            
+            // Review notes preview (if provided)
+            if !reviewNotes.isEmpty {
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Review Notes")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    
+                    Text(reviewNotes)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(nsColor: .textBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
         }
     }
     
-    // MARK: - Research Completion Section
+    // MARK: - Decision Step
     
-    /// Section shown when all drivers have been resolved
-    private var researchCompletionSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Completion banner
-            HStack(spacing: 12) {
-                Image(systemName: "flag.checkered")
-                    .font(.title2)
-                    .foregroundStyle(.blue)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Research Complete")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    Text("All assumptions have been tested. Consider forming a conclusion.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                Spacer()
-            }
-            .padding()
-            .background(Color.blue.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+    private var decisionStep: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Record Your Decision")
+                .font(.headline)
             
-            // Conclusion input
+            Text("Based on your review, what action are you taking?")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            
+            // Action selection
+            VStack(spacing: 12) {
+                ForEach(researchQuestion.validDecisionActions, id: \.self) { action in
+                    DecisionActionButton(
+                        action: action,
+                        isSelected: selectedAction == action,
+                        onSelect: { selectedAction = action }
+                    )
+                }
+            }
+            
+            Divider()
+            
+            // Decision rationale (required)
             VStack(alignment: .leading, spacing: 8) {
-                Text("Conclusion (Optional)")
+                Text("Rationale *")
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 
-                TextEditor(text: $conclusionText)
+                TextEditor(text: $decisionRationale)
+                    .font(.body)
+                    .frame(height: 100)
+                    .padding(8)
+                    .background(Color(nsColor: .textBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(decisionRationale.isEmpty ? Color.red.opacity(0.5) : Color(nsColor: .separatorColor), lineWidth: 1)
+                    )
+                
+                Text("Explain why you're making this decision based on your review.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            
+            // Conditional fields based on action
+            if selectedAction == .buy || selectedAction == .add {
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Expectations")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Expected Outcome")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        TextField("What do you expect to happen?", text: $expectedOutcome)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Expected Timeframe")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        TextField("When do you expect this?", text: $expectedTimeframe)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                }
+            }
+            
+            if selectedAction == .buy {
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Exit Plan")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    
+                    TextEditor(text: $exitPlan)
+                        .font(.body)
+                        .frame(height: 60)
+                        .padding(8)
+                        .background(Color(nsColor: .textBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        )
+                }
+            }
+            
+            if selectedAction == .pass {
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("What Would Change Your Mind?")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    
+                    TextEditor(text: $whatWouldChangeMyMind)
+                        .font(.body)
+                        .frame(height: 60)
+                        .padding(8)
+                        .background(Color(nsColor: .textBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        )
+                }
+            }
+            
+            Divider()
+            
+            // Review notes (separate from decision rationale)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Review Notes (Optional)")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                TextEditor(text: $reviewNotes)
                     .font(.body)
                     .frame(height: 80)
                     .padding(8)
@@ -605,24 +722,10 @@ struct ReviewWizardView: View {
                             .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                     )
                 
-                Text("Summarize your findings and investment decision.")
+                Text("Additional notes about your review process.")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
-            
-            // Archive option
-            Toggle(isOn: $shouldArchiveAfterConclusion) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Archive Research Question")
-                        .font(.subheadline)
-                    Text("Mark this research as complete and archive it")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .toggleStyle(.switch)
-            
-            Divider()
         }
     }
     
@@ -663,6 +766,17 @@ struct ReviewWizardView: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
+            } else if currentStep == .decision {
+                Button("Next") {
+                    // Validate decision rationale before proceeding
+                    if !decisionRationale.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        withAnimation {
+                            currentStep = .summary
+                        }
+                    }
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(decisionRationale.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             } else {
                 Button("Next") {
                     withAnimation {
@@ -693,63 +807,78 @@ struct ReviewWizardView: View {
         }
     }
     
-    /// Returns true if all drivers will be resolved (non-pending) after this review
-    private var willAllDriversBeResolved: Bool {
-        guard !driverAssessments.isEmpty else { return false }
-        return driverAssessments.allSatisfy { $0.newStatus != .pending }
-    }
-    
-    private func generateLogBody() -> String {
-        var body = "## Review Outcome: \(selectedOutcome.displayName)\n\n"
+    private func generateDecisionRationale() -> String {
+        var rationale = decisionRationale
         
-        // Drivers assessment
+        // Add review context to rationale
+        rationale += "\n\n## Review Context\n"
+        rationale += "**Outcome:** \(selectedOutcome.displayName)\n\n"
+        
+        // Drivers assessment summary
         if !driverAssessments.isEmpty {
-            body += "### Assumptions Assessment\n"
-            for assessment in driverAssessments {
-                let statusIcon: String
-                switch assessment.newStatus {
-                case .confirmed: statusIcon = "✅"
-                case .discarded: statusIcon = "❌"
-                case .needsRevision: statusIcon = "⚠️"
-                case .pending: statusIcon = "⏳"
-                }
-                body += "- \(statusIcon) \(assessment.title) (\(assessment.newStatus.displayName))\n"
-                if !assessment.notes.isEmpty {
-                    body += "  - Note: \(assessment.notes)\n"
-                }
-            }
-            body += "\n"
+            let confirmedCount = driverAssessments.filter { $0.newStatus == .confirmed }.count
+            let discardedCount = driverAssessments.filter { $0.newStatus == .discarded }.count
+            rationale += "**Assumptions:** \(confirmedCount) confirmed, \(discardedCount) discarded\n\n"
         }
         
-        // Confidence
+        // Confidence change
         let oldConfidence = researchQuestion.confidenceCurrent ?? 3
         if newConfidence != oldConfidence {
-            body += "### Confidence Update\n"
-            body += "Changed from \(oldConfidence)/5 to \(newConfidence)/5\n\n"
+            rationale += "**Confidence:** \(oldConfidence)/5 → \(newConfidence)/5\n\n"
         }
         
-        // Additional notes
-        if !overallNotes.isEmpty {
-            body += "### Additional Notes\n"
-            body += overallNotes + "\n"
+        // Review notes if provided
+        if !reviewNotes.isEmpty {
+            rationale += "**Review Notes:**\n\(reviewNotes)\n"
         }
         
-        return body
+        return rationale
     }
     
     private func completeReview() {
-        // Create structured review log entry
-        let logTitle = "Review: \(selectedOutcome.displayName)"
-        let logEntry = LogEntry(
-            title: logTitle,
-            body: generateLogBody(),
-            entryType: .review,
-            confidence: newConfidence,
-            occurredAt: Date(),
-            isSystemGenerated: false
+        // Create Decision (not a Review log entry)
+        let decision = Decision(
+            actionType: selectedAction,
+            rationale: generateDecisionRationale(),
+            decidedAt: Date(),
+            confidenceAtDecision: newConfidence
         )
-        logEntry.researchQuestion = researchQuestion
-        modelContext.insert(logEntry)
+        
+        // Set price if provided
+        if !priceAtDecision.isEmpty {
+            decision.priceAtDecision = priceAtDecision
+        }
+        
+        // Set expectations if provided
+        if !expectedOutcome.isEmpty {
+            decision.expectedOutcome = expectedOutcome
+        }
+        if !expectedTimeframe.isEmpty {
+            decision.expectedTimeframe = expectedTimeframe
+        }
+        
+        // Set exit plan if provided
+        if !exitPlan.isEmpty {
+            decision.exitPlan = exitPlan
+        }
+        
+        // Set "what would change my mind" if provided
+        if !whatWouldChangeMyMind.isEmpty {
+            decision.whatWouldChangeMyMind = whatWouldChangeMyMind
+        }
+        
+        // Capture snapshot of driver counts from assessments (before updating)
+        let confirmedCount = driverAssessments.filter { $0.newStatus == .confirmed }.count
+        let discardedCount = driverAssessments.filter { $0.newStatus == .discarded }.count
+        let pendingCount = driverAssessments.filter { $0.newStatus == .pending }.count
+        
+        decision.driversConfirmedCount = confirmedCount
+        decision.driversDiscardedCount = discardedCount
+        decision.driversPendingCount = pendingCount
+        
+        decision.researchQuestion = researchQuestion
+        
+        modelContext.insert(decision)
         
         // Update driver statuses based on assessments
         updateDriverStatuses()
@@ -758,16 +887,21 @@ struct ReviewWizardView: View {
         researchQuestion.confidenceCurrent = newConfidence
         researchQuestion.lastReviewedAt = Date()
         
-        // Handle conclusion if provided
-        if !conclusionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            researchQuestion.conclusion = conclusionText
-        }
-        
-        // Update status based on outcome or archive choice
+        // Update status based on outcome
         if selectedOutcome == .invalidate {
             _ = researchQuestion.updateStatus(.invalidated)
-        } else if shouldArchiveAfterConclusion && willAllDriversBeResolved {
-            _ = researchQuestion.updateStatus(.archived)
+        }
+        
+        // Update investment phase based on decision action
+        switch selectedAction {
+        case .buy:
+            if researchQuestion.investmentPhase == .watching {
+                researchQuestion.investmentPhase = .entered
+            }
+        case .exit, .abandon:
+            researchQuestion.investmentPhase = .exited
+        default:
+            break
         }
         
         // Update review reminder if exists
@@ -1090,6 +1224,48 @@ private struct RevisionPromptSheet: View {
     }
 }
 
+// MARK: - Decision Action Button
+
+private struct DecisionActionButton: View {
+    let action: DecisionAction
+    let isSelected: Bool
+    let onSelect: () -> Void
+    
+    private var actionColor: Color {
+        Color.fromName(action.colorName)
+    }
+    
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 12) {
+                Image(systemName: action.iconName)
+                    .font(.title2)
+                    .foregroundStyle(actionColor)
+                    .frame(width: 40)
+                
+                Text(action.displayName)
+                    .font(.headline)
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(actionColor)
+                }
+            }
+            .padding()
+            .background(isSelected ? actionColor.opacity(0.1) : Color(nsColor: .windowBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? actionColor : Color.clear, lineWidth: 2)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: - Preview
 
 #Preview {
@@ -1099,5 +1275,5 @@ private struct RevisionPromptSheet: View {
     )
     
     return ReviewWizardView(researchQuestion: question) { }
-        .modelContainer(for: [ResearchQuestion.self, LogEntry.self, Tag.self, Driver.self], inMemory: true)
+        .modelContainer(for: [ResearchQuestion.self, LogEntry.self, Tag.self, Driver.self, Decision.self], inMemory: true)
 }

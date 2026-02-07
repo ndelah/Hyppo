@@ -394,8 +394,56 @@ struct ResearchQuestionFormView: View {
                 confidence: confidence
             )
             
-            // Clear existing and re-save
-            question.drivers?.forEach { modelContext.delete($0) }
+            // Clear existing drivers and their relationships before deleting
+            if let existingDrivers = question.drivers {
+                for driver in existingDrivers {
+                    // Clear evidence relationships
+                    if let evidence = driver.evidence {
+                        for ev in evidence {
+                            ev.driver = nil
+                        }
+                    }
+                    
+                    // Clear log entry relationships
+                    // Note: LogEntry.driver is optional, so we need to find all log entries linked to this driver
+                    if let logEntries = question.logEntries {
+                        for logEntry in logEntries {
+                            if logEntry.driver?.driverId == driver.driverId {
+                                logEntry.driver = nil
+                            }
+                        }
+                    }
+                    
+                    // Clear task relationships (cascade should handle this, but be explicit)
+                    if let tasks = driver.tasks {
+                        for task in tasks {
+                            task.driver = nil
+                        }
+                    }
+                    
+                    // Clear sub-driver relationships
+                    if let subDrivers = driver.subDrivers {
+                        for subDriver in subDrivers {
+                            // Clear sub-driver's relationships too
+                            if let subEvidence = subDriver.evidence {
+                                for ev in subEvidence {
+                                    ev.driver = nil
+                                }
+                            }
+                            if let subTasks = subDriver.tasks {
+                                for task in subTasks {
+                                    task.driver = nil
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Now safe to delete
+                for driver in existingDrivers {
+                    modelContext.delete(driver)
+                }
+            }
             
             saveDrivers(to: question)
             onSave(question)
