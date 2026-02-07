@@ -1,0 +1,18 @@
+# Git ignore rules for Xcode/Swift projects.
+# Xcode build artifacts
+build/
+DerivedData/
+**/DerivedData/
+
+# User-specific Xcode files
+xcuserdata/
+**/*.xcuserstate
+
+# Workspace and SCM metadata
+*.xcscmblueprint
+*.xccheckout
+*.xcbkptlist
+
+# Misc
+.DS_Store
+
