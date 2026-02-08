@@ -13,7 +13,8 @@ import UniformTypeIdentifiers
 /// Tab selection for the detail menu
 enum ResearchDetailTab: String, CaseIterable, Identifiable {
     case description = "Description"
-    case health = "Health"
+    case researchConviction = "Research Conviction"
+    case confidence = "Confidence"
     case decisions = "Decisions"
     case tasks = "Tasks"
     
@@ -281,7 +282,7 @@ struct ResearchQuestionDetailView: View {
     
     // MARK: - Subviews
     
-    /// Tabbed menu section with Description, Health, and Tasks tabs
+    /// Tabbed menu section with Description, Research Conviction, Confidence, and Tasks tabs
     private var tabbedMenuSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Tab bar
@@ -298,7 +299,7 @@ struct ResearchQuestionDetailView: View {
         )
     }
     
-    /// Tab bar with Description, Health, and Tasks tabs
+    /// Tab bar with Description, Research Conviction, Confidence, and Tasks tabs
     private var tabBar: some View {
         HStack(spacing: 0) {
             ForEach(ResearchDetailTab.allCases) { tab in
@@ -344,8 +345,12 @@ struct ResearchQuestionDetailView: View {
             descriptionTabContent
                 .padding()
                 .transition(.opacity)
-        case .health:
-            healthTabContent
+        case .researchConviction:
+            researchConvictionTabContent
+                .padding()
+                .transition(.opacity)
+        case .confidence:
+            confidenceTabContent
                 .padding()
                 .transition(.opacity)
         case .decisions:
@@ -621,25 +626,22 @@ struct ResearchQuestionDetailView: View {
         }
     }
     
-    /// Health tab content - shows conviction health dashboard and confidence chart
-    private var healthTabContent: some View {
+    /// Research conviction tab content - shows conviction health dashboard
+    private var researchConvictionTabContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Confidence over time chart
-            ConfidenceChartView(researchQuestion: researchQuestion)
-            
             // Conviction health dashboard
             if !(researchQuestion.drivers?.isEmpty ?? true) {
                 ConvictionHealthView(drivers: researchQuestion.drivers ?? [])
             } else {
-                // Empty state for health
+                // Empty state for conviction
                 VStack(spacing: 8) {
                     Image(systemName: "heart.text.square")
                         .font(.title)
                         .foregroundStyle(.tertiary)
-                    Text("No health data available")
+                    Text("No conviction data available")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    Text("Add assumptions and evidence to track conviction health.")
+                    Text("Add assumptions and evidence to track research conviction.")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .multilineTextAlignment(.center)
@@ -647,6 +649,13 @@ struct ResearchQuestionDetailView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
             }
+        }
+    }
+
+    /// Confidence tab content - shows confidence over time
+    private var confidenceTabContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ConfidenceChartView(researchQuestion: researchQuestion)
         }
     }
     
