@@ -23,6 +23,10 @@ struct ConvictionHealthSummary {
     let driversWithBlindSpots: [Driver]
     let totalDrivers: Int
     let recentContradictingEvidence: [Evidence]
+    let driverEvidenceCounts: [Int]
+    let recentSupportingCount: Int
+    let recentContradictingCount: Int
+    let recentWindowSize: Int
     
     /// Overall sentiment balance
     var overallBalance: Int {
@@ -38,6 +42,60 @@ struct ConvictionHealthSummary {
     var blindSpotPercentage: Double {
         guard totalDrivers > 0 else { return 0 }
         return Double(blindSpotCount) / Double(totalDrivers) * 100
+    }
+
+    /**
+     Number of top-level drivers with at least one evidence item.
+     
+     - Returns: Count of drivers with evidence.
+     */
+    var driversWithEvidenceCount: Int {
+        driverEvidenceCounts.filter { $0 > 0 }.count
+    }
+
+    /**
+     Ratio of drivers with evidence relative to total drivers.
+     
+     - Returns: Coverage ratio between 0 and 1.
+     */
+    var driverCoverageRatio: Double {
+        guard totalDrivers > 0 else { return 0 }
+        return Double(driversWithEvidenceCount) / Double(totalDrivers)
+    }
+
+    /**
+     Total evidence count across all top-level drivers.
+     
+     - Returns: Total evidence items counted.
+     */
+    var totalEvidenceCount: Int {
+        driverEvidenceCounts.reduce(0, +)
+    }
+
+    /**
+     Share of evidence concentrated in the most-evidenced driver.
+     
+     - Returns: Concentration ratio between 0 and 1.
+     */
+    var driverConcentrationRatio: Double {
+        guard totalEvidenceCount > 0 else { return 0 }
+        return Double(driverEvidenceCounts.max() ?? 0) / Double(totalEvidenceCount)
+    }
+
+    /**
+     Human-readable coverage text for driver evidence distribution.
+     
+     - Returns: A short coverage summary string.
+     */
+    var coverageDetailText: String {
+        guard totalEvidenceCount > 0 else { return "No evidence yet" }
+        if driverConcentrationRatio >= 0.6 {
+            return "Evidence concentrated in 1 driver"
+        }
+        if driverCoverageRatio < 0.5 {
+            return "Coverage is narrow"
+        }
+        return "Evidence spread across drivers"
     }
     
     /// Overall health rating (0-100)
@@ -70,6 +128,28 @@ struct ConvictionHealthSummary {
         if healthScore >= 30 { return .weak }
         return .critical
     }
+
+    /**
+     Ratio of recent evidence balance over the rolling window.
+     
+     - Returns: Balance ratio between -1 and 1.
+     */
+    var recentBalanceRatio: Double {
+        let total = recentSupportingCount + recentContradictingCount
+        guard total > 0 else { return 0 }
+        return Double(recentSupportingCount - recentContradictingCount) / Double(total)
+    }
+
+    /**
+     Trend direction based on recent evidence balance.
+     
+     - Returns: Trend direction (improving/degrading/flat).
+     */
+    var trendDirection: TrendDirection {
+        if recentBalanceRatio >= 0.2 { return .improving }
+        if recentBalanceRatio <= -0.2 { return .degrading }
+        return .flat
+    }
     
     enum HealthStatus {
         case strong, moderate, weak, critical
@@ -101,6 +181,34 @@ struct ConvictionHealthSummary {
             }
         }
     }
+
+    enum TrendDirection {
+        case improving, degrading, flat
+        
+        var label: String {
+            switch self {
+            case .improving: return "Improving"
+            case .degrading: return "Degrading"
+            case .flat: return "Flat"
+            }
+        }
+        
+        var icon: String {
+            switch self {
+            case .improving: return "arrow.up.right"
+            case .degrading: return "arrow.down.right"
+            case .flat: return "arrow.right"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .improving: return .green
+            case .degrading: return .red
+            case .flat: return .gray
+            }
+        }
+    }
     
     /// Creates a summary from an array of drivers
     static func from(drivers: [Driver]) -> ConvictionHealthSummary {
@@ -109,12 +217,21 @@ struct ConvictionHealthSummary {
         var neutral = 0
         var blindSpotDrivers: [Driver] = []
         var recentContradicting: [Evidence] = []
+        var driverEvidenceCountById: [UUID: Int] = [:]
+        var allEvidence: [Evidence] = []
+        let recentWindowSize = 10
         
         let topLevelDrivers = drivers.filter { $0.parentDriver == nil }
         
-        func processDriver(_ driver: Driver, isTopLevel: Bool) {
+        for driver in topLevelDrivers {
+            driverEvidenceCountById[driver.driverId] = 0
+        }
+        
+        func processDriver(_ driver: Driver, rootDriverId: UUID, isTopLevel: Bool) {
             if let evidence = driver.evidence {
                 for item in evidence {
+                    allEvidence.append(item)
+                    driverEvidenceCountById[rootDriverId, default: 0] += 1
                     switch item.sentiment {
                     case .supporting: supporting += 1
                     case .contradicting:
@@ -136,13 +253,27 @@ struct ConvictionHealthSummary {
             // Process sub-drivers
             if let subs = driver.subDrivers {
                 for sub in subs {
-                    processDriver(sub, isTopLevel: false)
+                    processDriver(sub, rootDriverId: rootDriverId, isTopLevel: false)
                 }
             }
         }
         
         for driver in topLevelDrivers {
-            processDriver(driver, isTopLevel: true)
+            processDriver(driver, rootDriverId: driver.driverId, isTopLevel: true)
+        }
+        
+        let recentEvidence = allEvidence
+            .sorted { $0.capturedAt > $1.capturedAt }
+            .prefix(recentWindowSize)
+        
+        var recentSupportingCount = 0
+        var recentContradictingCount = 0
+        for item in recentEvidence {
+            switch item.sentiment {
+            case .supporting: recentSupportingCount += 1
+            case .contradicting: recentContradictingCount += 1
+            case .neutral: break
+            }
         }
         
         return ConvictionHealthSummary(
@@ -151,7 +282,11 @@ struct ConvictionHealthSummary {
             totalNeutral: neutral,
             driversWithBlindSpots: blindSpotDrivers,
             totalDrivers: topLevelDrivers.count,
-            recentContradictingEvidence: recentContradicting.sorted { $0.capturedAt > $1.capturedAt }
+            recentContradictingEvidence: recentContradicting.sorted { $0.capturedAt > $1.capturedAt },
+            driverEvidenceCounts: driverEvidenceCountById.values.map { $0 },
+            recentSupportingCount: recentSupportingCount,
+            recentContradictingCount: recentContradictingCount,
+            recentWindowSize: recentWindowSize
         )
     }
 }
@@ -207,8 +342,11 @@ struct ConvictionHealthView: View {
                 
                 Spacer()
                 
-                // Overall health badge
-                healthStatusBadge
+                // Overall health badge + trend
+                HStack(spacing: 8) {
+                    healthStatusBadge
+                    trendBadge
+                }
             }
             
             // Evidence summary bar
@@ -234,12 +372,49 @@ struct ConvictionHealthView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Health score \(summary.healthScore) out of 100, status: \(status.label)")
     }
+
+    /**
+     Trend chip showing whether recent evidence is improving or degrading.
+     
+     - Returns: A view representing the trend direction.
+     */
+    private var trendBadge: some View {
+        let trend = summary.trendDirection
+        
+        return HStack(spacing: 4) {
+            Image(systemName: trend.icon)
+            Text(trend.label)
+        }
+        .font(.caption)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(trend.color.opacity(0.12))
+        .foregroundStyle(trend.color)
+        .clipShape(Capsule())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Recent trend: \(trend.label)")
+    }
     
     private var evidenceSummaryBar: some View {
+        return HStack(alignment: .top, spacing: 16) {
+            balanceBarSection
+            coverageBarSection
+        }
+    }
+
+    /**
+     Evidence balance bar showing supporting/neutral/contradicting mix.
+     
+     - Returns: A view representing sentiment balance.
+     */
+    private var balanceBarSection: some View {
         let total = summary.totalSupporting + summary.totalContradicting + summary.totalNeutral
         
         return VStack(alignment: .leading, spacing: 6) {
-            // Progress bar
+            Text("Evidence Balance")
+                .font(.caption)
+                .fontWeight(.semibold)
+            
             GeometryReader { geometry in
                 HStack(spacing: 2) {
                     if summary.totalSupporting > 0 {
@@ -268,13 +443,43 @@ struct ConvictionHealthView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Evidence balance: \(summary.totalSupporting) supporting, \(summary.totalNeutral) neutral, \(summary.totalContradicting) contradicting")
             
-            // Legend
             HStack(spacing: 16) {
                 evidenceLegendItem(count: summary.totalSupporting, label: "Supporting", color: .green)
                 evidenceLegendItem(count: summary.totalNeutral, label: "Neutral", color: .gray)
                 evidenceLegendItem(count: summary.totalContradicting, label: "Contradicting", color: .red)
+            }
+            .font(.caption)
+        }
+    }
+
+    /**
+     Driver coverage bar showing how widely evidence is distributed.
+     
+     - Returns: A view representing driver coverage and concentration.
+     */
+    private var coverageBarSection: some View {
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("Driver Coverage")
+                .font(.caption)
+                .fontWeight(.semibold)
+            
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.gray.opacity(0.2))
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.blue.opacity(0.8))
+                        .frame(width: geometry.size.width * CGFloat(summary.driverCoverageRatio))
+                }
+            }
+            .frame(height: 8)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(summary.driversWithEvidenceCount) of \(summary.totalDrivers) drivers have evidence")
+            
+            HStack(spacing: 12) {
+                Text("\(summary.driversWithEvidenceCount) of \(summary.totalDrivers) drivers have evidence")
+                    .foregroundStyle(.secondary)
                 
-                // Blind spots indicator (only show if there are blind spots)
                 if summary.blindSpotCount > 0 {
                     HStack(spacing: 4) {
                         Image(systemName: "eye.slash.fill")
@@ -285,6 +490,11 @@ struct ConvictionHealthView: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("\(summary.blindSpotCount) assumption\(summary.blindSpotCount == 1 ? "" : "s") without evidence")
                 }
+                
+                Spacer()
+                
+                Text(summary.coverageDetailText)
+                    .foregroundStyle(.secondary)
             }
             .font(.caption)
         }
