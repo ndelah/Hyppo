@@ -61,7 +61,7 @@ struct DriverAssessment: Identifiable {
         self.id = driver.driverId
         self.title = driver.title
         self.currentStatus = driver.status
-        // Default to current status, or pending if not yet resolved
+        // Default to current status, or pending (under review) if not yet resolved
         self.newStatus = driver.status
     }
     
@@ -421,7 +421,7 @@ struct ReviewWizardView: View {
                     .foregroundStyle(.orange)
             }
             if pendingCount > 0 {
-                Label("\(pendingCount) pending", systemImage: "circle.dashed")
+                Label("\(pendingCount) under review", systemImage: "circle.dashed")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

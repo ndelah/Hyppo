@@ -2,7 +2,7 @@
  DriverAnalyticsView displays driver/assumption validation funnel analytics.
  
  Features:
- - Validation funnel visualization (Pending → Confirmed/Discarded)
+ - Validation funnel visualization (Under Review → Confirmed/Discarded)
  - Evidence coverage metrics
  - Blind spot analysis
  - Confirmation bias detection
@@ -140,7 +140,7 @@ struct DriverAnalyticsView: View {
                     
                     metricCard(
                         value: "\(analytics.pendingDrivers)",
-                        label: "Pending",
+                        label: "Under Review",
                         icon: "circle.dashed",
                         color: .gray
                     )
@@ -400,7 +400,7 @@ struct DriverAnalyticsView: View {
                     .padding(24)
             } else {
                 let chartData = [
-                    DriverStatusChartData(status: "Pending", count: analytics.pendingDrivers, color: .gray),
+                    DriverStatusChartData(status: "Under Review", count: analytics.pendingDrivers, color: .gray),
                     DriverStatusChartData(status: "Confirmed", count: analytics.confirmedDrivers, color: .green),
                     DriverStatusChartData(status: "Discarded", count: analytics.discardedDrivers, color: .red),
                     DriverStatusChartData(status: "Needs Revision", count: analytics.needsRevisionDrivers, color: .orange)
@@ -498,7 +498,7 @@ struct DriverAnalyticsView: View {
                     statusBadge(count: discarded, label: "Discarded", color: .red, icon: "xmark.seal.fill")
                 }
                 if pending > 0 {
-                    statusBadge(count: pending, label: "Pending", color: .gray, icon: "circle.dashed")
+                    statusBadge(count: pending, label: "Under Review", color: .gray, icon: "circle.dashed")
                 }
                 if needsRevision > 0 {
                     statusBadge(count: needsRevision, label: "Revision", color: .orange, icon: "exclamationmark.circle.fill")

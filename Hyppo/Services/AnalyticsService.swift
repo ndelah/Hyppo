@@ -794,7 +794,7 @@ final class AnalyticsService {
                 }
             }
             
-            // 5. Unresolved drivers (> 3 pending for > 14 days)
+            // 5. Unresolved drivers (> 3 under review for > 14 days)
             if let drivers = question.drivers {
                 let pendingDrivers = drivers.filter { $0.status == .pending && $0.parentDriver == nil }
                 let fourteenDaysAgo = Calendar.current.date(byAdding: .day, value: -14, to: now) ?? now
@@ -804,7 +804,7 @@ final class AnalyticsService {
                         type: .unresolvedDrivers,
                         severity: .info,
                         title: "Unresolved Assumptions",
-                        description: "\(oldPending.count) assumptions pending for over 2 weeks",
+                        description: "\(oldPending.count) assumptions under review for over 2 weeks",
                         relatedQuestion: question,
                         createdAt: now
                     ))

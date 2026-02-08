@@ -242,7 +242,7 @@ enum DriverStatus: String, Codable, CaseIterable, Identifiable {
     /// Display label for the status
     var displayName: String {
         switch self {
-        case .pending: return "Pending"
+        case .pending: return "Under Review"
         case .confirmed: return "Confirmed"
         case .discarded: return "Discarded"
         case .needsRevision: return "Needs Revision"

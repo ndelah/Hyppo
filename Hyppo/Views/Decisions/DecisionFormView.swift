@@ -461,7 +461,7 @@ struct DecisionFormView: View {
                 
                 snapshotItem(
                     icon: "circle.dashed",
-                    label: "Pending",
+                    label: "Under Review",
                     value: "\(researchQuestion.pendingDriversCount)",
                     color: .gray
                 )

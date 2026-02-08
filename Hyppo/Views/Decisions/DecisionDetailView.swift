@@ -153,7 +153,7 @@ struct DecisionDetailView: View {
                 
                 snapshotItem(
                     icon: "circle.dashed",
-                    label: "Pending",
+                    label: "Under Review",
                     value: "\(decision.driversPendingCount)",
                     color: .gray
                 )

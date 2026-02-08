@@ -37,7 +37,7 @@ final class Decision {
     /// Count of confirmed drivers at decision time
     var driversConfirmedCount: Int
     
-    /// Count of pending (untested) drivers at decision time
+    /// Count of under review (untested) drivers at decision time
     var driversPendingCount: Int
     
     /// Count of discarded drivers at decision time
@@ -173,7 +173,7 @@ final class Decision {
             parts.append("\(driversConfirmedCount) confirmed")
         }
         if driversPendingCount > 0 {
-            parts.append("\(driversPendingCount) pending")
+            parts.append("\(driversPendingCount) under review")
         }
         if driversDiscardedCount > 0 {
             parts.append("\(driversDiscardedCount) discarded")

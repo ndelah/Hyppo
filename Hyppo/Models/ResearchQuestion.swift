@@ -329,7 +329,7 @@ final class ResearchQuestion {
         drivers?.filter { $0.status == .needsRevision }.count ?? 0
     }
     
-    /// Returns the count of pending (untested) drivers
+    /// Returns the count of under review (untested) drivers
     var pendingDriversCount: Int {
         drivers?.filter { $0.status == .pending }.count ?? 0
     }
@@ -346,7 +346,7 @@ final class ResearchQuestion {
             return "\(confirmed) confirmed, \(discarded) discarded"
         } else {
             let pending = pendingDriversCount
-            return "\(pending) of \(total) pending"
+            return "\(pending) of \(total) under review"
         }
     }
     

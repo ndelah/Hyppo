@@ -686,7 +686,7 @@ final class ExportService {
                     md += "**Confidence at Decision:** \(confidence)/5\n"
                 }
                 
-                md += "**Driver Snapshot:** \(decision.driversConfirmedCount) confirmed, \(decision.driversPendingCount) pending, \(decision.driversDiscardedCount) discarded\n"
+                md += "**Driver Snapshot:** \(decision.driversConfirmedCount) confirmed, \(decision.driversPendingCount) under review, \(decision.driversDiscardedCount) discarded\n"
                 
                 if let expected = decision.expectedOutcome {
                     md += "**Expected Outcome:** \(expected)\n"

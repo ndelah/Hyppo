@@ -738,7 +738,7 @@ struct ConvictionHealthView: View {
     
     // MARK: - Validation Status Badge (Review-based)
     
-    /// Badge showing validation status from reviews (Confirmed/Discarded/Needs Revision/Pending)
+    /// Badge showing validation status from reviews (Confirmed/Discarded/Needs Revision/Under Review)
     private func validationBadge(for driver: Driver) -> some View {
         let status = driver.status
         
@@ -751,7 +751,7 @@ struct ConvictionHealthView: View {
             case .needsRevision:
                 badge("Revision", color: .orange, icon: "exclamationmark.circle.fill")
             case .pending:
-                badge("Pending", color: .gray, icon: "circle.dashed")
+                badge("Under Review", color: .gray, icon: "circle.dashed")
             }
         }
     }
