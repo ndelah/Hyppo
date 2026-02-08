@@ -24,12 +24,6 @@ Hyppo is positioned as a **lab notebook for investor conviction**: a logic manag
 - [x] **Offline & Persistence:** Operate fully offline with robust local persistence (SwiftData) and backups (JSON export/import).
 - [ ] **Premium Path:** Provide a premium upgrade path without bloating core workflows.
 
-## 2.1 Current alignment snapshot (Feb 2026)
-- **Recently shipped:** Reporting features (implemented but broken/untested), Task system (stable), Research Wizard driver creation overhaul (stable), Decision loop (decision menu + timeline integration + review wizard update) — untested and duplicative.
-- **Immediate goal:** Production readiness; pass the smoke test and validate the most important flows.
-- **Release adjustment:** Dashboards/reporting will be feature-flagged off for this release; sharing improvements are in-scope.
-- **Primary misalignment:** The decision loop emerged after the original plan and requires consolidation + QA.
-
 ## 3. Target users and Pareto workflow
 Target users are research-driven retail investors and semi-pro/independent analysts who take notes, read filings/news, and revisit decisions. Secondary consumers include analysts at boutique funds or family offices who operate as individual contributors and want a lightweight, local-first research notebook.
 
@@ -228,10 +222,10 @@ Asset (1) ───────────────────────�
   - Recent contradicting evidence highlights (last 7 days).
   - Compact mode for review wizard integration.
 
-#### 🟡 Flow 5 — Review and Decide (Decision Loop)
-*Status: Implemented but untested; duplication to resolve.*
+#### 🟢 Flow 5 — Review and Decide
+*Status: Fully Specified & Implemented (needs Conviction Health integration)*
 
-**User flow:** Trigger review → See conviction health → Choose outcome → Commit review log → Decision appears in timeline and decision menu.
+**User flow:** Trigger review → See conviction health → Choose outcome → Commit review log.
 
 **Steps**
 1) Trigger review: scheduled notification or manual Review button.
@@ -239,7 +233,6 @@ Asset (1) ───────────────────────�
 3) Decide: Reinforce / Revise / Invalidate.
 4) Guided prompts: minimal structured answers for the chosen outcome.
 5) Commit: create Review log entry; update confidence and status as needed.
-6) Decision surfaced: decision menu entry + timeline integration.
 
 **Fields required (UI + backend)**
 - Same as existing Review flow, plus:
@@ -256,17 +249,6 @@ Asset (1) ───────────────────────�
 1) Open Research Question → Export menu.
 2) Choose format: Markdown, PDF, JSON.
 3) Export includes: Thesis, Drivers (with sub-drivers), Kill Criteria, Evidence timeline, Conviction summary.
-
-#### 🟡 Flow 7 — Reporting & Dashboards
-*Status: Implemented but broken; feature-flagged off for this release.*
-
-**User flow:** Open Reporting/Dashboard → View research summaries → Drill into decisions and evidence.
-
-**Steps**
-1) Navigate to Reporting/Dashboard entry point.
-2) View summary panels (recent decisions, conviction balance, coverage).
-3) Drill into a research question to inspect drivers and evidence.
-4) **Release behavior:** dashboards are disabled via feature flag until QA passes.
 
 ## 9. Architecture (macOS-first)
 **Recommended baseline**
@@ -397,19 +379,17 @@ Ideas from early exploratory specs to consider for future iterations.
 
 ## 15. Next Steps
 
-### ✅ Recently completed
-1. **Task system** — Core workflow complete and stable.
-2. **Research Wizard driver creation overhaul** — Integrated into wizard flow.
-3. **Decision loop integration** — Decision menu, timeline integration, review wizard update.
-4. **Reporting features** — Implemented (QA pending).
+### ✅ Completed (MVP 2.5 Views)
+1. **Driver Outline Editor** — Inline editing with drag-drop, move up/down, expand/collapse, research plan details.
+2. **Research Wizard** — 3-step guided flow with "Start with Wizard" button, validation for 2+ assumptions and 1+ kill criteria.
+3. **Conviction Health Dashboard** — Health score, evidence summary, per-driver breakdown, dedicated blind spots section.
+4. **Research Plan Table** — Inline editing, blind spot indicators.
 
-### ⚪️ Production readiness focus
-1. **Run and pass smoke test** (see `docs/testing/user_journey_smoke_test.md`).
-2. **QA + fix reporting features.**
-3. **QA decision loop + remove feature duplication.**
-4. **Feature-flag dashboards/reporting off for this release.**
-5. **Improve sharing for social media.**
-6. **Validate critical flows** (Asset → Research Question → Driver → Evidence → Review → Export).
+### ⚪️ Remaining
+5. **Update Evidence Form** — Add Driver picker, sentiment picker, sourceType picker.
+6. **Update Quick Capture** — Add Driver destination picker.
+7. **Write Migration Logic** — Transform existing keyDrivers/invalidationRules to new models.
+8. **Update Export** — Evidence sentiment in exports (drivers and kill criteria already included).
 
 ---
 

@@ -111,14 +111,24 @@ This document tracks the implementation status of features across different deve
     - [x] Dedicated Blind Spots section with actionable items.
     - [x] Recent contradicting evidence highlights.
     - [x] Compact mode for review wizard integration.
-- [ ] **Evidence Form Updates**: Driver picker, sentiment, source type.
-- [ ] **Quick Capture Updates**: Driver destination picker.
+- [x] **Evidence Form Updates**: Driver picker, sentiment, source type.
+- [x] **Quick Capture Updates**: Driver destination picker.
 - [x] **Review Wizard Integration**: Conviction health in review flow (compact view).
 
 ### Migration
-- [ ] **Data Migration**: Transform existing data to new schema.
-    - [ ] Migrate old keyDrivers strings to Driver objects.
-    - [ ] Migrate old invalidationRules to KillCriteria objects.
+- [x] **Data Migration**: Transform existing data to new schema.
+    - [x] Migrate old keyDrivers strings to Driver objects.
+    - [x] Migrate old invalidationRules to KillCriteria objects.
+
+## Release 0.x: Production Readiness (Current)
+*Goal: Ship a stable, production-ready macOS build focused on critical flows; dashboards are disabled for this release.*
+
+- [ ] **Smoke test pass** (see `docs/testing/user_journey_smoke_test.md`).
+- [ ] **Critical flow validation**: Asset → Research Question → Driver → Evidence → Review → Export.
+- [ ] **Decision loop QA + dedupe** (decision menu, timeline, review wizard).
+- [ ] **Reporting QA + fixes** (currently broken).
+- [ ] **Feature flag dashboards/reporting off** for this release.
+- [ ] **Sharing improvements** for social media.
 
 ## MVP 3: Premium Features
 *Goal: Add analytical depth and AI-assisted insights.*
@@ -138,20 +148,19 @@ This document tracks the implementation status of features across different deve
 
 ---
 
-## Current Sprint: McKinsey Mind Views
+## Current Sprint: Production Readiness
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Driver Outline Editor | ✅ Complete | Inline editing, drag-drop, expand/collapse, research plan details |
-| Research Wizard | ✅ Complete | 3-step guided flow with "Start with Wizard" button |
-| Research Plan Table | ✅ Complete | Inline editing, blind spot indicators |
-| Conviction Health Dashboard | ✅ Complete | Health score, dedicated blind spots section, compact mode |
-| Evidence Form Updates | ⚪️ Pending | Driver picker, sentiment, sourceType |
-| Quick Capture Driver Picker | ⚪️ Pending | Link evidence directly to driver |
-| Review Wizard Integration | ✅ Complete | Conviction health compact view integrated |
-| Migration Logic | ⚪️ Pending | Existing data transformation — technical task |
+| Smoke test pass | 🟡 In progress | Use user journey smoke test doc |
+| Decision loop QA + dedupe | 🟡 In progress | Decision menu + timeline + review wizard |
+| Reporting QA + fixes | 🟡 In progress | Currently broken |
+| Feature flag dashboards | ⚪️ Pending | Keep off for this release |
+| Sharing improvements | ⚪️ Pending | Social sharing capabilities |
+| Critical flow validation | ⚪️ Pending | Asset → Research → Evidence → Review → Export |
 
 ### Legend
 - ✅ Complete = Implemented and tested
-- ⚪️ Pending = Not started, no blockers
+- 🟡 In progress = Implemented but untested or being stabilized
+- ⚪️ Pending = Not started
 

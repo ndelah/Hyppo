@@ -6,6 +6,7 @@
 - `roadmap.md` — feature tracking and status
 - `structure.md` — repository map + architecture changes
 - `user_testing.md` — test checklist and edge cases
+- `privacy_statement.md` — privacy statement
 
 ## User Journeys
 
