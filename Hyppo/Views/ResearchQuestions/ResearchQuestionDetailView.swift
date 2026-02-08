@@ -2015,7 +2015,11 @@ struct DecisionTimelineCard: View {
                     }
                     
                     // Expectations indicator
-                    if decision.hasExpectations {
+                    if let targetDate = decision.expectedTargetDate {
+                        Label("Target \(targetDate.formatted(date: .abbreviated, time: .omitted))", systemImage: "calendar")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if decision.hasExpectations {
                         Label("Expectations", systemImage: "target")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -2023,7 +2027,7 @@ struct DecisionTimelineCard: View {
                     
                     // Exit plan indicator
                     if decision.hasExitPlan {
-                        Label("Exit Plan", systemImage: "door.left.hand.open")
+                        Label("Exit Plan Update", systemImage: "door.left.hand.open")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

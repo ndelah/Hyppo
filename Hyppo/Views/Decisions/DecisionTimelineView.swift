@@ -163,14 +163,18 @@ struct DecisionTimelineItem: View {
                                 .foregroundStyle(.secondary)
                         }
                         
-                        if decision.hasExpectations {
+                        if let targetDate = decision.expectedTargetDate {
+                            Label("Target \(targetDate.formatted(date: .abbreviated, time: .omitted))", systemImage: "calendar")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        } else if decision.hasExpectations {
                             Label("Expectations", systemImage: "target")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
                         
                         if decision.hasExitPlan {
-                            Label("Exit Plan", systemImage: "door.left.hand.open")
+                            Label("Exit Plan Update", systemImage: "door.left.hand.open")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
@@ -332,7 +336,7 @@ struct CompactDecisionTimelineView: View {
         decidedAt: Date().addingTimeInterval(-86400 * 15),
         confidenceAtDecision: 4
     )
-    buy.expectedOutcome = "30% upside"
+    buy.expectedTargetDate = Calendar.current.date(byAdding: .month, value: 6, to: Date())
     buy.priceAtDecision = "$125"
     buy.exitPlan = "Sell at $160 or if AI thesis breaks"
     

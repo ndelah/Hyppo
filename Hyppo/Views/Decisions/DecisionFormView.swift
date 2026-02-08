@@ -29,8 +29,7 @@ struct DecisionFormView: View {
     
     @State private var selectedAction: DecisionAction
     @State private var rationale: String = ""
-    @State private var expectedOutcome: String = ""
-    @State private var expectedTimeframe: String = ""
+    @State private var expectedTargetDate: Date? = nil
     @State private var priceAtDecision: String = ""
     @State private var exitPlan: String = ""
     @State private var whatWouldChangeMyMind: String = ""
@@ -86,7 +85,7 @@ struct DecisionFormView: View {
     
     /// Whether to show exit plan section
     private var showExitPlan: Bool {
-        selectedAction == .buy
+        selectedAction == .buy || selectedAction == .add
     }
     
     /// Whether to show "what would change my mind" section
@@ -97,6 +96,22 @@ struct DecisionFormView: View {
     /// Whether this is an exit/abandon action
     private var isTerminalAction: Bool {
         selectedAction == .exit || selectedAction == .abandon
+    }
+    
+    /// Most recent exit plan on record (used as the current plan)
+    private var currentExitPlan: String? {
+        researchQuestion.sortedDecisions.last { decision in
+            guard let plan = decision.exitPlan else { return false }
+            return !plan.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }?.exitPlan
+    }
+    
+    /// Binding that allows a DatePicker to write to an optional date
+    private var expectedTargetDateBinding: Binding<Date> {
+        Binding(
+            get: { expectedTargetDate ?? Date() },
+            set: { expectedTargetDate = $0 }
+        )
     }
     
     // MARK: - Body
@@ -351,21 +366,31 @@ struct DecisionFormView: View {
                 .foregroundStyle(.secondary)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("What do you expect to happen?")
+                Text("Target date")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
-                TextField("e.g., 30% upside as AI revenue accelerates", text: $expectedOutcome)
-                    .textFieldStyle(.roundedBorder)
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Expected timeframe")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                DatePicker(
+                    "",
+                    selection: expectedTargetDateBinding,
+                    displayedComponents: [.date]
+                )
+                .labelsHidden()
                 
-                TextField("e.g., 6-12 months, by next earnings", text: $expectedTimeframe)
-                    .textFieldStyle(.roundedBorder)
+                HStack {
+                    Text("Shown on your timeline as a reminder.")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    
+                    Spacer()
+                    
+                    if expectedTargetDate != nil {
+                        Button("Clear Date") {
+                            expectedTargetDate = nil
+                        }
+                        .font(.caption2)
+                    }
+                }
             }
         }
         .padding()
@@ -374,10 +399,26 @@ struct DecisionFormView: View {
     }
     
     private var exitPlanSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Exit Plan (Recommended)")
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Exit Plan")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            
+            if let currentExitPlan, !currentExitPlan.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Current plan")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    
+                    Text(currentExitPlan)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(nsColor: .windowBackgroundColor))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+            }
             
             TextEditor(text: $exitPlan)
                 .font(.body)
@@ -390,7 +431,7 @@ struct DecisionFormView: View {
                         .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                 )
             
-            Text("Define conditions for exit: target price, stop loss, time limit, or invalidation triggers")
+            Text("Leave blank to keep the current plan. Update when commitments change.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -575,11 +616,8 @@ struct DecisionFormView: View {
         decision.decidedAt = decidedAt
         
         // Set optional fields
-        if !expectedOutcome.isEmpty {
-            decision.expectedOutcome = expectedOutcome
-        }
-        if !expectedTimeframe.isEmpty {
-            decision.expectedTimeframe = expectedTimeframe
+        if let expectedTargetDate {
+            decision.expectedTargetDate = expectedTargetDate
         }
         if !priceAtDecision.isEmpty {
             decision.priceAtDecision = priceAtDecision

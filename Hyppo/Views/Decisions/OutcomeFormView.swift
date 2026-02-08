@@ -192,10 +192,20 @@ struct OutcomeFormView: View {
                     .font(.subheadline)
                 }
                 
-                // Expected outcome
-                if let expected = entry.expectedOutcome {
+                // Expected target date
+                if let targetDate = entry.expectedTargetDate {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Expected Outcome")
+                        Text("Target Date")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        
+                        Text(targetDate.formatted(date: .abbreviated, time: .omitted))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                } else if let expected = entry.expectedOutcome {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Expected Outcome (Legacy)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         
@@ -514,7 +524,7 @@ struct OutcomeFormView: View {
         driversConfirmedCount: 3,
         driversPendingCount: 1
     )
-    buyDecision.expectedOutcome = "30% upside over 12 months"
+    buyDecision.expectedTargetDate = Calendar.current.date(byAdding: .month, value: 9, to: Date())
     buyDecision.priceAtDecision = "$125.00"
     rq.decisions = [buyDecision]
     

@@ -17,7 +17,7 @@ struct ExportData: Codable {
     let exportedAt: Date
     let assets: [AssetExport]
     
-    static let currentVersion = "2.0"  // Updated for new model structure
+    static let currentVersion = "2.1"  // Updated for decision target date
 }
 
 struct AssetExport: Codable {
@@ -113,6 +113,7 @@ struct DecisionExport: Codable {
     let driversConfirmedCount: Int
     let driversPendingCount: Int
     let driversDiscardedCount: Int
+    let expectedTargetDate: Date?
     let expectedOutcome: String?
     let expectedTimeframe: String?
     let priceAtDecision: String?
@@ -239,6 +240,7 @@ final class ExportService {
                         driversConfirmedCount: decision.driversConfirmedCount,
                         driversPendingCount: decision.driversPendingCount,
                         driversDiscardedCount: decision.driversDiscardedCount,
+                        expectedTargetDate: decision.expectedTargetDate,
                         expectedOutcome: decision.expectedOutcome,
                         expectedTimeframe: decision.expectedTimeframe,
                         priceAtDecision: decision.priceAtDecision,
@@ -501,6 +503,7 @@ final class ExportService {
                     decision.driversConfirmedCount = decisionExport.driversConfirmedCount
                     decision.driversPendingCount = decisionExport.driversPendingCount
                     decision.driversDiscardedCount = decisionExport.driversDiscardedCount
+                    decision.expectedTargetDate = decisionExport.expectedTargetDate
                     decision.expectedOutcome = decisionExport.expectedOutcome
                     decision.expectedTimeframe = decisionExport.expectedTimeframe
                     decision.priceAtDecision = decisionExport.priceAtDecision
@@ -688,11 +691,15 @@ final class ExportService {
                 
                 md += "**Driver Snapshot:** \(decision.driversConfirmedCount) confirmed, \(decision.driversPendingCount) under review, \(decision.driversDiscardedCount) discarded\n"
                 
-                if let expected = decision.expectedOutcome {
-                    md += "**Expected Outcome:** \(expected)\n"
-                }
-                if let timeframe = decision.expectedTimeframe {
-                    md += "**Expected Timeframe:** \(timeframe)\n"
+                if let targetDate = decision.expectedTargetDate {
+                    md += "**Target Date:** \(dateFormatter.string(from: targetDate))\n"
+                } else {
+                    if let expected = decision.expectedOutcome {
+                        md += "**Expected Outcome:** \(expected)\n"
+                    }
+                    if let timeframe = decision.expectedTimeframe {
+                        md += "**Expected Timeframe:** \(timeframe)\n"
+                    }
                 }
                 if let price = decision.priceAtDecision {
                     md += "**Price at Decision:** \(price)\n"

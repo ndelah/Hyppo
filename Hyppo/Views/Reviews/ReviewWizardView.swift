@@ -105,8 +105,7 @@ struct ReviewWizardView: View {
     // Decision state (required)
     @State private var selectedAction: DecisionAction
     @State private var decisionRationale: String = ""
-    @State private var expectedOutcome: String = ""
-    @State private var expectedTimeframe: String = ""
+    @State private var expectedTargetDate: Date? = nil
     @State private var priceAtDecision: String = ""
     @State private var exitPlan: String = ""
     @State private var whatWouldChangeMyMind: String = ""
@@ -627,30 +626,58 @@ struct ReviewWizardView: View {
                         .fontWeight(.semibold)
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Expected Outcome")
+                        Text("Target Date")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        TextField("What do you expect to happen?", text: $expectedOutcome)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Expected Timeframe")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        TextField("When do you expect this?", text: $expectedTimeframe)
-                            .textFieldStyle(.roundedBorder)
+                        
+                        DatePicker(
+                            "",
+                            selection: expectedTargetDateBinding,
+                            displayedComponents: [.date]
+                        )
+                        .labelsHidden()
+                        
+                        HStack {
+                            Text("Shown on your timeline as a reminder.")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                            
+                            Spacer()
+                            
+                            if expectedTargetDate != nil {
+                                Button("Clear Date") {
+                                    expectedTargetDate = nil
+                                }
+                                .font(.caption2)
+                            }
+                        }
                     }
                 }
             }
             
-            if selectedAction == .buy {
+            if selectedAction == .buy || selectedAction == .add {
                 Divider()
                 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Exit Plan")
                         .font(.subheadline)
                         .fontWeight(.semibold)
+                    
+                    if let currentExitPlan, !currentExitPlan.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Current plan")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                            
+                            Text(currentExitPlan)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(8)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color(nsColor: .windowBackgroundColor))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
                     
                     TextEditor(text: $exitPlan)
                         .font(.body)
@@ -662,6 +689,10 @@ struct ReviewWizardView: View {
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                         )
+                    
+                    Text("Leave blank to keep the current plan. Update when commitments change.")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
             }
             
@@ -767,6 +798,22 @@ struct ReviewWizardView: View {
         }
     }
     
+    /// Most recent exit plan on record (used as the current plan)
+    private var currentExitPlan: String? {
+        researchQuestion.sortedDecisions.last { decision in
+            guard let plan = decision.exitPlan else { return false }
+            return !plan.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }?.exitPlan
+    }
+    
+    /// Binding that allows a DatePicker to write to an optional date
+    private var expectedTargetDateBinding: Binding<Date> {
+        Binding(
+            get: { expectedTargetDate ?? Date() },
+            set: { expectedTargetDate = $0 }
+        )
+    }
+    
     private func generateDecisionRationale() -> String {
         var rationale = decisionRationale
         
@@ -805,11 +852,8 @@ struct ReviewWizardView: View {
         }
         
         // Set expectations if provided
-        if !expectedOutcome.isEmpty {
-            decision.expectedOutcome = expectedOutcome
-        }
-        if !expectedTimeframe.isEmpty {
-            decision.expectedTimeframe = expectedTimeframe
+        if let expectedTargetDate {
+            decision.expectedTargetDate = expectedTargetDate
         }
         
         // Set exit plan if provided

@@ -190,9 +190,19 @@ struct DecisionDetailView: View {
             sectionHeader(title: "Expectations", icon: "target")
             
             VStack(alignment: .leading, spacing: 12) {
+                if let targetDate = decision.expectedTargetDate {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Target Date")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(targetDate.formatted(date: .abbreviated, time: .omitted))
+                            .font(.subheadline)
+                    }
+                }
+                
                 if let outcome = decision.expectedOutcome {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Expected Outcome")
+                        Text("Expected Outcome (Legacy)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Text(outcome)
@@ -202,7 +212,7 @@ struct DecisionDetailView: View {
                 
                 if let timeframe = decision.expectedTimeframe {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Expected Timeframe")
+                        Text("Expected Timeframe (Legacy)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Text(timeframe)
@@ -291,8 +301,7 @@ struct DecisionDetailView: View {
         driversPendingCount: 1,
         driversDiscardedCount: 0
     )
-    decision.expectedOutcome = "30% upside over 12 months as AI revenue accelerates"
-    decision.expectedTimeframe = "12 months"
+    decision.expectedTargetDate = Calendar.current.date(byAdding: .month, value: 9, to: Date())
     decision.priceAtDecision = "$125.00"
     decision.exitPlan = "Sell 50% at $160, remainder at $180. Stop loss at $100. Exit if AI demand thesis breaks."
     

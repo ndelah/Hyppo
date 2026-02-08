@@ -45,10 +45,13 @@ final class Decision {
     
     // MARK: - Expectations (for Buy/Add decisions)
     
-    /// What the user expects to happen
+    /// Target date for checking expectations (shown on timeline)
+    var expectedTargetDate: Date?
+    
+    /// Legacy expected outcome (kept for existing data)
     var expectedOutcome: String?
     
-    /// Expected timeframe for the outcome (e.g., "6 months", "next earnings")
+    /// Legacy expected timeframe (kept for existing data)
     var expectedTimeframe: String?
     
     /// Price at decision time (entry/exit price, optional)
@@ -151,7 +154,7 @@ final class Decision {
     
     /// Whether this decision has expectations set
     var hasExpectations: Bool {
-        expectedOutcome != nil || expectedTimeframe != nil
+        expectedTargetDate != nil || expectedOutcome != nil || expectedTimeframe != nil
     }
     
     /// Whether this decision has an exit plan
@@ -188,6 +191,7 @@ final class Decision {
      
      - Parameters:
        - rationale: Updated rationale
+       - expectedTargetDate: Updated target date for expectations
        - expectedOutcome: Updated expected outcome
        - expectedTimeframe: Updated expected timeframe
        - priceAtDecision: Updated price
@@ -196,6 +200,7 @@ final class Decision {
      */
     func update(
         rationale: String? = nil,
+        expectedTargetDate: Date? = nil,
         expectedOutcome: String? = nil,
         expectedTimeframe: String? = nil,
         priceAtDecision: String? = nil,
@@ -204,6 +209,9 @@ final class Decision {
     ) {
         if let rationale = rationale {
             self.rationale = rationale.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if let expectedTargetDate = expectedTargetDate {
+            self.expectedTargetDate = expectedTargetDate
         }
         if let expectedOutcome = expectedOutcome {
             self.expectedOutcome = expectedOutcome.trimmingCharacters(in: .whitespacesAndNewlines)
