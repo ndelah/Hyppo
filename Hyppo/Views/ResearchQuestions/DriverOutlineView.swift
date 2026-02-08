@@ -43,6 +43,9 @@ struct FlatDriverItem: Identifiable {
 struct DriverOutlineView: View {
     @Binding var drivers: [DriverDTO]
     let prompt: String
+    @Binding var isDriverFieldFocused: Bool
+    @Binding var shouldFocusFirstDriver: Bool
+    let onShiftTabAtFirstDriver: (() -> Void)?
     
     /// Currently dragged driver ID for visual feedback
     @State private var draggedDriverId: UUID?
@@ -90,21 +93,21 @@ struct DriverOutlineView: View {
                 draggedDriverId = nil
                 return false
             }
-            
-            Button {
-                let newDriver = DriverDTO(title: "")
-                drivers.append(newDriver)
-                // Focus the new driver's title field
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    focusedField = .title(newDriver.id)
-                }
-            } label: {
-                Label("Add Assumption", systemImage: "plus.circle")
-                    .font(.caption)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.blue)
-            .padding(.top, 4)
+        }
+        .onAppear {
+            ensureTrailingEmptyDriver()
+            isDriverFieldFocused = focusedField != nil
+        }
+        .onChange(of: drivers) { _, _ in
+            ensureTrailingEmptyDriver()
+        }
+        .onChange(of: shouldFocusFirstDriver) { _, newValue in
+            guard newValue else { return }
+            focusFirstItem()
+            shouldFocusFirstDriver = false
+        }
+        .onChange(of: focusedField) { _, newValue in
+            isDriverFieldFocused = newValue != nil
         }
     }
     
@@ -116,6 +119,7 @@ struct DriverOutlineView: View {
         
         DriverRowView(
             driver: binding,
+            isFirstRow: flatIndex == 0,
             onDelete: { deleteItem(item) },
             onAddSubDriver: item.isSubDriver ? nil : { addSubDriver(to: item) },
             onMoveUp: canMoveUp(item) ? { moveItemUp(item) } : nil,
@@ -128,6 +132,7 @@ struct DriverOutlineView: View {
             onFocusPreviousDriver: { focusPreviousItem(before: flatIndex) },
             onSelectNextDriver: { selectNextItem(after: flatIndex) },
             onSelectPreviousDriver: { selectPreviousItem(before: flatIndex) },
+            onShiftTabAtFirstDriver: onShiftTabAtFirstDriver,
             focusedField: $focusedField
         )
         // No indentation - all items at same level, pill indicator shows hierarchy
@@ -191,17 +196,22 @@ struct DriverOutlineView: View {
         }
     }
     
+    /// Focus the first driver's title field
+    private func focusFirstItem() {
+        guard let firstItem = flattenedDrivers.first else { return }
+        focusedField = .title(firstItem.id)
+    }
+    
     // MARK: - Driver/SubDriver Conversion (d1/d2 inline shortcuts)
     
-    /// Sets the driver type based on inline d1/d2 shortcut
-    /// Simply changes the isSubDriver flag - the pill will update immediately
+    /// Sets the driver type based on inline d1/d2 shortcut.
+    /// Toggles the isSubDriver flag directly — the pill updates immediately
+    /// and the save logic groups based on this flag at save time.
     private func setDriverType(item: FlatDriverItem, isSubDriver: Bool) {
         withAnimation(.easeInOut(duration: 0.15)) {
             if let subIndex = item.subDriverIndex {
-                // It's currently a sub-driver
                 drivers[item.driverIndex].subDrivers[subIndex].isSubDriver = isSubDriver
             } else {
-                // It's a top-level driver
                 drivers[item.driverIndex].isSubDriver = isSubDriver
             }
         }
@@ -281,6 +291,7 @@ struct DriverOutlineView: View {
                 drivers.remove(at: item.driverIndex)
             }
         }
+        ensureTrailingEmptyDriver()
     }
     
     // MARK: - Sub-Driver Actions
@@ -327,6 +338,40 @@ struct DriverOutlineView: View {
             }
         }
     }
+
+    // MARK: - Driver Normalization
+
+    /// Ensures there is always a single empty driver row at the end of the list.
+    private func ensureTrailingEmptyDriver() {
+        guard !drivers.isEmpty else {
+            drivers = [DriverDTO(title: "")]
+            return
+        }
+        
+        var updatedDrivers = drivers
+        
+        while updatedDrivers.count > 1,
+              isEmptyDriver(updatedDrivers[updatedDrivers.count - 1]),
+              isEmptyDriver(updatedDrivers[updatedDrivers.count - 2]) {
+            updatedDrivers.removeLast()
+        }
+        
+        if let lastDriver = updatedDrivers.last, !isEmptyDriver(lastDriver) {
+            updatedDrivers.append(DriverDTO(title: ""))
+        }
+        
+        if updatedDrivers != drivers {
+            drivers = updatedDrivers
+        }
+    }
+    
+    /// Returns true if the driver is an empty placeholder row.
+    private func isEmptyDriver(_ driver: DriverDTO) -> Bool {
+        driver.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        driver.subDrivers.isEmpty &&
+        !driver.isSubDriver
+    }
+    
 }
 
 // MARK: - Drag Drop Modifier
@@ -413,6 +458,7 @@ enum DriverRowField: Hashable {
 
 struct DriverRowView: View {
     @Binding var driver: DriverDTO
+    let isFirstRow: Bool
     let onDelete: () -> Void
     let onAddSubDriver: (() -> Void)?
     var onMoveUp: (() -> Void)?
@@ -433,6 +479,9 @@ struct DriverRowView: View {
     /// Callback to select the previous driver without editing (selected-mode navigation)
     var onSelectPreviousDriver: (() -> Void)?
     
+    /// Callback for Shift+Tab at the first driver to move focus outside the list
+    var onShiftTabAtFirstDriver: (() -> Void)?
+    
     /// Focus state binding from parent for coordinated keyboard navigation
     var focusedField: FocusState<DriverRowField?>.Binding?
     
@@ -446,6 +495,11 @@ struct DriverRowView: View {
     /// Whether this row is currently in selected (non-editing) mode
     private var isSelected: Bool {
         focusedField?.wrappedValue == .selected(driver.id)
+    }
+    
+    /// Whether the title text field is currently being edited
+    private var isTitleEditing: Bool {
+        focusedField?.wrappedValue == .title(driver.id)
     }
     
     var body: some View {
@@ -468,6 +522,23 @@ struct DriverRowView: View {
                     } else {
                         onSelectPreviousDriver?()
                     }
+                    return .handled
+                }
+                .onKeyPress(keys: [.tab], phases: .down) { press in
+                    if press.modifiers.contains(.shift) {
+                        if isFirstRow {
+                            focusBinding.wrappedValue = nil
+                            onShiftTabAtFirstDriver?()
+                            return .handled
+                        }
+                        onSelectPreviousDriver?()
+                    } else {
+                        onSelectNextDriver?()
+                    }
+                    return .handled
+                }
+                .onKeyPress(keys: [.escape], phases: .down) { _ in
+                    focusBinding.wrappedValue = nil
                     return .handled
                 }
                 // Selected-mode: Enter creates sibling below
@@ -567,11 +638,24 @@ struct DriverRowView: View {
                     .textFieldStyle(.plain)
                     .foregroundStyle(detectedShortcut != nil ? .clear : .primary)
                     .focused(focusBinding, equals: .title(driver.id))
-                    .onSubmit {
-                        // Enter: process shortcut if present, exit to selected mode
-                        processShortcutAndSubmit()
-                    }
-                    // Arrow keys: navigate between drivers (with Cmd check for move)
+                    // Intercept Return, Escape, Tab at AppKit level (NSTextField swallows these)
+                    .interceptKeys(
+                        isActive: isTitleEditing,
+                        onReturn: { processShortcutAndSubmit() },
+                        onEscape: { focusBinding.wrappedValue = nil },
+                        onTab: {
+                            onFocusNextDriver?()
+                        },
+                        onShiftTab: {
+                            if isFirstRow {
+                                focusBinding.wrappedValue = nil
+                                onShiftTabAtFirstDriver?()
+                            } else {
+                                onFocusPreviousDriver?()
+                            }
+                        }
+                    )
+                    // Arrow keys still work via onKeyPress (not swallowed by NSTextField)
                     .onKeyPress(keys: [.downArrow], phases: .down) { press in
                         if press.modifiers.contains(.command) {
                             onMoveDown?()
@@ -591,9 +675,10 @@ struct DriverRowView: View {
             } else {
                 TextField("Assumption...", text: $driver.title)
                     .textFieldStyle(.plain)
-                    .onSubmit {
-                        processShortcutAndSubmit()
-                    }
+                    .interceptKeys(
+                        isActive: false,
+                        onReturn: { processShortcutAndSubmit() }
+                    )
             }
         }
     }
@@ -622,9 +707,9 @@ struct DriverRowView: View {
         .font(.body)
     }
     
-    /// Process any detected shortcut and exit to selected mode.
-    /// Enter in edit mode validates the content and transitions to selected mode
-    /// without creating a new sibling. A second Enter (in selected mode) creates one.
+    /// Process any detected shortcut and move focus to the next driver.
+    /// Enter in edit mode validates the content and advances to the next row,
+    /// keeping the user in a smooth editing flow.
     private func processShortcutAndSubmit() {
         if let shortcut = detectedShortcut {
             // Remove the shortcut from the title first
@@ -632,8 +717,8 @@ struct DriverRowView: View {
             // Set the driver type based on shortcut (d1 = Driver, d2 = Sub-driver)
             onSetDriverType?(shortcut.isSubDriver)
         }
-        // Exit edit mode → enter selected mode (driver stays highlighted)
-        focusedField?.wrappedValue = .selected(driver.id)
+        // Move focus to the next driver below (unfocuses if no next driver)
+        onFocusNextDriver?()
     }
 }
 
@@ -763,7 +848,10 @@ struct SourceTypeChip: View {
         var body: some View {
             DriverOutlineView(
                 drivers: $drivers,
-                prompt: "What assumptions must be true?"
+                prompt: "What assumptions must be true?",
+                isDriverFieldFocused: .constant(false),
+                shouldFocusFirstDriver: .constant(false),
+                onShiftTabAtFirstDriver: nil
             )
             .padding()
             .frame(width: 600, height: 400)

@@ -23,6 +23,8 @@ struct AssetTagField: View {
     @Binding var isCreatingNew: Bool
     @Binding var newTicker: String
     @Binding var newName: String
+    /// Reports whether the asset text field currently has focus
+    @Binding var isFieldFocused: Bool
     
     // MARK: - State
     
@@ -139,6 +141,7 @@ struct AssetTagField: View {
             }
             .onChange(of: textFieldFocused) { _, focused in
                 isFocused = focused
+                isFieldFocused = focused
                 if !focused {
                     // Delay hiding suggestions to allow click
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -469,7 +472,8 @@ struct AssetTagField: View {
                     selectedAsset: $selectedAsset,
                     isCreatingNew: $isCreatingNew,
                     newTicker: $newTicker,
-                    newName: $newName
+                    newName: $newName,
+                    isFieldFocused: .constant(false)
                 )
                 
                 Spacer()

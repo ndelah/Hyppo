@@ -278,6 +278,11 @@ final class ResearchQuestion {
         logEntries?.count ?? 0
     }
     
+    /// Returns the count of review log entries for this research question
+    var reviewLogsCount: Int {
+        logEntries?.filter { $0.entryType == .review }.count ?? 0
+    }
+    
     /// Returns log entries sorted by occurred date (most recent first)
     var sortedLogEntries: [LogEntry] {
         logEntries?.sorted { $0.occurredAt > $1.occurredAt } ?? []

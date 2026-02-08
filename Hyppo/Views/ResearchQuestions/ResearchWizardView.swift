@@ -49,6 +49,9 @@ struct ResearchWizardView: View {
     ]
     
     @State private var selectedDriverId: UUID?
+    @State private var isDriverFieldFocused = false
+    @State private var shouldFocusFirstDriver = false
+    @State private var isAssetFieldFocused = false
     
     /// Confidence level for the research question (1-5 scale)
     @State private var confidence: Int? = nil
@@ -202,6 +205,28 @@ struct ResearchWizardView: View {
             footerView
         }
         .frame(width: 750, height: 800)
+        .onKeyPress(.escape) {
+            if focusedField != nil || isDriverFieldFocused || isAssetFieldFocused {
+                focusedField = nil
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.return) {
+            guard focusedField == nil, !isDriverFieldFocused, !isAssetFieldFocused else {
+                return .ignored
+            }
+            if currentStep < 2 {
+                if validateCurrentStep() {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        currentStep += 1
+                    }
+                }
+            } else {
+                save()
+            }
+            return .handled
+        }
         .alert("Validation Required", isPresented: $showValidationError) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -352,10 +377,12 @@ struct ResearchWizardView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(nsColor: .separatorColor)))
                     .focused($focusedField, equals: .investmentThesis)
-                    .onKeyPress(.tab) {
-                        focusedField = .whyThisMatters
-                        return .handled
-                    }
+                    .interceptTab(
+                        isActive: focusedField == .investmentThesis,
+                        onTab: { focusedField = .whyThisMatters },
+                        onShiftTab: { /* No previous field */ },
+                        onEscape: { focusedField = nil }
+                    )
             }
             
             // Why This Matters
@@ -374,11 +401,15 @@ struct ResearchWizardView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(nsColor: .separatorColor)))
                     .focused($focusedField, equals: .whyThisMatters)
-                    .onKeyPress(.tab) {
-                        // Move focus out of text fields (to next section)
-                        focusedField = nil
-                        return .handled
-                    }
+                    .interceptTab(
+                        isActive: focusedField == .whyThisMatters,
+                        onTab: {
+                            focusedField = nil
+                            shouldFocusFirstDriver = true
+                        },
+                        onShiftTab: { focusedField = .investmentThesis },
+                        onEscape: { focusedField = nil }
+                    )
             }
             
             // Key Assumptions (Drivers)
@@ -388,7 +419,12 @@ struct ResearchWizardView: View {
                 
                 DriverOutlineView(
                     drivers: $drivers,
-                    prompt: "What assumptions must be true for this thesis to hold?"
+                    prompt: "What assumptions must be true for this thesis to hold?",
+                    isDriverFieldFocused: $isDriverFieldFocused,
+                    shouldFocusFirstDriver: $shouldFocusFirstDriver,
+                    onShiftTabAtFirstDriver: {
+                        focusedField = .whyThisMatters
+                    }
                 )
                 
                 // Status hint - show count of top-level drivers and total subdrivers
@@ -598,7 +634,8 @@ struct ResearchWizardView: View {
                 selectedAsset: $selectedAsset,
                 isCreatingNew: $isCreatingNewAsset,
                 newTicker: $newAssetTicker,
-                newName: $newAssetName
+                newName: $newAssetName,
+                isFieldFocused: $isAssetFieldFocused
             )
             
             // Quick stats for selected asset
@@ -900,6 +937,7 @@ struct ResearchWizardView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
+            .keyboardShortcut(.escape, modifiers: [])
             
             Spacer()
             

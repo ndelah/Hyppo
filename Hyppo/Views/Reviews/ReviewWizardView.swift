@@ -333,8 +333,10 @@ struct ReviewWizardView: View {
             
             // Quick stats
             HStack(spacing: 24) {
+                statBox(title: "Reviews", value: "\(researchQuestion.reviewLogsCount)", icon: "magnifyingglass")
                 statBox(title: "Assumptions", value: "\(researchQuestion.drivers?.count ?? 0)", icon: "target")
-                statBox(title: "Log Entries", value: "\(researchQuestion.logEntriesCount)", icon: "note.text")
+                statBox(title: "Logs", value: "\(researchQuestion.logEntriesCount)", icon: "note.text")
+                statBox(title: "Decisions", value: "\(researchQuestion.decisionsCount)", icon: "checkmark.circle")
             }
         }
     }
@@ -936,7 +938,6 @@ struct ReviewWizardView: View {
 
 private struct DriverAssessmentCard: View {
     @Binding var assessment: DriverAssessment
-    @State private var isExpanded = false
     
     /// Color for the current status
     private var statusColor: Color {
@@ -950,7 +951,7 @@ private struct DriverAssessmentCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Header row with title and expand button
+            // Header row with title
             HStack {
                 Image(systemName: assessment.newStatus.iconName)
                     .font(.title2)
@@ -968,15 +969,6 @@ private struct DriverAssessmentCard: View {
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
-                
-                Button {
-                    withAnimation { isExpanded.toggle() }
-                } label: {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
             }
             
             // Status picker buttons
@@ -990,9 +982,9 @@ private struct DriverAssessmentCard: View {
                 }
             }
             
-            // Expandable notes
-            if isExpanded {
-                TextField("Add notes...", text: $assessment.notes, axis: .vertical)
+            // Revision notes (only when needs revision)
+            if assessment.newStatus == .needsRevision {
+                TextField("Suggest how to revise this driver.", text: $assessment.notes, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
                     .font(.caption)
             }

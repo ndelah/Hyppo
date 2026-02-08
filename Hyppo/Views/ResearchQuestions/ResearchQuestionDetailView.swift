@@ -692,52 +692,48 @@ struct ResearchQuestionDetailView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                }
-            }
-            
-            // Metadata row
-            HStack(spacing: 16) {
-                // Investment phase badge
-                HStack(spacing: 4) {
-                    Image(systemName: researchQuestion.investmentPhase.iconName)
-                    Text(researchQuestion.investmentPhase.displayName)
-                }
-                .font(.caption)
-                .fontWeight(.medium)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(researchQuestion.investmentPhase.colorName).opacity(0.15))
-                .foregroundStyle(Color(researchQuestion.investmentPhase.colorName))
-                .clipShape(Capsule())
-                
-                if let confidence = researchQuestion.confidence {
-                    Label(confidence.shortLabel, systemImage: "gauge")
+                    
+                    // Metadata rows
+                    VStack(alignment: .leading, spacing: 8) {
+                        // Investment phase badge
+                        HStack(spacing: 4) {
+                            Image(systemName: researchQuestion.investmentPhase.iconName)
+                            Text(researchQuestion.investmentPhase.displayName)
+                        }
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color(researchQuestion.investmentPhase.colorName).opacity(0.15))
+                        .foregroundStyle(Color(researchQuestion.investmentPhase.colorName))
+                        .clipShape(Capsule())
+                        
+                        HStack(spacing: 16) {
+                            // Review reminder badge (inline)
+                            ReviewReminderBadge(researchQuestion: researchQuestion)
+                            
+                            Text("v\(researchQuestion.versionNumber)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            
+                            Label("\(researchQuestion.logEntriesCount) logs", systemImage: "note.text")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            
+                            if !researchQuestion.scenarios.isEmpty {
+                                Label("\(researchQuestion.scenariosCount) scenarios", systemImage: "arrow.up.arrow.down")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            Text("Updated \(researchQuestion.updatedAt.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
                 }
-                
-                // Review reminder badge (inline)
-                ReviewReminderBadge(researchQuestion: researchQuestion)
-                
-                Label("v\(researchQuestion.versionNumber)", systemImage: "number")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                Label("\(researchQuestion.logEntriesCount) logs", systemImage: "note.text")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                if !researchQuestion.scenarios.isEmpty {
-                    Label("\(researchQuestion.scenariosCount) scenarios", systemImage: "arrow.up.arrow.down")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                Spacer()
-                
-                Text("Updated \(researchQuestion.updatedAt.formatted(date: .abbreviated, time: .shortened))")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
             }
         }
     }
@@ -1268,10 +1264,6 @@ private struct DescriptionSection<Content: View>: View {
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
-        )
     }
 }
 
@@ -1340,7 +1332,7 @@ private struct CompactDriverRow: View {
                         .frame(width: 14)
                 }
                 
-                // Driver type pill
+                // Driver type pill (fixed width, right-aligned for alignment with sub-driver pills)
                 HStack(spacing: 4) {
                     Image(systemName: "number")
                         .font(.caption2)
@@ -1352,6 +1344,7 @@ private struct CompactDriverRow: View {
                 .background(Color.orange.opacity(0.12))
                 .foregroundStyle(.orange)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
+                .frame(width: 70, alignment: .trailing)
                 
                 // Status indicator
                 Image(systemName: statusIconName)
@@ -1404,7 +1397,6 @@ private struct CompactDriverRow: View {
                         CompactSubDriverRow(driver: subDriver)
                     }
                 }
-                .padding(.leading, 30)
                 .padding(.top, 4)
             }
         }
@@ -1412,10 +1404,6 @@ private struct CompactDriverRow: View {
         .padding(.horizontal, 12)
         .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
-        )
     }
     
     private var statusIconName: String {
@@ -1454,12 +1442,11 @@ private struct CompactSubDriverRow: View {
         VStack(alignment: .leading, spacing: 6) {
             // Sub-driver header row
             HStack(spacing: 8) {
-                // Arrow indicator
-                Text("→")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                // Empty space for alignment with driver chevron area
+                Spacer()
+                    .frame(width: 14)
                 
-                // Sub-driver type pill
+                // Sub-driver type pill (fixed width, right-aligned to match driver pills)
                 HStack(spacing: 4) {
                     Image(systemName: "arrow.turn.down.right")
                         .font(.caption2)
@@ -1471,12 +1458,13 @@ private struct CompactSubDriverRow: View {
                 .background(Color.indigo.opacity(0.12))
                 .foregroundStyle(.indigo)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
+                .frame(width: 70, alignment: .trailing)
                 
                 // Status indicator
                 Image(systemName: statusIconName)
                     .font(.caption)
                     .foregroundStyle(statusColor)
-                    .frame(width: 14)
+                    .frame(width: 16)
                 
                 // Sub-driver title
                 Text(driver.title)
@@ -1510,7 +1498,7 @@ private struct CompactSubDriverRow: View {
                         .foregroundStyle(.tertiary)
                         .italic()
                 }
-                .padding(.leading, 22)
+                .padding(.leading, 30)
             }
         }
         .padding(.vertical, 4)

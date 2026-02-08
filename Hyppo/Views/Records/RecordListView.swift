@@ -234,6 +234,12 @@ struct RecordListView: View {
             // Reset to first page when filters change
             currentPage = 0
         }
+        // Keyboard shortcut: press "n" to create a new research question
+        .onKeyPress(characters: .init(charactersIn: "n")) { _ in
+            guard !showingSearchPopover && !showingAddQuestion else { return .ignored }
+            showingAddQuestion = true
+            return .handled
+        }
     }
     
     // MARK: - Toolbar (Odoo-style)

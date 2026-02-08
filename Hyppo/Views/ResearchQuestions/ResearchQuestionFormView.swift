@@ -57,6 +57,15 @@ struct ResearchQuestionFormView: View {
     @State private var preMortemText: String = ""
     @State private var confidence: Int? = nil
     @State private var validationErrors: [String] = []
+    @State private var isDriverFieldFocused = false
+    @State private var shouldFocusFirstDriver = false
+    
+    /// Focus state for keyboard navigation between text fields
+    enum FocusedField: Hashable {
+        case investmentThesis
+        case whyThisMatters
+    }
+    @FocusState private var focusedField: FocusedField?
     
     // MARK: - Initialization
     
@@ -119,7 +128,15 @@ struct ResearchQuestionFormView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Assumptions")
                             .font(.headline)
-                        DriverOutlineView(drivers: $drivers, prompt: "What assumptions must be true?")
+                        DriverOutlineView(
+                            drivers: $drivers,
+                            prompt: "What assumptions must be true?",
+                            isDriverFieldFocused: $isDriverFieldFocused,
+                            shouldFocusFirstDriver: $shouldFocusFirstDriver,
+                            onShiftTabAtFirstDriver: {
+                                focusedField = .whyThisMatters
+                            }
+                        )
                     }
                     
                     // Confidence section
@@ -139,6 +156,20 @@ struct ResearchQuestionFormView: View {
             footerView
         }
         .frame(width: 650, height: 750)
+        .onKeyPress(.escape) {
+            if focusedField != nil || isDriverFieldFocused {
+                focusedField = nil
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.return) {
+            guard focusedField == nil, !isDriverFieldFocused else {
+                return .ignored
+            }
+            saveQuestion()
+            return .handled
+        }
     }
     
     // MARK: - Sections
@@ -176,6 +207,13 @@ struct ResearchQuestionFormView: View {
                     RoundedRectangle(cornerRadius: 6)
                         .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                 )
+                .focused($focusedField, equals: .investmentThesis)
+                .interceptTab(
+                    isActive: focusedField == .investmentThesis,
+                    onTab: { focusedField = .whyThisMatters },
+                    onShiftTab: { /* No previous field */ },
+                    onEscape: { focusedField = nil }
+                )
         }
     }
     
@@ -197,6 +235,16 @@ struct ResearchQuestionFormView: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
                         .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                )
+                .focused($focusedField, equals: .whyThisMatters)
+                .interceptTab(
+                    isActive: focusedField == .whyThisMatters,
+                    onTab: {
+                        focusedField = nil
+                        shouldFocusFirstDriver = true
+                    },
+                    onShiftTab: { focusedField = .investmentThesis },
+                    onEscape: { focusedField = nil }
                 )
         }
     }
