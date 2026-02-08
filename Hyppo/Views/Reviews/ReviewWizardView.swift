@@ -100,7 +100,6 @@ struct ReviewWizardView: View {
     @State private var driverAssessments: [DriverAssessment] = []
     @State private var selectedOutcome: ReviewOutcome = .reinforce
     @State private var newConfidence: Int = 3
-    @State private var reviewNotes: String = ""
     @State private var showingConfirmation = false
     
     // Decision state (required)
@@ -569,24 +568,6 @@ struct ReviewWizardView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             
-            // Review notes preview (if provided)
-            if !reviewNotes.isEmpty {
-                Divider()
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Review Notes")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                    
-                    Text(reviewNotes)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(nsColor: .textBackgroundColor))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-            }
         }
     }
     
@@ -705,29 +686,6 @@ struct ReviewWizardView: View {
                 }
             }
             
-            Divider()
-            
-            // Review notes (separate from decision rationale)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Review Notes (Optional)")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                
-                TextEditor(text: $reviewNotes)
-                    .font(.body)
-                    .frame(height: 80)
-                    .padding(8)
-                    .background(Color(nsColor: .textBackgroundColor))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-                    )
-                
-                Text("Additional notes about your review process.")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
         }
     }
     
@@ -827,11 +785,6 @@ struct ReviewWizardView: View {
         let oldConfidence = researchQuestion.confidenceCurrent ?? 3
         if newConfidence != oldConfidence {
             rationale += "**Confidence:** \(oldConfidence)/5 → \(newConfidence)/5\n\n"
-        }
-        
-        // Review notes if provided
-        if !reviewNotes.isEmpty {
-            rationale += "**Review Notes:**\n\(reviewNotes)\n"
         }
         
         return rationale
