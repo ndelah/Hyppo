@@ -56,13 +56,16 @@ struct ResearchWizardView: View {
     /// Confidence level for the research question (1-5 scale)
     @State private var confidence: Int? = nil
     
-    /// Selected tags for the research question
-    @State private var selectedTags: [Tag] = []
+    /// Selected type for the research question
+    @State private var selectedType: ResearchType? = nil
     
-    /// State for creating new tags
-    @State private var showingTagCreation = false
-    @State private var newTagName = ""
-    @State private var newTagColor: TagColor = .blue
+    /// Selected labels for the research question
+    @State private var selectedLabels: [Tag] = []
+    
+    /// State for creating new labels
+    @State private var showingLabelCreation = false
+    @State private var newLabelName = ""
+    @State private var newLabelColor: TagColor = .blue
     
     /// Focus state for tab navigation between text fields
     enum FocusedField: Hashable {
@@ -104,8 +107,18 @@ struct ResearchWizardView: View {
                 _drivers = State(initialValue: dtos)
             }
             
-            // Pre-populate tags
-            _selectedTags = State(initialValue: question.tags ?? [])
+            // Pre-populate type + labels (fallback to legacy tags when needed)
+            if question.researchType == nil,
+               (question.labels ?? []).isEmpty,
+               let legacyTags = question.tags,
+               !legacyTags.isEmpty {
+                let split = ResearchQuestion.splitLegacyTags(legacyTags)
+                _selectedType = State(initialValue: split.type)
+                _selectedLabels = State(initialValue: split.labels)
+            } else {
+                _selectedType = State(initialValue: question.researchType)
+                _selectedLabels = State(initialValue: question.labels ?? question.tags ?? [])
+            }
         }
     }
     
@@ -448,66 +461,89 @@ struct ResearchWizardView: View {
                 }
             }
             
-            // Confidence Level
+            // Confidence
             VStack(alignment: .leading, spacing: 8) {
-                Text("Confidence Level")
+                Text("Confidence")
                     .font(.headline)
                 
-                HStack(spacing: 8) {
-                    ForEach(ConfidenceLevel.allCases, id: \.rawValue) { level in
-                        Button {
-                            if confidence == level.rawValue {
-                                confidence = nil
-                            } else {
-                                confidence = level.rawValue
-                            }
-                        } label: {
-                            VStack(spacing: 4) {
-                                Image(systemName: (confidence ?? 0) >= level.rawValue ? "star.fill" : "star")
-                                    .font(.body)
-                                Text(level.displayName)
-                                    .font(.caption2)
-                            }
-                            .frame(width: 60, height: 44)
-                            .background(confidence == level.rawValue ? Color.accentColor : Color.surface)
-                            .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? Color.confidenceMedium : .primary))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                        .buttonStyle(.plain)
+                let confidenceSelection = Binding<Int?>(
+                    get: { ConfidenceLevel.normalizedRawValue(confidence) },
+                    set: { confidence = $0 }
+                )
+                
+                Picker("Confidence", selection: confidenceSelection) {
+                    Text("Not set").tag(nil as Int?)
+                    ForEach(ConfidenceLevel.selectableCases) { level in
+                        Text(level.displayName).tag(level.rawValue as Int?)
                     }
                 }
+                .pickerStyle(.menu)
             }
             
-            // Tags
-            tagsSection
+            // Type
+            typeSection
+            
+            // Labels
+            labelsSection
         }
     }
+
+    // MARK: - Type Section
     
-    // MARK: - Tags Section
-    
-    private var tagsSection: some View {
+    private var typeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Tags")
+                Text("Type")
                     .font(.headline)
                 Text("(optional)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             
-            Text("Categorize this research for easy filtering later.")
+            Text("Choose a single type for meaningful filtering.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
             VStack(alignment: .leading, spacing: 8) {
-                if allTags.isEmpty && selectedTags.isEmpty {
+                FlowLayout(spacing: 6) {
+                    ForEach(ResearchType.allCases.sorted(by: { $0.sortOrder < $1.sortOrder })) { type in
+                        WizardTypeToggleChip(
+                            type: type,
+                            isSelected: selectedType == type
+                        ) {
+                            toggleType(type)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Labels Section
+    
+    private var labelsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Labels")
+                    .font(.headline)
+                Text("(optional)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Text("Add multiple labels to refine filtering.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                if allTags.isEmpty && selectedLabels.isEmpty {
                     HStack {
-                        Text("No tags yet")
+                        Text("No labels yet")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                         
-                        Button("Create tag") {
-                            showingTagCreation = true
+                        Button("Create label") {
+                            showingLabelCreation = true
                         }
                         .font(.caption)
                     }
@@ -516,15 +552,15 @@ struct ResearchWizardView: View {
                         ForEach(allTags) { tag in
                             WizardTagToggleChip(
                                 tag: tag,
-                                isSelected: selectedTags.contains(where: { $0.tagId == tag.tagId })
+                                isSelected: selectedLabels.contains(where: { $0.tagId == tag.tagId })
                             ) {
-                                toggleTag(tag)
+                                toggleLabel(tag)
                             }
                         }
                         
-                        // Add tag button
+                        // Add label button
                         Button {
-                            showingTagCreation = true
+                            showingLabelCreation = true
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "plus")
@@ -546,15 +582,15 @@ struct ResearchWizardView: View {
                     }
                 }
             }
-            .popover(isPresented: $showingTagCreation) {
+            .popover(isPresented: $showingLabelCreation) {
                 VStack(spacing: 12) {
-                    Text("Create Tag")
+                    Text("Create Label")
                         .font(.headline)
                     
-                    TextField("Tag name", text: $newTagName)
+                    TextField("Label name", text: $newLabelName)
                         .textFieldStyle(.roundedBorder)
                     
-                    Picker("Color", selection: $newTagColor) {
+                    Picker("Color", selection: $newLabelColor) {
                         ForEach(TagColor.allCases) { color in
                             HStack {
                                 Circle()
@@ -569,17 +605,17 @@ struct ResearchWizardView: View {
                     
                     HStack {
                         Button("Cancel") {
-                            newTagName = ""
-                            showingTagCreation = false
+                            newLabelName = ""
+                            showingLabelCreation = false
                         }
                         
                         Spacer()
                         
                         Button("Create") {
-                            createTag()
+                            createLabel()
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(newTagName.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .disabled(newLabelName.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
                 .padding()
@@ -588,20 +624,28 @@ struct ResearchWizardView: View {
         }
     }
     
-    private func toggleTag(_ tag: Tag) {
-        if let index = selectedTags.firstIndex(where: { $0.tagId == tag.tagId }) {
-            selectedTags.remove(at: index)
+    private func toggleType(_ type: ResearchType) {
+        if selectedType == type {
+            selectedType = nil
         } else {
-            selectedTags.append(tag)
+            selectedType = type
         }
     }
     
-    private func createTag() {
-        let tag = Tag(name: newTagName, colorName: newTagColor.rawValue)
+    private func toggleLabel(_ label: Tag) {
+        if let index = selectedLabels.firstIndex(where: { $0.tagId == label.tagId }) {
+            selectedLabels.remove(at: index)
+        } else {
+            selectedLabels.append(label)
+        }
+    }
+    
+    private func createLabel() {
+        let tag = Tag(name: newLabelName, colorName: newLabelColor.rawValue)
         modelContext.insert(tag)
-        selectedTags.append(tag)
-        newTagName = ""
-        showingTagCreation = false
+        selectedLabels.append(tag)
+        newLabelName = ""
+        showingLabelCreation = false
     }
     
     private func tagColor(for tag: Tag) -> Color {
@@ -823,19 +867,38 @@ struct ResearchWizardView: View {
                 
                 // Confidence
                 if let conf = confidence, let level = ConfidenceLevel(rawValue: conf) {
-                    reviewSection(icon: "star.fill", title: "Confidence", color: Color.statusOnHold) {
+                    reviewSection(icon: "gauge", title: "Confidence", color: Color.statusOnHold) {
                         Text(level.displayName)
                             .font(.subheadline)
                     }
                 }
                 
-                // Tags
-                if !selectedTags.isEmpty {
+                // Type
+                if let type = selectedType {
                     Divider()
                     
-                    reviewSection(icon: "tag.fill", title: "Tags (\(selectedTags.count))", color: .purple) {
+                    reviewSection(icon: type.iconName, title: "Type", color: .purple) {
+                        HStack(spacing: 6) {
+                            Image(systemName: type.iconName)
+                                .font(.caption)
+                            Text(type.displayName)
+                                .font(.caption)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.purple.opacity(0.12))
+                        .foregroundStyle(.purple)
+                        .clipShape(Capsule())
+                    }
+                }
+                
+                // Labels
+                if !selectedLabels.isEmpty {
+                    Divider()
+                    
+                    reviewSection(icon: "tag.fill", title: "Labels (\(selectedLabels.count))", color: .purple) {
                         FlowLayout(spacing: 6) {
-                            ForEach(selectedTags) { tag in
+                            ForEach(selectedLabels) { tag in
                                 HStack(spacing: 4) {
                                     Circle()
                                         .fill(tagColor(for: tag))
@@ -1035,8 +1098,10 @@ struct ResearchWizardView: View {
             // Clear existing drivers
             existing.drivers?.forEach { modelContext.delete($0) }
             
-            // Update tags
-            existing.tags = selectedTags.isEmpty ? nil : selectedTags
+            // Update type + labels (sync legacy tags for compatibility)
+            existing.researchType = selectedType
+            existing.labels = selectedLabels.isEmpty ? nil : selectedLabels
+            existing.tags = existing.labels
             
             rq = existing
         } else {
@@ -1053,8 +1118,10 @@ struct ResearchWizardView: View {
                 rq.asset = assetToAssign
             }
             
-            // Assign tags
-            rq.tags = selectedTags.isEmpty ? nil : selectedTags
+            // Assign type + labels (sync legacy tags for compatibility)
+            rq.researchType = selectedType
+            rq.labels = selectedLabels.isEmpty ? nil : selectedLabels
+            rq.tags = rq.labels
         }
         
         // Save drivers and sub-drivers using the grouped structure
@@ -1090,6 +1157,36 @@ struct ResearchWizardView: View {
         
         onSave(rq)
         dismiss()
+    }
+}
+
+// MARK: - Wizard Type Toggle Chip
+
+/// A toggleable chip for research type selection in the wizard
+private struct WizardTypeToggleChip: View {
+    let type: ResearchType
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: type.iconName)
+                    .font(.caption2)
+                Text(type.displayName)
+                    .font(.caption)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(isSelected ? Color.accentColor.opacity(0.15) : Color.surface)
+            .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(isSelected ? Color.accentColor : Color.appBorder, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 

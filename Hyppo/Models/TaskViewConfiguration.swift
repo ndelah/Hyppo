@@ -66,7 +66,7 @@ enum TaskGroupByColumn: String, CaseIterable, Identifiable {
         case .none: return "None"
         case .researchQuestion: return "Research Project"
         case .driver: return "Driver"
-        case .tags: return "Tags"
+        case .tags: return "Labels"
         case .status: return "Completion Status"
         case .createdDate: return "Created Date"
         }

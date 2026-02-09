@@ -186,7 +186,7 @@ struct OutcomeFormView: View {
                         
                         if let confidence = entry.confidenceLevel {
                             Spacer()
-                            Text(confidence.shortLabel)
+                            Text("Confidence: \(confidence.displayName)")
                         }
                     }
                     .font(.subheadline)

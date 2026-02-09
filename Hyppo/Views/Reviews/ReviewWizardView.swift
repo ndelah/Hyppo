@@ -431,36 +431,26 @@ struct ReviewWizardView: View {
             
             // Confidence adjustment
             VStack(alignment: .leading, spacing: 8) {
-                Text("Update Confidence Level")
+                Text("Update Confidence")
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 
-                HStack(spacing: 12) {
-                    ForEach(1...5, id: \.self) { level in
-                        Button {
-                            newConfidence = level
-                        } label: {
-                            VStack(spacing: 2) {
-                                Image(systemName: newConfidence >= level ? "star.fill" : "star")
-                                    .font(.title2)
-                                Text("\(level)")
-                                    .font(.caption2)
-                            }
-                            .frame(width: 44, height: 44)
-                            .background(newConfidence == level ? Color.accentColor : Color.surface)
-                            .foregroundStyle(newConfidence == level ? .white : (newConfidence >= level ? Color.confidenceMedium : .primary))
-                            .clipShape(Circle())
-                        }
-                        .buttonStyle(.plain)
+                let confidenceSelection = Binding<Int>(
+                    get: { ConfidenceLevel.normalizedRawValue(newConfidence) ?? ConfidenceLevel.medium.rawValue },
+                    set: { newConfidence = $0 }
+                )
+                
+                Picker("Confidence", selection: confidenceSelection) {
+                    ForEach(ConfidenceLevel.selectableCases) { level in
+                        Text(level.displayName).tag(level.rawValue)
                     }
-                    
-                    Spacer()
-                    
-                    if let level = ConfidenceLevel(rawValue: newConfidence) {
-                        Text(level.displayName)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                }
+                .pickerStyle(.menu)
+                
+                if let level = ConfidenceLevel(rawValue: newConfidence) {
+                    Text(level.displayName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
             
@@ -513,10 +503,15 @@ struct ReviewWizardView: View {
                 )
                 
                 // Confidence
+                let oldConfidenceLabel = ConfidenceLevel(rawValue: researchQuestion.confidenceCurrent ?? 3)?.displayName ?? "Med"
+                let newConfidenceLabel = ConfidenceLevel(rawValue: newConfidence)?.displayName ?? "Med"
+                let oldConfidenceRaw = researchQuestion.confidenceCurrent ?? 3
+                let oldConfidenceTier = ConfidenceLevel.normalizedRawValue(oldConfidenceRaw) ?? oldConfidenceRaw
+                let newConfidenceTier = ConfidenceLevel.normalizedRawValue(newConfidence) ?? newConfidence
                 summaryRow(
                     label: "Confidence",
-                    value: "\(researchQuestion.confidenceCurrent ?? 3) → \(newConfidence)",
-                    isWarning: newConfidence < (researchQuestion.confidenceCurrent ?? 3)
+                    value: "\(oldConfidenceLabel) → \(newConfidenceLabel)",
+                    isWarning: newConfidenceTier < oldConfidenceTier
                 )
                 
                 // Status change (if invalidating)
@@ -812,7 +807,9 @@ struct ReviewWizardView: View {
         // Confidence change
         let oldConfidence = researchQuestion.confidenceCurrent ?? 3
         if newConfidence != oldConfidence {
-            rationale += "**Confidence:** \(oldConfidence)/5 → \(newConfidence)/5\n\n"
+            let oldLabel = ConfidenceLevel(rawValue: oldConfidence)?.displayName ?? "Med"
+            let newLabel = ConfidenceLevel(rawValue: newConfidence)?.displayName ?? "Med"
+            rationale += "**Confidence:** \(oldLabel) → \(newLabel)\n\n"
         }
         
         return rationale

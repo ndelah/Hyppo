@@ -248,7 +248,8 @@ struct GlobalSearchView: View {
     private func matchesFilters(question: ResearchQuestion) -> Bool {
         // Tag filter
         if let tag = selectedTag {
-            guard let questionTags = question.tags, questionTags.contains(where: { $0.tagId == tag.tagId }) else {
+            let labels = question.effectiveLabels
+            guard labels.contains(where: { $0.tagId == tag.tagId }) else {
                 return false
             }
         }
@@ -414,21 +415,21 @@ struct GlobalSearchView: View {
                             
                             Divider()
                             
-                            ForEach(ConfidenceLevel.allCases) { level in
+                            ForEach(ConfidenceLevel.selectableCases) { level in
                                 Button {
                                     selectedConfidence = selectedConfidence == level ? nil : level
                                 } label: {
                                     if selectedConfidence == level {
-                                        Label("\(level.shortLabel) - \(level.displayName)", systemImage: "checkmark")
+                                        Label(level.displayName, systemImage: "checkmark")
                                     } else {
-                                        Text("\(level.shortLabel) - \(level.displayName)")
+                                        Text(level.displayName)
                                     }
                                 }
                             }
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "gauge")
-                                Text(selectedConfidence?.shortLabel ?? "All Confidence")
+                                Text(selectedConfidence?.displayName ?? "All Confidence")
                                     .font(.caption)
                             }
                             .padding(.horizontal, 8)

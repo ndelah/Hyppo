@@ -346,32 +346,21 @@ struct ResearchQuestionFormView: View {
     
     private var confidenceSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Confidence Level")
+            Text("Confidence")
                 .font(.headline)
             
-            HStack(spacing: 12) {
-                ForEach(ConfidenceLevel.allCases, id: \.rawValue) { level in
-                    Button {
-                        if confidence == level.rawValue {
-                            confidence = nil
-                        } else {
-                            confidence = level.rawValue
-                        }
-                    } label: {
-                        VStack(spacing: 4) {
-                            Image(systemName: (confidence ?? 0) >= level.rawValue ? "star.fill" : "star")
-                                .font(.title3)
-                            Text(level.displayName)
-                                .font(.caption2)
-                        }
-                        .frame(width: 70, height: 50)
-                        .background(confidence == level.rawValue ? Color.accentColor : Color.surface)
-                        .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? Color.confidenceMedium : .primary))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                    .buttonStyle(.plain)
+            let confidenceSelection = Binding<Int?>(
+                get: { ConfidenceLevel.normalizedRawValue(confidence) },
+                set: { confidence = $0 }
+            )
+            
+            Picker("Confidence", selection: confidenceSelection) {
+                Text("Not set").tag(nil as Int?)
+                ForEach(ConfidenceLevel.selectableCases) { level in
+                    Text(level.displayName).tag(level.rawValue as Int?)
                 }
             }
+            .pickerStyle(.menu)
         }
     }
     

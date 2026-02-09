@@ -138,9 +138,9 @@ struct DecisionDetailView: View {
             
             HStack(spacing: 20) {
                 snapshotItem(
-                    icon: "star.fill",
+                    icon: "gauge",
                     label: "Confidence",
-                    value: decision.confidenceLevel?.shortLabel ?? "Not set",
+                    value: decision.confidenceLevel?.displayName ?? "Not set",
                     color: Color.confidenceMedium
                 )
                 

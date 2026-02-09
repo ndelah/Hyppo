@@ -71,12 +71,12 @@ struct AllTasksListView: View {
             }
         }
         
-        // Filter by tag IDs (through research question tags)
+        // Filter by label IDs (through research question labels)
         if !config.activeTagIds.isEmpty {
             result = result.filter { task in
-                guard let question = task.effectiveResearchQuestion,
-                      let questionTags = question.tags else { return false }
-                return questionTags.contains { config.activeTagIds.contains($0.tagId) }
+                guard let question = task.effectiveResearchQuestion else { return false }
+                let labels = question.effectiveLabels
+                return labels.contains { config.activeTagIds.contains($0.tagId) }
             }
         }
         
@@ -123,13 +123,13 @@ struct AllTasksListView: View {
             return grouped.sorted { $0.key < $1.key }
             
         case .tags:
-            // Group by first tag of the research question
+            // Group by first label of the research question
             let grouped = Dictionary(grouping: pagedTasks) { task -> String in
                 if let question = task.effectiveResearchQuestion,
-                   let firstTag = question.tags?.first {
-                    return firstTag.name
+                   let firstLabel = question.effectiveLabels.first {
+                    return firstLabel.name
                 }
-                return "Untagged"
+                return "Unlabeled"
             }
             return grouped.sorted { $0.key < $1.key }
             

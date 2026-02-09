@@ -1940,7 +1940,7 @@ struct DecisionTimelineCard: View {
                 HStack(spacing: 12) {
                     // Confidence at decision
                     if let confidence = decision.confidenceLevel {
-                        Label(confidence.shortLabel, systemImage: "star.fill")
+                        Label("Confidence: \(confidence.displayName)", systemImage: "gauge")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

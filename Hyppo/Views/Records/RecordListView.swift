@@ -56,14 +56,16 @@ struct RecordListView: View {
         
         // Filter by confidence
         if let confidenceFilter = config.activeConfidenceFilter {
-            result = result.filter { $0.confidenceCurrent == confidenceFilter }
+            result = result.filter {
+                ConfidenceLevel.matchesTier(confidenceRaw: $0.confidenceCurrent, filterRaw: confidenceFilter)
+            }
         }
         
-        // Filter by tags
+        // Filter by labels
         if !config.activeTagIds.isEmpty {
             result = result.filter { question in
-                guard let questionTags = question.tags else { return false }
-                return questionTags.contains { config.activeTagIds.contains($0.tagId) }
+                let labels = question.effectiveLabels
+                return labels.contains { config.activeTagIds.contains($0.tagId) }
             }
         }
         
@@ -462,7 +464,9 @@ struct RecordListView: View {
             )
             duplicate.asset = question.asset
             duplicate.status = question.status
-            duplicate.tags = question.tags
+            duplicate.researchType = question.researchType
+            duplicate.labels = question.labels ?? question.tags
+            duplicate.tags = duplicate.labels
             
             modelContext.insert(duplicate)
         }

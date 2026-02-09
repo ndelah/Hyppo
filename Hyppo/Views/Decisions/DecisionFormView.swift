@@ -487,9 +487,9 @@ struct DecisionFormView: View {
             
             HStack(spacing: 16) {
                 snapshotItem(
-                    icon: "star.fill",
+                    icon: "gauge",
                     label: "Confidence",
-                    value: researchQuestion.confidence?.shortLabel ?? "Not set",
+                    value: researchQuestion.confidence?.displayName ?? "Not set",
                     color: Color.confidenceMedium
                 )
                 

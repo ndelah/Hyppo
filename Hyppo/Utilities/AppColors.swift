@@ -202,8 +202,7 @@ extension Color {
     
     // MARK: - Confidence Color Helper
     
-    /// Returns gold for all confidence levels — star ratings use a single color
-    /// to avoid confusing them with status indicators.
+    /// Returns a consistent tone for confidence tiers to avoid clashing with status colors.
     static func forConfidence(_ level: ConfidenceLevel) -> Color {
         .confidenceMedium
     }

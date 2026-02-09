@@ -267,9 +267,9 @@ struct TaskSearchPopoverView: View {
                 }
             }
             
-            // Tags filter (from research question tags)
+            // Labels filter (from research question labels)
             VStack(alignment: .leading, spacing: 6) {
-                Text("Tags")
+                Text("Labels")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
@@ -287,7 +287,7 @@ struct TaskSearchPopoverView: View {
                         }
                     }
                 } else {
-                    Text("No tags available")
+                    Text("No labels available")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }

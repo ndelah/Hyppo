@@ -567,7 +567,7 @@ struct RecordTableView: View {
             case .updated:
                 result = lhs.updatedAt < rhs.updatedAt
                 
-            case .drivers, .logEntries, .tags:
+            case .drivers, .logEntries, .type, .labels:
                 // Non-sortable columns default to updated date
                 result = lhs.updatedAt < rhs.updatedAt
             }
@@ -996,9 +996,10 @@ private struct BulkConfidencePickerPopover: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            let levels = ConfidenceLevel.selectableCases
             // Header with selection count
             HStack {
-                Image(systemName: "star.fill")
+                Image(systemName: "gauge")
                     .foregroundStyle(Color.accentColor)
                 Text("Change Confidence")
                     .font(.headline)
@@ -1037,18 +1038,14 @@ private struct BulkConfidencePickerPopover: View {
                 Divider()
                     .padding(.vertical, 4)
                 
-                ForEach(ConfidenceLevel.allCases) { level in
+                ForEach(levels) { level in
                     Button {
                         onSelect(level)
                     } label: {
                         HStack(spacing: 8) {
-                            Text(level.shortLabel)
-                                .font(.system(size: 12))
-                                .foregroundStyle(confidenceColor(for: level))
-                                .frame(width: 80, alignment: .leading)
-                            
                             Text(level.displayName)
                                 .font(.system(size: 13))
+                                .foregroundStyle(confidenceColor(for: level))
                             
                             Spacer()
                         }
@@ -1058,7 +1055,7 @@ private struct BulkConfidencePickerPopover: View {
                     }
                     .buttonStyle(.plain)
                     
-                    if level != ConfidenceLevel.allCases.last {
+                    if let lastLevel = levels.last, level != lastLevel {
                         Divider()
                             .padding(.leading, 100)
                     }

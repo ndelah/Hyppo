@@ -126,7 +126,7 @@ struct ConfidenceChartView: View {
                         Text("Current:")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(ConfidenceLevel(rawValue: current)?.shortLabel ?? "\(current)/5")
+                        Text(ConfidenceLevel(rawValue: current)?.displayName ?? "\(current)")
                             .font(.caption)
                             .fontWeight(.semibold)
                     }

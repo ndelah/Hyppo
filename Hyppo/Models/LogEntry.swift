@@ -386,12 +386,11 @@ extension LogEntry {
         
         var body: String
         if fromConfidence == nil && toConfidence != nil {
-            body = "Confidence level set to \(toConfidence!.displayName) (\(toConfidence!.shortLabel))."
+            body = "Confidence set to \(toConfidence!.displayName)."
         } else if fromConfidence != nil && toConfidence == nil {
             body = "Confidence level removed (was \(fromConfidence!.displayName))."
         } else if let from = fromConfidence, let to = toConfidence {
-            let direction = to.rawValue > from.rawValue ? "increased" : "decreased"
-            body = "Confidence level \(direction) from \(from.displayName) to \(to.displayName).\n\n\(from.shortLabel) → \(to.shortLabel)"
+            body = "Confidence changed from \(from.displayName) to \(to.displayName)."
         } else {
             body = "Confidence level unchanged."
         }

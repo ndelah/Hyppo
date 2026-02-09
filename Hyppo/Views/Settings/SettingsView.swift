@@ -151,8 +151,13 @@ private struct GeneralSettingsTab: View {
                 }
                 .pickerStyle(.inline)
                 
-                Picker("Default Confidence Level", selection: $defaultConfidenceLevel) {
-                    ForEach(ConfidenceLevel.allCases, id: \.rawValue) { level in
+                let confidenceSelection = Binding<Int>(
+                    get: { ConfidenceLevel.normalizedRawValue(defaultConfidenceLevel) ?? ConfidenceLevel.medium.rawValue },
+                    set: { defaultConfidenceLevel = $0 }
+                )
+                
+                Picker("Default Confidence Level", selection: confidenceSelection) {
+                    ForEach(ConfidenceLevel.selectableCases) { level in
                         Text(level.displayName).tag(level.rawValue)
                     }
                 }

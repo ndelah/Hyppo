@@ -5,7 +5,7 @@
  - Status (default): Active, On Hold, Invalidated, Archived
  - Asset: Grouped by ticker
  - Confidence: Grouped by confidence level
- - Tags: Grouped by tag name
+ - Labels: Grouped by label name
  - Created/Updated Date: Grouped by month
  
  Features:
@@ -73,7 +73,7 @@ struct RecordKanbanView: View {
         case .confidence:
             return confidenceGroupedColumns
         case .tags:
-            return tagGroupedColumns
+            return labelGroupedColumns
         case .createdDate:
             return dateGroupedColumns(keyPath: \.createdAt, label: "Created")
         case .updatedDate:
@@ -134,13 +134,15 @@ struct RecordKanbanView: View {
     }
     
     private var confidenceGroupedColumns: [KanbanColumn] {
-        ConfidenceLevel.allCases.map { level in
+        ConfidenceLevel.selectableCases.map { level in
             KanbanColumn(
                 id: "confidence_\(level.rawValue)",
                 title: level.displayName,
                 icon: "gauge",
                 color: confidenceColor(for: level),
-                questions: questions.filter { $0.confidenceCurrent == level.rawValue }.sorted { $0.updatedAt > $1.updatedAt },
+                questions: questions.filter {
+                    ConfidenceLevel.matchesTier(confidenceRaw: $0.confidenceCurrent, filterRaw: level.rawValue)
+                }.sorted { $0.updatedAt > $1.updatedAt },
                 status: nil
             )
         } + [
@@ -155,25 +157,26 @@ struct RecordKanbanView: View {
         ]
     }
     
-    private var tagGroupedColumns: [KanbanColumn] {
-        // Collect all unique tags
-        var tagQuestions: [String: (tag: Tag, questions: [ResearchQuestion])] = [:]
-        var untaggedQuestions: [ResearchQuestion] = []
+    private var labelGroupedColumns: [KanbanColumn] {
+        // Collect all unique labels
+        var labelQuestions: [String: (tag: Tag, questions: [ResearchQuestion])] = [:]
+        var unlabeledQuestions: [ResearchQuestion] = []
         
         for question in questions {
-            if let tags = question.tags, !tags.isEmpty {
-                for tag in tags {
-                    if tagQuestions[tag.tagId.uuidString] == nil {
-                        tagQuestions[tag.tagId.uuidString] = (tag: tag, questions: [])
+            let labels = question.effectiveLabels
+            if !labels.isEmpty {
+                for tag in labels {
+                    if labelQuestions[tag.tagId.uuidString] == nil {
+                        labelQuestions[tag.tagId.uuidString] = (tag: tag, questions: [])
                     }
-                    tagQuestions[tag.tagId.uuidString]?.questions.append(question)
+                    labelQuestions[tag.tagId.uuidString]?.questions.append(question)
                 }
             } else {
-                untaggedQuestions.append(question)
+                unlabeledQuestions.append(question)
             }
         }
         
-        var columns = tagQuestions.values.sorted { $0.tag.name < $1.tag.name }.map { item in
+        var columns = labelQuestions.values.sorted { $0.tag.name < $1.tag.name }.map { item in
             KanbanColumn(
                 id: item.tag.tagId.uuidString,
                 title: item.tag.name,
@@ -184,13 +187,13 @@ struct RecordKanbanView: View {
             )
         }
         
-        if !untaggedQuestions.isEmpty {
+        if !unlabeledQuestions.isEmpty {
             columns.append(KanbanColumn(
-                id: "_untagged",
-                title: "Untagged",
+                id: "_unlabeled",
+                title: "Unlabeled",
                 icon: "tag.slash",
                 color: Color.statusArchived,
-                questions: untaggedQuestions.sorted { $0.updatedAt > $1.updatedAt },
+                questions: unlabeledQuestions.sorted { $0.updatedAt > $1.updatedAt },
                 status: nil
             ))
         }

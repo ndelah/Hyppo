@@ -71,7 +71,7 @@ enum GroupByColumn: String, CaseIterable, Identifiable {
         case .status: return "Status"
         case .asset: return "Asset"
         case .confidence: return "Confidence"
-        case .tags: return "Tags"
+        case .tags: return "Labels"
         case .createdDate: return "Created Date"
         case .updatedDate: return "Updated Date"
         }
@@ -135,7 +135,8 @@ enum RecordColumn: String, CaseIterable, Identifiable {
     case logEntries = "logEntries"
     case confidence = "confidence"
     case status = "status"
-    case tags = "tags"
+    case type = "tags"
+    case labels = "labels"
     case created = "created"
     case updated = "updated"
     
@@ -150,7 +151,8 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .confidence: return "Confidence"
         case .drivers: return "Coverage"
         case .logEntries: return "Momentum"
-        case .tags: return "Tags"
+        case .type: return "Type"
+        case .labels: return "Labels"
         case .created: return "Created"
         case .updated: return "Updated"
         }
@@ -165,7 +167,8 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .confidence: return "gauge"
         case .drivers: return "target"
         case .logEntries: return "note.text"
-        case .tags: return "tag"
+        case .type: return "square.grid.2x2"
+        case .labels: return "tag"
         case .created: return "calendar.badge.plus"
         case .updated: return "calendar"
         }
@@ -174,9 +177,9 @@ enum RecordColumn: String, CaseIterable, Identifiable {
     /// Whether this column is visible by default
     var isDefaultVisible: Bool {
         switch self {
-        case .question, .assetName, .status, .confidence, .updated:
+        case .question, .assetName, .status, .confidence, .type, .updated:
             return true
-        case .drivers, .logEntries, .tags, .created:
+        case .drivers, .logEntries, .labels, .created:
             return false
         }
     }
@@ -190,7 +193,8 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .confidence: return 100
         case .drivers: return 80
         case .logEntries: return 160
-        case .tags: return 120
+        case .type: return 120
+        case .labels: return 140
         case .created: return 100
         case .updated: return 100
         }
@@ -201,7 +205,7 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         switch self {
         case .question, .assetName, .status, .confidence, .created, .updated:
             return true
-        case .drivers, .logEntries, .tags:
+        case .drivers, .logEntries, .type, .labels:
             return false
         }
     }
@@ -219,7 +223,7 @@ enum RecordColumn: String, CaseIterable, Identifiable {
             return .leading
         case .assetName, .confidence, .created, .updated:
             return .center
-        case .status, .tags:
+        case .status, .type, .labels:
             return .leading
         }
     }
@@ -234,9 +238,10 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .confidence: return 3    // Key metric
         case .updated: return 4       // Useful timestamp
         case .created: return 5       // Less critical timestamp
-        case .tags: return 6          // Nice to have
-        case .drivers: return 7       // Count info
-        case .logEntries: return 8    // Count info
+        case .type: return 6          // Category
+        case .labels: return 7        // Nice to have
+        case .drivers: return 8       // Count info
+        case .logEntries: return 9    // Count info
         }
     }
     
@@ -250,8 +255,8 @@ enum RecordColumn: String, CaseIterable, Identifiable {
     var flexGrow: CGFloat {
         switch self {
         case .question: return 3.0    // Takes most extra space
-        case .tags: return 1.5        // Tags can benefit from extra space
-        case .assetName, .status, .confidence, .created, .updated: return 1.0
+        case .labels: return 1.5      // Labels can benefit from extra space
+        case .assetName, .status, .confidence, .type, .created, .updated: return 1.0
         case .drivers, .logEntries: return 0.5  // Compact columns grow less
         }
     }

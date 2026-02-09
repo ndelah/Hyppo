@@ -47,6 +47,63 @@ enum ScenarioType: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - Research Type
+
+/**
+ Represents the primary category for a research question.
+ 
+ Research type is a single-select field (Stock/Crypto/Macro/Commodity)
+ used for filtering and quick visual context in lists.
+ */
+enum ResearchType: String, Codable, CaseIterable, Identifiable {
+    case stock = "Stock"
+    case crypto = "Crypto"
+    case macro = "Macro"
+    case commodity = "Commodity"
+    
+    var id: String { rawValue }
+    
+    /// Display label for the type
+    var displayName: String { rawValue }
+    
+    /// SF Symbol icon name for visual representation
+    var iconName: String {
+        switch self {
+        case .stock: return "chart.line.uptrend.xyaxis"
+        case .crypto: return "bitcoinsign.circle"
+        case .macro: return "globe"
+        case .commodity: return "shippingbox"
+        }
+    }
+    
+    /// Sort order for consistent UI display
+    var sortOrder: Int {
+        switch self {
+        case .stock: return 0
+        case .crypto: return 1
+        case .macro: return 2
+        case .commodity: return 3
+        }
+    }
+    
+    /**
+     Maps a tag name to a research type if it matches known labels.
+     
+     - Parameter name: The tag name to evaluate
+     - Returns: A matching research type, or nil if no match
+     */
+    static func fromTagName(_ name: String) -> ResearchType? {
+        let normalized = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch normalized {
+        case "stock": return .stock
+        case "crypto": return .crypto
+        case "macro": return .macro
+        case "commodity": return .commodity
+        default: return nil
+        }
+    }
+}
+
 // MARK: - Log Entry Enums
 
 /**
@@ -280,8 +337,8 @@ enum DriverStatus: String, Codable, CaseIterable, Identifiable {
 /**
  Represents the user's confidence level in a research question or log entry.
  
- Confidence is rated on a 1-5 scale, where 1 is lowest
- and 5 is highest conviction.
+ Confidence is stored on a 1-5 scale, but displayed as three tiers
+ (Low / Med / High) for legibility and accountability.
  */
 enum ConfidenceLevel: Int, Codable, CaseIterable, Identifiable {
     case veryLow = 1
@@ -292,20 +349,54 @@ enum ConfidenceLevel: Int, Codable, CaseIterable, Identifiable {
     
     var id: Int { rawValue }
     
-    /// Display label for the confidence level
+    /// Display label for the confidence level (normalized to three tiers)
     var displayName: String {
         switch self {
-        case .veryLow: return "Very Low"
-        case .low: return "Low"
-        case .medium: return "Medium"
-        case .high: return "High"
-        case .veryHigh: return "Very High"
+        case .veryLow, .low: return "Low"
+        case .medium: return "Med"
+        case .high, .veryHigh: return "High"
         }
     }
     
     /// Short label for compact display
     var shortLabel: String {
-        String(repeating: "★", count: rawValue) + String(repeating: "☆", count: 5 - rawValue)
+        displayName
+    }
+    
+    /// Confidence options presented in pickers (Low / Med / High)
+    static var selectableCases: [ConfidenceLevel] {
+        [.low, .medium, .high]
+    }
+    
+    /// Representative raw value for the tier this level belongs to.
+    var tierRawValue: Int {
+        switch self {
+        case .veryLow, .low:
+            return ConfidenceLevel.low.rawValue
+        case .medium:
+            return ConfidenceLevel.medium.rawValue
+        case .high, .veryHigh:
+            return ConfidenceLevel.high.rawValue
+        }
+    }
+    
+    /// Normalizes a raw value to its tier representative (Low/Med/High).
+    static func normalizedRawValue(_ rawValue: Int?) -> Int? {
+        guard let rawValue,
+              let level = ConfidenceLevel(rawValue: rawValue) else {
+            return rawValue
+        }
+        return level.tierRawValue
+    }
+    
+    /// Returns true when the confidence is in the same tier as the filter.
+    static func matchesTier(confidenceRaw: Int?, filterRaw: Int) -> Bool {
+        guard let confidenceRaw,
+              let confidenceLevel = ConfidenceLevel(rawValue: confidenceRaw),
+              let filterLevel = ConfidenceLevel(rawValue: filterRaw) else {
+            return false
+        }
+        return confidenceLevel.tierRawValue == filterLevel.tierRawValue
     }
 }
 

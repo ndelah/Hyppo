@@ -5,7 +5,7 @@
  - Status: Active, On Hold, Invalidated, Archived
  - Asset: Grouped by ticker
  - Confidence: Grouped by confidence level
- - Tags: Grouped by tag name
+ - Labels: Grouped by label name
  - Created/Updated Date: Grouped by month
  
  Uses a flexible grid layout that adapts to available width,
@@ -161,7 +161,7 @@ struct RecordCardGridView: View {
         case .confidence:
             return confidenceGroupedSections
         case .tags:
-            return tagGroupedSections
+            return labelGroupedSections
         case .createdDate:
             return dateGroupedSections(keyPath: \.createdAt, label: "Created")
         case .updatedDate:
@@ -221,8 +221,10 @@ struct RecordCardGridView: View {
     }
     
     private var confidenceGroupedSections: [CardSection] {
-        var sections = ConfidenceLevel.allCases.compactMap { level -> CardSection? in
-            let sectionQuestions = sortedQuestions.filter { $0.confidenceCurrent == level.rawValue }
+        var sections = ConfidenceLevel.selectableCases.compactMap { level -> CardSection? in
+            let sectionQuestions = sortedQuestions.filter {
+                ConfidenceLevel.matchesTier(confidenceRaw: $0.confidenceCurrent, filterRaw: level.rawValue)
+            }
             guard !sectionQuestions.isEmpty else { return nil }
             return CardSection(
                 id: "confidence_\(level.rawValue)",
@@ -247,24 +249,25 @@ struct RecordCardGridView: View {
         return sections
     }
     
-    private var tagGroupedSections: [CardSection] {
-        var tagQuestions: [String: (tag: Tag, questions: [ResearchQuestion])] = [:]
-        var untaggedQuestions: [ResearchQuestion] = []
+    private var labelGroupedSections: [CardSection] {
+        var labelQuestions: [String: (tag: Tag, questions: [ResearchQuestion])] = [:]
+        var unlabeledQuestions: [ResearchQuestion] = []
         
         for question in sortedQuestions {
-            if let tags = question.tags, !tags.isEmpty {
-                for tag in tags {
-                    if tagQuestions[tag.tagId.uuidString] == nil {
-                        tagQuestions[tag.tagId.uuidString] = (tag: tag, questions: [])
+            let labels = question.effectiveLabels
+            if !labels.isEmpty {
+                for tag in labels {
+                    if labelQuestions[tag.tagId.uuidString] == nil {
+                        labelQuestions[tag.tagId.uuidString] = (tag: tag, questions: [])
                     }
-                    tagQuestions[tag.tagId.uuidString]?.questions.append(question)
+                    labelQuestions[tag.tagId.uuidString]?.questions.append(question)
                 }
             } else {
-                untaggedQuestions.append(question)
+                unlabeledQuestions.append(question)
             }
         }
         
-        var sections = tagQuestions.values.sorted { $0.tag.name < $1.tag.name }.compactMap { item -> CardSection? in
+        var sections = labelQuestions.values.sorted { $0.tag.name < $1.tag.name }.compactMap { item -> CardSection? in
             guard !item.questions.isEmpty else { return nil }
             return CardSection(
                 id: item.tag.tagId.uuidString,
@@ -275,13 +278,13 @@ struct RecordCardGridView: View {
             )
         }
         
-        if !untaggedQuestions.isEmpty {
+        if !unlabeledQuestions.isEmpty {
             sections.append(CardSection(
-                id: "_untagged",
-                title: "Untagged",
+                id: "_unlabeled",
+                title: "Unlabeled",
                 icon: "tag.slash",
                 color: Color.statusArchived,
-                questions: untaggedQuestions
+                questions: unlabeledQuestions
             ))
         }
         
@@ -367,7 +370,7 @@ struct RecordCardGridView: View {
             case .updated:
                 result = lhs.updatedAt < rhs.updatedAt
                 
-            case .drivers, .logEntries, .tags:
+            case .drivers, .logEntries, .type, .labels:
                 // Non-sortable columns default to updated date
                 result = lhs.updatedAt < rhs.updatedAt
             }

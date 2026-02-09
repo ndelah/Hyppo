@@ -129,6 +129,9 @@ final class ResearchQuestion {
     /// Raw investment phase value for persistence (Decision Layer)
     var investmentPhaseRaw: String
     
+    /// Raw research type value for persistence (Type field)
+    var researchTypeRaw: String?
+    
     /// Version number for tracking updates
     var versionNumber: Int
     
@@ -192,8 +195,11 @@ final class ResearchQuestion {
     /// Log entries for this research question (ordered chronologically)
     @Relationship(deleteRule: .cascade) var logEntries: [LogEntry]?
     
-    /// Tags associated with this research question
+    /// Legacy tags associated with this research question
     var tags: [Tag]?
+    
+    /// Labels associated with this research question
+    var labels: [Tag]?
     
     /// Review reminder for this research question
     @Relationship(deleteRule: .cascade) var reviewReminder: ReviewReminder?
@@ -261,6 +267,59 @@ final class ResearchQuestion {
             investmentPhaseRaw = newValue.rawValue
             updatedAt = Date()
         }
+    }
+    
+    /// Research type as enum (Type field)
+    var researchType: ResearchType? {
+        get {
+            guard let raw = researchTypeRaw else { return nil }
+            return ResearchType(rawValue: raw)
+        }
+        set {
+            researchTypeRaw = newValue?.rawValue
+        }
+    }
+    
+    /**
+     Returns the effective research type, falling back to legacy tags when needed.
+     
+     - Returns: Effective type for display and filtering
+     */
+    var effectiveResearchType: ResearchType? {
+        if let researchType = researchType {
+            return researchType
+        }
+        let legacyTags = tags ?? []
+        let split = ResearchQuestion.splitLegacyTags(legacyTags)
+        return split.type
+    }
+    
+    /**
+     Returns label tags, falling back to legacy tags when labels are unset.
+     
+     - Returns: Effective labels for display and filtering
+     */
+    var effectiveLabels: [Tag] {
+        if let labels = labels, !labels.isEmpty {
+            return labels
+        }
+        let legacyTags = tags ?? []
+        let split = ResearchQuestion.splitLegacyTags(legacyTags)
+        return split.labels
+    }
+    
+    /**
+     Splits legacy tags into a type (if matched) and remaining labels.
+     
+     - Parameter tags: Legacy tags to split
+     - Returns: Tuple of detected type and remaining labels
+     */
+    static func splitLegacyTags(_ tags: [Tag]) -> (type: ResearchType?, labels: [Tag]) {
+        guard let firstTag = tags.first else { return (nil, []) }
+        if let matchedType = ResearchType.fromTagName(firstTag.name) {
+            return (matchedType, Array(tags.dropFirst()))
+        }
+        return (nil, tags)
     }
     
     /// Top-level drivers (those without a parent)
@@ -359,7 +418,7 @@ final class ResearchQuestion {
             parts.append("\(scenariosCount) \(scenarioText)")
         }
         if let confidence = confidence {
-            parts.append(confidence.shortLabel)
+            parts.append("Confidence: \(confidence.displayName)")
         }
         return parts.joined(separator: " • ")
     }

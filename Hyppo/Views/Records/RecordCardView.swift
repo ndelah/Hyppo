@@ -114,7 +114,7 @@ struct RecordCardView: View {
             if let confidence = question.confidence {
                 MetricBadge(
                     icon: "gauge",
-                    text: confidence.shortLabel,
+                    text: confidence.displayName,
                     color: confidenceColor(for: confidence),
                     isCompact: isCompact
                 )
@@ -148,20 +148,21 @@ struct RecordCardView: View {
     
     private var footerRow: some View {
         HStack {
-            // Tags (show first 2)
-            if let tags = question.tags, !tags.isEmpty {
+            // Labels (show first 2)
+            let labels = question.effectiveLabels
+            if !labels.isEmpty {
                 HStack(spacing: 5) {
-                    ForEach(tags.prefix(2)) { tag in
+                    ForEach(labels.prefix(2)) { tag in
                         Circle()
                             .fill(tagColor(for: tag))
                             .frame(width: 9 * textSizeMultiplier, height: 9 * textSizeMultiplier)
-                            .accessibilityLabel("Tag: \(tag.name)")
+                            .accessibilityLabel("Label: \(tag.name)")
                     }
-                    if tags.count > 2 {
-                        Text("+\(tags.count - 2)")
+                    if labels.count > 2 {
+                        Text("+\(labels.count - 2)")
                             .font(.system(size: 12 * textSizeMultiplier))
                             .foregroundStyle(.secondary)
-                            .accessibilityLabel("\(tags.count - 2) more tags")
+                            .accessibilityLabel("\(labels.count - 2) more labels")
                     }
                 }
             }

@@ -137,8 +137,10 @@ struct RecordRowView: View {
             driversCell
         case .logEntries:
             logEntriesCell
-        case .tags:
-            tagsCell
+        case .type:
+            typeCell
+        case .labels:
+            labelsCell
         case .created:
             createdCell
         case .updated:
@@ -282,19 +284,24 @@ struct RecordRowView: View {
         } label: {
             Group {
                 if let confidence = question.confidence {
-                    Text(confidence.shortLabel)
-                        .font(.system(size: 12 * textSizeMultiplier))
-                        .foregroundStyle(confidenceColor(for: confidence))
+                    let color = confidenceColor(for: confidence)
+                    Text(confidence.displayName)
+                        .font(.system(size: 12 * textSizeMultiplier, weight: .medium))
+                        .foregroundStyle(color)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(color.opacity(hasMultipleSelection && isChecked ? 0.25 : 0.15))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(color.opacity(0.25), lineWidth: 1)
+                        )
                 } else {
                     Text("—")
                         .font(.system(size: 12 * textSizeMultiplier))
                         .foregroundStyle(.tertiary)
                 }
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 4)
-            .background(hasMultipleSelection && isChecked ? Color.accentColor.opacity(0.1) : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -336,25 +343,45 @@ struct RecordRowView: View {
             .foregroundStyle(question.logEntriesCount > 0 ? .primary : .tertiary)
     }
     
-    private var tagsCell: some View {
+    private var typeCell: some View {
         Group {
-            if let tags = question.tags, !tags.isEmpty {
+            if let type = question.effectiveResearchType {
+                HStack(spacing: 6) {
+                    Image(systemName: type.iconName)
+                        .font(.system(size: 12 * textSizeMultiplier))
+                    Text(type.displayName)
+                        .font(.system(size: 12 * textSizeMultiplier))
+                }
+                .foregroundStyle(.secondary)
+            } else {
+                Text("—")
+                    .font(.system(size: 12 * textSizeMultiplier))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityLabel("No type")
+            }
+        }
+    }
+    
+    private var labelsCell: some View {
+        Group {
+            let labels = question.effectiveLabels
+            if !labels.isEmpty {
                 HStack(spacing: 4) {
-                    ForEach(tags.prefix(3)) { tag in
+                    ForEach(labels.prefix(3)) { tag in
                         TagPill(tag: tag)
                     }
-                    if tags.count > 3 {
-                        Text("+\(tags.count - 3)")
+                    if labels.count > 3 {
+                        Text("+\(labels.count - 3)")
                             .font(.system(size: 12 * textSizeMultiplier))
                             .foregroundStyle(.secondary)
-                            .accessibilityLabel("\(tags.count - 3) more tags")
+                            .accessibilityLabel("\(labels.count - 3) more labels")
                     }
                 }
             } else {
                 Text("—")
                     .font(.system(size: 12 * textSizeMultiplier))
                     .foregroundStyle(.tertiary)
-                    .accessibilityLabel("No tags")
+                    .accessibilityLabel("No labels")
             }
         }
     }
@@ -539,6 +566,7 @@ private struct ConfidencePickerPopover: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            let currentTier = ConfidenceLevel.normalizedRawValue(currentConfidence?.rawValue)
             Text("Confidence")
                 .font(.headline)
                 .padding(.horizontal, 12)
@@ -569,22 +597,18 @@ private struct ConfidencePickerPopover: View {
                 Divider()
                     .padding(.vertical, 4)
                 
-                ForEach(ConfidenceLevel.allCases) { level in
+                ForEach(ConfidenceLevel.selectableCases) { level in
                     Button {
                         onSelect(level)
                     } label: {
                         HStack(spacing: 8) {
-                            Text(level.shortLabel)
-                                .font(.system(size: 12))
-                                .foregroundStyle(confidenceColor(for: level))
-                                .frame(width: 80, alignment: .leading)
-                            
                             Text(level.displayName)
                                 .font(.system(size: 13))
+                                .foregroundStyle(confidenceColor(for: level))
                             
                             Spacer()
                             
-                            if currentConfidence == level {
+                            if currentTier == level.rawValue {
                                 Image(systemName: "checkmark")
                                     .foregroundStyle(Color.accentColor)
                             }

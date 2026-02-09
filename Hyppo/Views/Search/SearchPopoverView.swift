@@ -244,16 +244,17 @@ struct SearchPopoverView: View {
     
     private var confidenceFiltersColumn: some View {
         VStack(alignment: .leading, spacing: 6) {
+            let selectedConfidence = ConfidenceLevel.normalizedRawValue(config.activeConfidenceFilter)
             Text("Confidence")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
             FlowLayout(spacing: 6) {
-                ForEach(ConfidenceLevel.allCases) { level in
+                ForEach(ConfidenceLevel.selectableCases) { level in
                     FilterChip(
                         title: level.displayName,
                         icon: "gauge",
-                        isSelected: config.activeConfidenceFilter == level.rawValue,
+                        isSelected: selectedConfidence == level.rawValue,
                         color: confidenceColor(for: level)
                     ) {
                         toggleConfidenceFilter(level)
@@ -266,7 +267,7 @@ struct SearchPopoverView: View {
     
     private var tagsFiltersColumn: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Tags")
+            Text("Labels")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
@@ -284,7 +285,7 @@ struct SearchPopoverView: View {
                     }
                 }
             } else {
-                Text("No tags")
+                Text("No labels")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
@@ -468,7 +469,7 @@ struct SearchPopoverView: View {
     }
     
     private func toggleConfidenceFilter(_ level: ConfidenceLevel) {
-        if config.activeConfidenceFilter == level.rawValue {
+        if ConfidenceLevel.normalizedRawValue(config.activeConfidenceFilter) == level.rawValue {
             config.activeConfidenceFilter = nil
         } else {
             config.activeConfidenceFilter = level.rawValue

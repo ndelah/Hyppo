@@ -17,7 +17,7 @@ struct ExportData: Codable {
     let exportedAt: Date
     let assets: [AssetExport]
     
-    static let currentVersion = "2.1"  // Updated for decision target date
+    static let currentVersion = "2.2"  // Updated for research type and labels
 }
 
 struct AssetExport: Codable {
@@ -43,11 +43,13 @@ struct ResearchQuestionExport: Codable {
     let confidence: Int?
     let status: String
     let investmentPhase: String
+    let researchType: String?
     let conclusion: String?
     let versionNumber: Int
     let createdAt: Date
     let updatedAt: Date
     let lastReviewedAt: Date?
+    let labels: [String]?
     let tags: [String]
     let logEntries: [LogEntryExport]
     let reviewReminder: ReviewReminderExport?
@@ -279,12 +281,14 @@ final class ExportService {
                     confidence: question.confidenceCurrent,
                     status: question.statusRaw,
                     investmentPhase: question.investmentPhaseRaw,
+                    researchType: question.researchTypeRaw ?? question.effectiveResearchType?.rawValue,
                     conclusion: question.conclusion,
                     versionNumber: question.versionNumber,
                     createdAt: question.createdAt,
                     updatedAt: question.updatedAt,
                     lastReviewedAt: question.lastReviewedAt,
-                    tags: (question.tags ?? []).map { $0.name },
+                    labels: (question.labels ?? question.tags ?? []).map { $0.name },
+                    tags: (question.labels ?? question.tags ?? []).map { $0.name },
                     logEntries: logEntryExports,
                     reviewReminder: reminderExport,
                     decisions: decisionExports,
@@ -405,12 +409,16 @@ final class ExportService {
                 researchQuestion.scenarios = importedScenarios
                 researchQuestion.statusRaw = questionExport.status
                 researchQuestion.investmentPhaseRaw = questionExport.investmentPhase
+                researchQuestion.researchTypeRaw = questionExport.researchType
                 researchQuestion.conclusion = questionExport.conclusion
                 researchQuestion.versionNumber = questionExport.versionNumber
                 researchQuestion.createdAt = questionExport.createdAt
                 researchQuestion.updatedAt = questionExport.updatedAt
                 researchQuestion.lastReviewedAt = questionExport.lastReviewedAt
-                researchQuestion.tags = questionExport.tags.map { getOrCreateTag(name: $0) }
+                let labelNames = questionExport.labels ?? questionExport.tags
+                let labels = labelNames.map { getOrCreateTag(name: $0) }
+                researchQuestion.labels = labels.isEmpty ? nil : labels
+                researchQuestion.tags = researchQuestion.labels
                 researchQuestion.asset = asset
                 
                 modelContext.insert(researchQuestion)
