@@ -523,11 +523,11 @@ struct ConvictionHealthView: View {
                 Text("Evidence")
                     .font(.caption)
                     .fontWeight(.bold)
-                    .frame(width: 50)
+                    .frame(width: 50, alignment: .trailing)
                 Text("Balance")
                     .font(.caption)
                     .fontWeight(.bold)
-                    .frame(width: 50)
+                    .frame(width: 50, alignment: .trailing)
                 Text("Data")
                     .font(.caption)
                     .fontWeight(.bold)
@@ -562,15 +562,17 @@ struct ConvictionHealthView: View {
                 
                 Text("\(driver.directEvidenceCount)")
                     .font(.caption)
-                    .frame(width: 50)
+                    .monospacedDigit()
+                    .frame(width: 50, alignment: .trailing)
                 
                 let balance = driver.totalEvidenceBalance
                 let balanceColor: Color = balance > 0 ? .statusActive : (balance < 0 ? .statusInvalidated : .secondary)
                 Text(balance > 0 ? "+\(balance)" : "\(balance)")
                     .font(.caption)
                     .fontWeight(.bold)
+                    .monospacedDigit()
                     .foregroundStyle(balanceColor)
-                    .frame(width: 50)
+                    .frame(width: 50, alignment: .trailing)
                 
                 // Evidence-based status (Data column)
                 evidenceStatusBadge(for: driver)
@@ -594,15 +596,17 @@ struct ConvictionHealthView: View {
                         
                         Text("\(sub.directEvidenceCount)")
                             .font(.caption2)
+                            .monospacedDigit()
                             .foregroundStyle(.tertiary)
-                            .frame(width: 50)
+                            .frame(width: 50, alignment: .trailing)
                         
                         let balance = sub.totalEvidenceBalance
                         let subBalanceColor: Color = balance > 0 ? .statusActive : (balance < 0 ? .statusInvalidated : .secondary)
                         Text(balance > 0 ? "+\(balance)" : "\(balance)")
                             .font(.caption2)
+                            .monospacedDigit()
                             .foregroundStyle(subBalanceColor.opacity(balance != 0 ? 0.8 : 1.0))
-                            .frame(width: 50)
+                            .frame(width: 50, alignment: .trailing)
                         
                         evidenceStatusBadge(for: sub)
                             .frame(width: 80)

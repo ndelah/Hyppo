@@ -207,11 +207,15 @@ enum RecordColumn: String, CaseIterable, Identifiable {
     }
     
     /// Content alignment for this column
+    /// Numeric columns use trailing alignment so digits align by place value;
+    /// text / badge columns stay centered; question stays leading.
     var alignment: Alignment {
         switch self {
         case .question:
             return .leading
-        case .assetName, .status, .confidence, .drivers, .logEntries, .tags, .created, .updated:
+        case .drivers, .logEntries:
+            return .trailing
+        case .assetName, .status, .confidence, .tags, .created, .updated:
             return .center
         }
     }

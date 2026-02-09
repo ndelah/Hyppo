@@ -330,6 +330,7 @@ struct RecordRowView: View {
         let count = question.drivers?.count ?? 0
         return Text("\(count)")
             .font(.system(size: 14 * textSizeMultiplier))
+            .monospacedDigit()
             .foregroundStyle(count > 0 ? .primary : .tertiary)
     }
     
@@ -337,6 +338,7 @@ struct RecordRowView: View {
         let count = question.logEntriesCount
         return Text("\(count)")
             .font(.system(size: 14 * textSizeMultiplier))
+            .monospacedDigit()
             .foregroundStyle(count > 0 ? .primary : .tertiary)
     }
     

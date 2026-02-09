@@ -227,10 +227,6 @@ struct RecordTableView: View {
             }
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: column.iconName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
                 Text(column.displayName)
                     .font(.subheadline)
                     .fontWeight(.semibold)
