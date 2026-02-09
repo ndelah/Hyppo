@@ -322,19 +322,18 @@ struct RecordRowView: View {
     // MARK: - Other Cells (Read-Only)
     
     private var driversCell: some View {
-        let count = question.drivers?.count ?? 0
-        return Text("\(count)")
+        return Text(question.driverCoverageText)
             .font(.system(size: 14 * textSizeMultiplier))
             .monospacedDigit()
-            .foregroundStyle(count > 0 ? .primary : .tertiary)
+            .foregroundStyle(question.topLevelDrivers.isEmpty ? .tertiary : .primary)
     }
     
     private var logEntriesCell: some View {
-        let count = question.logEntriesCount
-        return Text("\(count)")
+        return Text(question.logMomentumText)
             .font(.system(size: 14 * textSizeMultiplier))
-            .monospacedDigit()
-            .foregroundStyle(count > 0 ? .primary : .tertiary)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .foregroundStyle(question.logEntriesCount > 0 ? .primary : .tertiary)
     }
     
     private var tagsCell: some View {

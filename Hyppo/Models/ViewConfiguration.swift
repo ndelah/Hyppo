@@ -148,8 +148,8 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .assetName: return "Asset"
         case .status: return "Status"
         case .confidence: return "Confidence"
-        case .drivers: return "Drivers"
-        case .logEntries: return "Logs"
+        case .drivers: return "Coverage"
+        case .logEntries: return "Momentum"
         case .tags: return "Tags"
         case .created: return "Created"
         case .updated: return "Updated"
@@ -188,8 +188,8 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .assetName: return 80
         case .status: return 100
         case .confidence: return 100
-        case .drivers: return 70
-        case .logEntries: return 60
+        case .drivers: return 80
+        case .logEntries: return 160
         case .tags: return 120
         case .created: return 100
         case .updated: return 100
@@ -213,8 +213,10 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         switch self {
         case .question:
             return .leading
-        case .drivers, .logEntries:
+        case .drivers:
             return .trailing
+        case .logEntries:
+            return .leading
         case .assetName, .confidence, .created, .updated:
             return .center
         case .status, .tags:

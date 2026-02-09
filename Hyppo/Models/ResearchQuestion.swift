@@ -267,6 +267,53 @@ final class ResearchQuestion {
     var topLevelDrivers: [Driver] {
         drivers?.filter { $0.parentDriver == nil }.sorted { $0.position < $1.position } ?? []
     }
+
+    /**
+     Returns the number of top-level drivers that have evidence coverage.
+     
+     - Returns: Count of top-level drivers with evidence.
+     */
+    var driversWithEvidenceCount: Int {
+        topLevelDrivers.filter { !$0.hasBlindSpot }.count
+    }
+
+    /**
+     Returns coverage text for top-level drivers (e.g., "3/5").
+     
+     - Returns: Coverage string or "—" if no drivers exist.
+     */
+    var driverCoverageText: String {
+        let total = topLevelDrivers.count
+        guard total > 0 else { return "—" }
+        return "\(driversWithEvidenceCount)/\(total)"
+    }
+
+    /**
+     Returns count of log entries within the last 7 days.
+     
+     - Returns: Count of log entries in the last 7 days.
+     */
+    var logEntriesThisWeekCount: Int {
+        logEntryCount(withinLastDays: 7)
+    }
+
+    /**
+     Returns count of log entries within the last 14 days.
+     
+     - Returns: Count of log entries in the last 14 days.
+     */
+    var logEntriesLast14DaysCount: Int {
+        logEntryCount(withinLastDays: 14)
+    }
+
+    /**
+     Returns momentum text (e.g., "+2 this week / 0 in 14d").
+     
+     - Returns: Momentum summary string.
+     */
+    var logMomentumText: String {
+        "+\(logEntriesThisWeekCount) this week / \(logEntriesLast14DaysCount) in 14d"
+    }
     
     /// Returns true if the question has at least 2 drivers
     var hasMinimumDrivers: Bool {
@@ -286,6 +333,17 @@ final class ResearchQuestion {
     /// Returns log entries sorted by occurred date (most recent first)
     var sortedLogEntries: [LogEntry] {
         logEntries?.sorted { $0.occurredAt > $1.occurredAt } ?? []
+    }
+
+    /**
+     Counts log entries by occurredAt within the last N days.
+     
+     - Parameter days: Number of days to look back from now.
+     - Returns: Count of log entries in the window.
+     */
+    private func logEntryCount(withinLastDays days: Int) -> Int {
+        let cutoff = Date().addingTimeInterval(TimeInterval(-days * 24 * 60 * 60))
+        return logEntries?.filter { $0.occurredAt >= cutoff }.count ?? 0
     }
     
     /// Returns the count of scenarios
