@@ -448,7 +448,7 @@ struct ReviewWizardView: View {
                             }
                             .frame(width: 44, height: 44)
                             .background(newConfidence == level ? Color.accentColor : Color.surface)
-                            .foregroundStyle(newConfidence == level ? .white : (newConfidence >= level ? .orange : .primary))
+                            .foregroundStyle(newConfidence == level ? .white : (newConfidence >= level ? Color.confidenceMedium : .primary))
                             .clipShape(Circle())
                         }
                         .buttonStyle(.plain)

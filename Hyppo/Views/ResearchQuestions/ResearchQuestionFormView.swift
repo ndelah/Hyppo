@@ -366,7 +366,7 @@ struct ResearchQuestionFormView: View {
                         }
                         .frame(width: 70, height: 50)
                         .background(confidence == level.rawValue ? Color.accentColor : Color.surface)
-                        .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? .orange : .primary))
+                        .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? Color.confidenceMedium : .primary))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                     .buttonStyle(.plain)

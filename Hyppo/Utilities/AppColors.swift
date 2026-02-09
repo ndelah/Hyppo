@@ -202,15 +202,10 @@ extension Color {
     
     // MARK: - Confidence Color Helper
     
-    /// Returns the theme color for a confidence level
+    /// Returns gold for all confidence levels — star ratings use a single color
+    /// to avoid confusing them with status indicators.
     static func forConfidence(_ level: ConfidenceLevel) -> Color {
-        switch level {
-        case .veryLow: return .confidenceVeryLow
-        case .low: return .confidenceLow
-        case .medium: return .confidenceMedium
-        case .high: return .confidenceHigh
-        case .veryHigh: return .confidenceVeryHigh
-        }
+        .confidenceMedium
     }
     
     // MARK: - Driver Status Color Helper

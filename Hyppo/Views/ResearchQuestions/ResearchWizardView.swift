@@ -470,7 +470,7 @@ struct ResearchWizardView: View {
                             }
                             .frame(width: 60, height: 44)
                             .background(confidence == level.rawValue ? Color.accentColor : Color.surface)
-                            .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? .orange : .primary))
+                            .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? Color.confidenceMedium : .primary))
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                         .buttonStyle(.plain)
