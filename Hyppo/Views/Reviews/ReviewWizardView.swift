@@ -55,7 +55,6 @@ struct DriverAssessment: Identifiable {
     let title: String
     let currentStatus: DriverStatus
     var newStatus: DriverStatus
-    var notes: String = ""
     /// The revised title entered inline when driver is marked as needing revision
     var revisedTitle: String = ""
     
@@ -978,17 +977,6 @@ private struct DriverAssessmentCard: View {
                     TextField("Enter revised assumption...", text: $assessment.revisedTitle, axis: .vertical)
                         .textFieldStyle(.roundedBorder)
                         .font(.caption)
-                        .onAppear {
-                            // Pre-fill with current title if empty
-                            if assessment.revisedTitle.isEmpty {
-                                assessment.revisedTitle = assessment.title
-                            }
-                        }
-                    
-                    TextField("Notes (optional)", text: $assessment.notes, axis: .vertical)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
             }
         }

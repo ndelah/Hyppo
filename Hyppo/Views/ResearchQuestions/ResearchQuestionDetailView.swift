@@ -15,7 +15,6 @@ enum ResearchDetailTab: String, CaseIterable, Identifiable {
     case description = "Description"
     case researchConviction = "Research Conviction"
     case confidence = "Confidence"
-    case decisions = "Decisions"
     case tasks = "Tasks"
     
     var id: String { rawValue }
@@ -353,47 +352,9 @@ struct ResearchQuestionDetailView: View {
             confidenceTabContent
                 .padding()
                 .transition(.opacity)
-        case .decisions:
-            decisionsTabContent
-                .padding()
-                .transition(.opacity)
         case .tasks:
             tasksTabContent
                 .transition(.opacity)
-        }
-    }
-    
-    /// Decisions tab content - shows decision timeline and actions
-    private var decisionsTabContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Investment phase header
-            investmentPhaseHeader
-            
-            // Awaiting outcome banner
-            if researchQuestion.isAwaitingOutcome {
-                awaitingOutcomeBanner
-            }
-            
-            // Outcome summary (if in PostMortem)
-            if let outcome = researchQuestion.outcome {
-                outcomeSummarySection(outcome)
-            }
-            
-            // Decision timeline
-            DecisionTimelineView(researchQuestion: researchQuestion) { decision in
-                selectedDecision = decision
-            }
-            
-            // Record decision button (if actions available)
-            if !researchQuestion.validDecisionActions.isEmpty {
-                Button {
-                    showingDecisionForm = true
-                } label: {
-                    Label("Record Decision", systemImage: "plus.circle.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-            }
         }
     }
     
