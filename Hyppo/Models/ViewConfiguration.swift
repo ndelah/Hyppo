@@ -239,17 +239,7 @@ enum RecordColumn: String, CaseIterable, Identifiable {
     /// Minimum width for this column (cannot be compressed below this)
     /// These are set aggressively small to allow more columns to fit at medium widths
     var minWidth: CGFloat {
-        switch self {
-        case .question: return 150
-        case .assetName: return 50
-        case .status: return 70
-        case .confidence: return 70
-        case .drivers: return 40
-        case .logEntries: return 40
-        case .tags: return 60
-        case .created: return 70
-        case .updated: return 70
-        }
+        0
     }
     
     /// Flex grow factor for proportional expansion (higher = takes more extra space)
@@ -490,9 +480,7 @@ final class ViewConfiguration {
        - width: The new width
      */
     func setWidthForColumn(_ column: RecordColumn, width: CGFloat) {
-        // Enforce minimum width
-        let minWidth: CGFloat = 50
-        columnWidths[column.rawValue] = max(width, minWidth)
+        columnWidths[column.rawValue] = width
     }
     
     /**
@@ -537,9 +525,8 @@ final class ViewConfiguration {
     }
     
     /**
-     Calculates proportional widths for columns based on available space.
-     Columns get their minimum width plus a proportional share of extra space based on flexGrow.
-     Ensures total width never exceeds available space.
+     Calculates widths for columns based on saved custom widths or suggested widths.
+     Scales down proportionally when the total exceeds available space.
      
      - Parameters:
        - columns: The columns to calculate widths for
@@ -547,48 +534,26 @@ final class ViewConfiguration {
        - horizontalPadding: Additional horizontal padding to account for
      - Returns: Dictionary mapping each column to its calculated width
      */
-    func responsiveWidths(for columns: [RecordColumn], availableWidth: CGFloat, horizontalPadding: CGFloat = 44) -> [RecordColumn: CGFloat] {
+    func responsiveWidths(
+        for columns: [RecordColumn],
+        availableWidth: CGFloat,
+        horizontalPadding: CGFloat = 44,
+        allowScaleDown: Bool = true
+    ) -> [RecordColumn: CGFloat] {
         let usableWidth = availableWidth - horizontalPadding
-        
-        // Calculate total minimum width and total flex grow
-        let totalMinWidth = columns.reduce(CGFloat(0)) { $0 + $1.minWidth }
-        let totalFlexGrow = columns.reduce(CGFloat(0)) { $0 + $1.flexGrow }
-        
-        // Calculate extra space to distribute
-        let extraSpace = max(0, usableWidth - totalMinWidth)
-        
         var widths: [RecordColumn: CGFloat] = [:]
         
         for column in columns {
-            // Base width is minimum, plus proportional share of extra space
-            let flexShare = totalFlexGrow > 0 ? (column.flexGrow / totalFlexGrow) : 0
-            let columnWidth = column.minWidth + (extraSpace * flexShare)
-            widths[column] = columnWidth
+            let baseWidth = columnWidths[column.rawValue] ?? column.suggestedWidth
+            widths[column] = max(0, baseWidth)
         }
         
-        // Apply custom widths, but ensure total doesn't exceed usable width
-        var totalCustomizedWidth = widths.values.reduce(CGFloat(0), +)
-        
-        for column in columns {
-            if let customWidth = columnWidths[column.rawValue] {
-                let currentWidth = widths[column] ?? column.minWidth
-                let widthDifference = customWidth - currentWidth
-                
-                // Only apply custom width if it fits within remaining space
-                if totalCustomizedWidth + widthDifference <= usableWidth {
-                    widths[column] = customWidth
-                    totalCustomizedWidth += widthDifference
-                }
-            }
-        }
-        
-        // Final safety check: if total still exceeds usable width, scale down proportionally
-        let finalTotal = widths.values.reduce(CGFloat(0), +)
-        if finalTotal > usableWidth && finalTotal > 0 {
-            let scaleFactor = usableWidth / finalTotal
+        let totalWidth = widths.values.reduce(CGFloat(0), +)
+        if allowScaleDown, totalWidth > usableWidth, totalWidth > 0 {
+            let scaleFactor = usableWidth / totalWidth
             for column in columns {
                 if let width = widths[column] {
-                    widths[column] = max(column.minWidth, width * scaleFactor)
+                    widths[column] = max(0, width * scaleFactor)
                 }
             }
         }

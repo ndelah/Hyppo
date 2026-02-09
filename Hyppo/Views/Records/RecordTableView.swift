@@ -40,6 +40,7 @@ struct RecordTableView: View {
     @State private var showingColumnPopover = false
     @State private var availableWidth: CGFloat = 800
     @State private var currentPage = 0
+    @State private var isResizingColumn = false
     
     /// Tracks the last clicked question ID for shift-click range selection
     @State private var lastSelectedQuestionID: PersistentIdentifier?
@@ -64,7 +65,11 @@ struct RecordTableView: View {
     
     /// Proportionally calculated widths for visible columns
     private var responsiveWidths: [RecordColumn: CGFloat] {
-        config.responsiveWidths(for: responsiveColumns, availableWidth: availableWidth)
+        config.responsiveWidths(
+            for: responsiveColumns,
+            availableWidth: availableWidth,
+            allowScaleDown: !isResizingColumn
+        )
     }
     
     // MARK: - Pagination Computed Properties
@@ -148,7 +153,8 @@ struct RecordTableView: View {
                         ResizableDivider(
                             column: column,
                             config: config,
-                            responsiveWidth: columnWidth
+                            responsiveWidth: columnWidth,
+                            isResizingColumn: $isResizingColumn
                         )
                     }
                 }
@@ -162,7 +168,7 @@ struct RecordTableView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .clipped()
-        .background(Color.surfaceSecondary)
+        .background(Color.surfaceSecondary.opacity(0.9))
     }
     
     @ViewBuilder
@@ -174,8 +180,7 @@ struct RecordTableView: View {
         } label: {
             HStack(spacing: 4) {
                 Text(column.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+                    .font(.system(size: 13, weight: .semibold))
                 
                 if column.isSortable && config.sortColumn == column {
                     Image(systemName: config.sortAscending ? "chevron.up" : "chevron.down")
@@ -606,6 +611,7 @@ private struct ResizableDivider: View {
     let column: RecordColumn
     @Bindable var config: ViewConfiguration
     let responsiveWidth: CGFloat
+    @Binding var isResizingColumn: Bool
     
     @State private var isDragging = false
     @State private var dragStartWidth: CGFloat = 0
@@ -618,16 +624,19 @@ private struct ResizableDivider: View {
             .gesture(
                 DragGesture(minimumDistance: 1)
                     .onChanged { value in
+                        if !isResizingColumn {
+                            isResizingColumn = true
+                        }
                         if !isDragging {
                             isDragging = true
                             dragStartWidth = responsiveWidth
                         }
                         let newWidth = dragStartWidth + value.translation.width
-                        // Enforce minimum width
-                        config.setWidthForColumn(column, width: max(newWidth, column.minWidth))
+                        config.setWidthForColumn(column, width: newWidth)
                     }
                     .onEnded { _ in
                         isDragging = false
+                        isResizingColumn = false
                     }
             )
             .onHover { hovering in

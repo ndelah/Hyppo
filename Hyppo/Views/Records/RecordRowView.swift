@@ -90,7 +90,7 @@ struct RecordRowView: View {
                 }
                 .buttonStyle(.plain)
                 .frame(width: checkboxColumnWidth)
-                .padding(.vertical, 14)
+                .padding(.vertical, 10)
             }
             
             ForEach(columns) { column in
@@ -103,7 +103,7 @@ struct RecordRowView: View {
                         .frame(width: width - 16, alignment: column.alignment)
                         .padding(.leading, column.alignment == .leading ? 12 : 8)
                         .padding(.trailing, 8)
-                        .padding(.vertical, 14)
+                        .padding(.vertical, 10)
                     
                     if column != columns.last {
                         Divider()
@@ -154,16 +154,10 @@ struct RecordRowView: View {
         } label: {
             VStack(alignment: .leading, spacing: 2) {
                 Text(question.questionText)
-                    .font(.system(size: 14 * textSizeMultiplier, weight: .medium))
+                    .font(.system(size: 14 * textSizeMultiplier, weight: .regular))
                     .lineLimit(2)
                     .foregroundStyle(.primary)
-                
-                if let context = question.context, !context.isEmpty {
-                    Text(context)
-                        .font(.system(size: 12 * textSizeMultiplier))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
+                    .opacity(0.85)
             }
             .contentShape(Rectangle())
         }
@@ -191,8 +185,9 @@ struct RecordRowView: View {
             Group {
                 if let asset = question.asset {
                     Text(asset.ticker)
-                        .font(.system(size: 14 * textSizeMultiplier, weight: .semibold))
+                        .font(.system(size: 14 * textSizeMultiplier, weight: .medium))
                         .foregroundStyle(Color.assetColor)
+                        .opacity(0.85)
                 } else {
                     Text("—")
                         .font(.system(size: 14 * textSizeMultiplier))
