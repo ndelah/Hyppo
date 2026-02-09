@@ -129,12 +129,12 @@ enum ViewMode: String, CaseIterable, Identifiable {
  Each column maps to a property on ResearchQuestion.
  */
 enum RecordColumn: String, CaseIterable, Identifiable {
-    case question = "question"
     case assetName = "assetName"
-    case status = "status"
-    case confidence = "confidence"
+    case question = "question"
     case drivers = "drivers"
     case logEntries = "logEntries"
+    case confidence = "confidence"
+    case status = "status"
     case tags = "tags"
     case created = "created"
     case updated = "updated"

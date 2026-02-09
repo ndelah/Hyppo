@@ -69,11 +69,6 @@ struct RecordTableView: View {
     
     // MARK: - Pagination Computed Properties
     
-    /// Total number of pages
-    private var totalPages: Int {
-        max(1, (sortedQuestions.count + pageSize - 1) / pageSize)
-    }
-    
     /// Questions for the current page
     private var pagedQuestions: [ResearchQuestion] {
         let startIndex = currentPage * pageSize
@@ -81,14 +76,6 @@ struct RecordTableView: View {
         
         guard startIndex < sortedQuestions.count else { return [] }
         return Array(sortedQuestions[startIndex..<endIndex])
-    }
-    
-    /// Display range for pagination (e.g., "1-50")
-    private var displayRange: String {
-        guard !sortedQuestions.isEmpty else { return "0" }
-        let startIndex = currentPage * pageSize + 1
-        let endIndex = min((currentPage + 1) * pageSize, sortedQuestions.count)
-        return "\(startIndex)-\(endIndex)"
     }
     
     // MARK: - Body
@@ -170,53 +157,12 @@ struct RecordTableView: View {
             
             Spacer(minLength: 0)
             
-            // Pagination controls
-            paginationControls
-            
             // Column settings button at the end
             columnSettingsButton
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .clipped()
         .background(Color.surfaceSecondary)
-    }
-    
-    // MARK: - Pagination Controls
-    
-    private var paginationControls: some View {
-        HStack(spacing: 8) {
-            Text("\(displayRange) / \(sortedQuestions.count)")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-            
-            HStack(spacing: 2) {
-                Button {
-                    if currentPage > 0 {
-                        currentPage -= 1
-                    }
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 11))
-                        .foregroundStyle(currentPage > 0 ? .primary : .tertiary)
-                }
-                .buttonStyle(.plain)
-                .disabled(currentPage == 0)
-                
-                Button {
-                    if currentPage < totalPages - 1 {
-                        currentPage += 1
-                    }
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11))
-                        .foregroundStyle(currentPage < totalPages - 1 ? .primary : .tertiary)
-                }
-                .buttonStyle(.plain)
-                .disabled(currentPage >= totalPages - 1)
-            }
-        }
-        .padding(.trailing, 8)
     }
     
     @ViewBuilder

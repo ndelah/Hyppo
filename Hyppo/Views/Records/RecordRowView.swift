@@ -243,7 +243,7 @@ struct RecordRowView: View {
                 Image(systemName: question.status.iconName)
                     .font(.system(size: 12 * textSizeMultiplier))
                 Text(question.status.displayName)
-                    .font(.system(size: 12 * textSizeMultiplier, weight: .medium))
+                    .font(.system(size: 12 * textSizeMultiplier))
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
