@@ -54,3 +54,4 @@ We may update this statement as the product evolves. We will update the effectiv
 ### Contact
 If you have questions about privacy, contact us at: `privacy@hyppo.app`.
 
+

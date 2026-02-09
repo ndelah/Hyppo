@@ -100,7 +100,6 @@ struct ReviewWizardView: View {
     @State private var driverAssessments: [DriverAssessment] = []
     @State private var selectedOutcome: ReviewOutcome = .reinforce
     @State private var newConfidence: Int = 3
-    @State private var showingConfirmation = false
     
     // Decision state (required)
     @State private var selectedAction: DecisionAction
@@ -180,14 +179,6 @@ struct ReviewWizardView: View {
         .frame(width: 600, height: 850)
         .onAppear {
             initializeAssessments()
-        }
-        .alert("Complete Review", isPresented: $showingConfirmation) {
-            Button("Cancel", role: .cancel) { }
-            Button("Complete") {
-                completeReview()
-            }
-        } message: {
-            Text("This will create a decision and update the research question. Continue?")
         }
         .sheet(isPresented: $showingRevisionPrompt) {
             RevisionPromptSheet(
@@ -753,7 +744,7 @@ struct ReviewWizardView: View {
             
             if currentStep == .summary {
                 Button("Complete Review") {
-                    showingConfirmation = true
+                    completeReview()
                 }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
