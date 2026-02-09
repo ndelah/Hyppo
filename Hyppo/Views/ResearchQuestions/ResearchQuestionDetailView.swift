@@ -1318,6 +1318,8 @@ private struct CompactDriverRow: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
                     .strikethrough(driver.status == .discarded, color: Color.statusInvalidated)
+                    .lineLimit(1)
+                    .help(driver.title)
                 
                 // Status badge for non-pending
                 if driver.status != .pending {
@@ -1426,6 +1428,8 @@ private struct CompactSubDriverRow: View {
                     .font(.subheadline)
                     .foregroundStyle(driver.status == .discarded ? .tertiary : .secondary)
                     .strikethrough(driver.status == .discarded, color: Color.statusInvalidated)
+                    .lineLimit(1)
+                    .help(driver.title)
                 
                 // Status badge for non-pending
                 if driver.status != .pending {
@@ -1501,6 +1505,7 @@ private struct DriverDescriptionCard: View {
                         .fontWeight(.medium)
                         .strikethrough(driver.status == .discarded, color: Color.statusInvalidated)
                         .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
+                        .lineLimit(2)
                     
                     // Status badge
                     if driver.status != .pending {
@@ -1596,6 +1601,7 @@ private struct SubDriverRow: View {
                     .font(.caption)
                     .strikethrough(driver.status == .discarded, color: Color.statusInvalidated)
                     .foregroundStyle(driver.status == .discarded ? .tertiary : .secondary)
+                    .lineLimit(1)
                 
                 if driver.status != .pending {
                     Text(driver.status.displayName)
@@ -1665,6 +1671,7 @@ private struct DriverStatusRow: View {
                     .font(.subheadline)
                     .strikethrough(driver.status == .discarded, color: Color.statusInvalidated)
                     .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
+                    .lineLimit(2)
                 
                 // Status label (only show for non-pending)
                 if driver.status != .pending {
@@ -2043,6 +2050,7 @@ struct LogEntryDetailSheet: View {
                                     .foregroundStyle(.secondary)
                                 Text(driver.title)
                                     .fontWeight(.medium)
+                                    .lineLimit(1)
                             }
                             .font(.caption)
                             .padding(.top, 4)
@@ -2227,6 +2235,7 @@ struct EvidenceRow: View {
                         .font(.caption)
                         .fontWeight(.medium)
                         .foregroundStyle(Color.accentColor)
+                        .lineLimit(1)
                 }
             }
             

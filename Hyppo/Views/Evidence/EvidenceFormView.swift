@@ -186,6 +186,7 @@ struct EvidenceFormView: View {
                                     .foregroundStyle(.secondary)
                                 Text(driver.title)
                                     .fontWeight(.medium)
+                                    .lineLimit(1)
                             }
                             .padding(8)
                             .background(Color.surface)

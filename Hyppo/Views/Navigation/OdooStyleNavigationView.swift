@@ -93,11 +93,6 @@ struct OdooStyleNavigationView: View {
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
         .background(Color.surfaceSecondary)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Color.appBorder)
-                .frame(height: 1)
-        }
     }
     
     /// Individual navigation tab button

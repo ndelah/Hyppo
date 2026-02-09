@@ -558,6 +558,8 @@ struct ConvictionHealthView: View {
                     .fontWeight(.medium)
                     .strikethrough(driver.status == .discarded, color: Color.statusInvalidated)
                     .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
+                    .lineLimit(1)
+                    .help(driver.title)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
                 Text("\(driver.directEvidenceCount)")

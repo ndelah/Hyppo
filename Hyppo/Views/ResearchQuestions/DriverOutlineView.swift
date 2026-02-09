@@ -417,6 +417,9 @@ struct DragDropModifier: ViewModifier {
  Supports 2-level hierarchy with sub-drivers.
  */
 struct DriverDTO: Identifiable, Equatable {
+    /// Maximum allowed characters for a driver title
+    static let maxTitleLength = 120
+    
     let id: UUID
     var title: String
     var description: String = ""
@@ -623,6 +626,11 @@ struct DriverRowView: View {
     
     // MARK: - Title Field with Inline Shortcut Highlighting
     
+    /// Whether the character counter should be visible (near limit and editing)
+    private var showCharacterCount: Bool {
+        isTitleEditing && driver.title.count > DriverDTO.maxTitleLength - 20
+    }
+    
     @ViewBuilder
     private var titleFieldWithHighlighting: some View {
         ZStack(alignment: .leading) {
@@ -634,47 +642,73 @@ struct DriverRowView: View {
             
             // Actual text field (transparent text when shortcut detected to show highlight)
             if let focusBinding = focusedField {
-                TextField("Assumption...", text: $driver.title)
-                    .textFieldStyle(.plain)
-                    .foregroundStyle(detectedShortcut != nil ? .clear : .primary)
-                    .focused(focusBinding, equals: .title(driver.id))
-                    // Intercept Return, Escape, Tab at AppKit level (NSTextField swallows these)
-                    .interceptKeys(
-                        isActive: isTitleEditing,
-                        onReturn: { processShortcutAndSubmit() },
-                        onEscape: { focusBinding.wrappedValue = nil },
-                        onTab: {
-                            onFocusNextDriver?()
-                        },
-                        onShiftTab: {
-                            if isFirstRow {
-                                focusBinding.wrappedValue = nil
-                                onShiftTabAtFirstDriver?()
+                HStack(spacing: 4) {
+                    TextField("Assumption...", text: $driver.title)
+                        .textFieldStyle(.plain)
+                        .foregroundStyle(detectedShortcut != nil ? .clear : .primary)
+                        .focused(focusBinding, equals: .title(driver.id))
+                        // Clamp title to max length
+                        .onChange(of: driver.title) { _, newValue in
+                            if newValue.count > DriverDTO.maxTitleLength {
+                                driver.title = String(newValue.prefix(DriverDTO.maxTitleLength))
+                            }
+                        }
+                        // Intercept Return, Escape, Tab at AppKit level (NSTextField swallows these)
+                        .interceptKeys(
+                            isActive: isTitleEditing,
+                            onReturn: { processShortcutAndSubmit() },
+                            onEscape: { focusBinding.wrappedValue = nil },
+                            onTab: {
+                                onFocusNextDriver?()
+                            },
+                            onShiftTab: {
+                                if isFirstRow {
+                                    focusBinding.wrappedValue = nil
+                                    onShiftTabAtFirstDriver?()
+                                } else {
+                                    onFocusPreviousDriver?()
+                                }
+                            }
+                        )
+                        // Arrow keys still work via onKeyPress (not swallowed by NSTextField)
+                        .onKeyPress(keys: [.downArrow], phases: .down) { press in
+                            if press.modifiers.contains(.command) {
+                                onMoveDown?()
+                            } else {
+                                onFocusNextDriver?()
+                            }
+                            return .handled
+                        }
+                        .onKeyPress(keys: [.upArrow], phases: .down) { press in
+                            if press.modifiers.contains(.command) {
+                                onMoveUp?()
                             } else {
                                 onFocusPreviousDriver?()
                             }
+                            return .handled
                         }
-                    )
-                    // Arrow keys still work via onKeyPress (not swallowed by NSTextField)
-                    .onKeyPress(keys: [.downArrow], phases: .down) { press in
-                        if press.modifiers.contains(.command) {
-                            onMoveDown?()
-                        } else {
-                            onFocusNextDriver?()
-                        }
-                        return .handled
+                    
+                    // Subtle character counter near the limit
+                    if showCharacterCount {
+                        Text("\(driver.title.count)/\(DriverDTO.maxTitleLength)")
+                            .font(.caption2)
+                            .foregroundStyle(driver.title.count >= DriverDTO.maxTitleLength
+                                ? AnyShapeStyle(Color.statusInvalidated)
+                                : AnyShapeStyle(.tertiary)
+                            )
+                            .monospacedDigit()
+                            .transition(.opacity)
                     }
-                    .onKeyPress(keys: [.upArrow], phases: .down) { press in
-                        if press.modifiers.contains(.command) {
-                            onMoveUp?()
-                        } else {
-                            onFocusPreviousDriver?()
-                        }
-                        return .handled
-                    }
+                }
+                .animation(.easeInOut(duration: 0.15), value: showCharacterCount)
             } else {
                 TextField("Assumption...", text: $driver.title)
                     .textFieldStyle(.plain)
+                    .onChange(of: driver.title) { _, newValue in
+                        if newValue.count > DriverDTO.maxTitleLength {
+                            driver.title = String(newValue.prefix(DriverDTO.maxTitleLength))
+                        }
+                    }
                     .interceptKeys(
                         isActive: false,
                         onReturn: { processShortcutAndSubmit() }
