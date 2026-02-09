@@ -206,128 +206,137 @@ struct SearchPopoverView: View {
     // MARK: - Filters Content
     
     private var filtersContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Top row: Status and Confidence side by side
-            HStack(alignment: .top, spacing: 24) {
-                // Status filters (multi-select)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Status")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    FlowLayout(spacing: 6) {
-                        ForEach(ResearchQuestionStatus.allCases) { status in
-                            FilterChip(
-                                title: status.displayName,
-                                icon: status.iconName,
-                                isSelected: config.activeStatusFilters.contains(status.rawValue),
-                                color: statusColor(for: status)
-                            ) {
-                                toggleStatusFilter(status)
-                            }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Confidence filter
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Confidence")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    FlowLayout(spacing: 6) {
-                        ForEach(ConfidenceLevel.allCases) { level in
-                            FilterChip(
-                                title: level.displayName,
-                                icon: "gauge",
-                                isSelected: config.activeConfidenceFilter == level.rawValue,
-                                color: confidenceColor(for: level)
-                            ) {
-                                toggleConfidenceFilter(level)
-                            }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+        Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 16) {
+            GridRow {
+                statusFiltersColumn
+                confidenceFiltersColumn
             }
             
-            // Bottom row: Tags and Date Range side by side
-            HStack(alignment: .top, spacing: 24) {
-                // Tags filter
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Tags")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    if !allTags.isEmpty {
-                        FlowLayout(spacing: 6) {
-                            ForEach(allTags) { tag in
-                                FilterChip(
-                                    title: tag.name,
-                                    icon: "tag",
-                                    isSelected: config.activeTagIds.contains(tag.tagId),
-                                    color: tagColor(for: tag)
-                                ) {
-                                    toggleTagFilter(tag)
-                                }
-                            }
-                        }
-                    } else {
-                        Text("No tags")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Date range
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Date Range")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    HStack(spacing: 8) {
-                        DatePicker(
-                            "From",
-                            selection: Binding(
-                                get: { config.activeStartDate ?? Date().addingTimeInterval(-30 * 24 * 60 * 60) },
-                                set: { config.activeStartDate = $0 }
-                            ),
-                            displayedComponents: .date
-                        )
-                        .labelsHidden()
-                        
-                        Text("to")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        DatePicker(
-                            "To",
-                            selection: Binding(
-                                get: { config.activeEndDate ?? Date() },
-                                set: { config.activeEndDate = $0 }
-                            ),
-                            displayedComponents: .date
-                        )
-                        .labelsHidden()
-                    }
-                    
-                    if config.activeStartDate != nil || config.activeEndDate != nil {
-                        Button {
-                            config.activeStartDate = nil
-                            config.activeEndDate = nil
-                        } label: {
-                            Label("Clear dates", systemImage: "xmark.circle")
-                                .font(.caption)
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.secondary)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+            GridRow {
+                tagsFiltersColumn
+                dateRangeColumn
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    private var statusFiltersColumn: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Status")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            FlowLayout(spacing: 6) {
+                ForEach(ResearchQuestionStatus.allCases) { status in
+                    FilterChip(
+                        title: status.displayName,
+                        icon: status.iconName,
+                        isSelected: config.activeStatusFilters.contains(status.rawValue),
+                        color: statusColor(for: status)
+                    ) {
+                        toggleStatusFilter(status)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    private var confidenceFiltersColumn: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Confidence")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            FlowLayout(spacing: 6) {
+                ForEach(ConfidenceLevel.allCases) { level in
+                    FilterChip(
+                        title: level.displayName,
+                        icon: "gauge",
+                        isSelected: config.activeConfidenceFilter == level.rawValue,
+                        color: confidenceColor(for: level)
+                    ) {
+                        toggleConfidenceFilter(level)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    private var tagsFiltersColumn: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Tags")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            if !allTags.isEmpty {
+                FlowLayout(spacing: 6) {
+                    ForEach(allTags) { tag in
+                        FilterChip(
+                            title: tag.name,
+                            icon: "tag",
+                            isSelected: config.activeTagIds.contains(tag.tagId),
+                            color: tagColor(for: tag)
+                        ) {
+                            toggleTagFilter(tag)
+                        }
+                    }
+                }
+            } else {
+                Text("No tags")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    private var dateRangeColumn: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Date Range")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            HStack(spacing: 8) {
+                DatePicker(
+                    "From",
+                    selection: Binding(
+                        get: { config.activeStartDate ?? Date().addingTimeInterval(-30 * 24 * 60 * 60) },
+                        set: { config.activeStartDate = $0 }
+                    ),
+                    displayedComponents: .date
+                )
+                .labelsHidden()
+                
+                Text("to")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                DatePicker(
+                    "To",
+                    selection: Binding(
+                        get: { config.activeEndDate ?? Date() },
+                        set: { config.activeEndDate = $0 }
+                    ),
+                    displayedComponents: .date
+                )
+                .labelsHidden()
+            }
+            
+            if config.activeStartDate != nil || config.activeEndDate != nil {
+                Button {
+                    config.activeStartDate = nil
+                    config.activeEndDate = nil
+                } label: {
+                    Label("Clear dates", systemImage: "xmark.circle")
+                        .font(.caption)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     // MARK: - Group By Content

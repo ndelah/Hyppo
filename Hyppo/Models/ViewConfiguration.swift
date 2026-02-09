@@ -215,8 +215,10 @@ enum RecordColumn: String, CaseIterable, Identifiable {
             return .leading
         case .drivers, .logEntries:
             return .trailing
-        case .assetName, .status, .confidence, .tags, .created, .updated:
+        case .assetName, .confidence, .created, .updated:
             return .center
+        case .status, .tags:
+            return .leading
         }
     }
     

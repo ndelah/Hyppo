@@ -95,7 +95,7 @@ struct DecisionTimelineItem: View {
     let onTap: () -> Void
     
     private var actionColor: Color {
-        Color(decision.actionType.colorName)
+        Color.fromName(decision.actionType.colorName)
     }
     
     var body: some View {
@@ -254,11 +254,11 @@ struct OutcomeTimelineItem: View {
                 HStack(spacing: 12) {
                     Label(outcome.thesisAssessment.displayName, systemImage: outcome.thesisAssessment.iconName)
                         .font(.caption2)
-                        .foregroundStyle(Color(outcome.thesisAssessment.colorName))
+                        .foregroundStyle(Color.fromName(outcome.thesisAssessment.colorName))
                     
                     Label(outcome.timingAssessment.displayName, systemImage: outcome.timingAssessment.iconName)
                         .font(.caption2)
-                        .foregroundStyle(Color(outcome.timingAssessment.colorName))
+                        .foregroundStyle(Color.fromName(outcome.timingAssessment.colorName))
                 }
             }
             .padding(12)
@@ -301,7 +301,7 @@ struct CompactDecisionTimelineView: View {
                 ForEach(sortedDecisions) { decision in
                     Image(systemName: decision.actionType.iconName)
                         .font(.caption)
-                        .foregroundStyle(Color(decision.actionType.colorName))
+                        .foregroundStyle(Color.fromName(decision.actionType.colorName))
                 }
                 
                 if researchQuestion.outcome != nil {

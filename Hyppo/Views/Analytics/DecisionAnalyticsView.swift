@@ -258,7 +258,7 @@ struct DecisionAnalyticsView: View {
                         label: assessment.displayName,
                         count: count,
                         total: allOutcomes.count,
-                        color: Color(assessment.colorName),
+                        color: Color.fromName(assessment.colorName),
                         icon: assessment.iconName
                     )
                 }
@@ -281,7 +281,7 @@ struct DecisionAnalyticsView: View {
                         label: assessment.displayName,
                         count: count,
                         total: allOutcomes.count,
-                        color: Color(assessment.colorName),
+                        color: Color.fromName(assessment.colorName),
                         icon: assessment.iconName
                     )
                 }
@@ -371,8 +371,8 @@ struct DecisionAnalyticsView: View {
             .font(.subheadline)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color(action.colorName).opacity(0.15))
-            .foregroundStyle(Color(action.colorName))
+            .background(Color.fromName(action.colorName).opacity(0.15))
+            .foregroundStyle(Color.fromName(action.colorName))
             .clipShape(RoundedRectangle(cornerRadius: 8))
             
             Text(action.displayName)

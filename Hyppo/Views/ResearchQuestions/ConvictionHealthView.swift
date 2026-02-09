@@ -177,7 +177,7 @@ struct ConvictionHealthSummary {
             case .strong: return "heart.fill"
             case .moderate: return "heart"
             case .weak: return "heart.slash"
-            case .critical: return "exclamationmark.heart"
+            case .critical: return "heart.slash.fill"
             }
         }
     }

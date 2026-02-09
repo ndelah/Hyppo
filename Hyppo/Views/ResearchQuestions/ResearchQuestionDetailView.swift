@@ -364,12 +364,12 @@ struct ResearchQuestionDetailView: View {
             // Phase icon
             ZStack {
                 Circle()
-                    .fill(Color(researchQuestion.investmentPhase.colorName).opacity(0.15))
+                    .fill(Color.fromName(researchQuestion.investmentPhase.colorName).opacity(0.15))
                     .frame(width: 40, height: 40)
                 
                 Image(systemName: researchQuestion.investmentPhase.iconName)
                     .font(.title3)
-                    .foregroundStyle(Color(researchQuestion.investmentPhase.colorName))
+                    .foregroundStyle(Color.fromName(researchQuestion.investmentPhase.colorName))
             }
             
             VStack(alignment: .leading, spacing: 2) {
@@ -379,7 +379,7 @@ struct ResearchQuestionDetailView: View {
                 
                 Text(researchQuestion.investmentPhase.displayName)
                     .font(.headline)
-                    .foregroundStyle(Color(researchQuestion.investmentPhase.colorName))
+                    .foregroundStyle(Color.fromName(researchQuestion.investmentPhase.colorName))
             }
             
             Spacer()
@@ -395,11 +395,11 @@ struct ResearchQuestionDetailView: View {
             }
         }
         .padding()
-        .background(Color(researchQuestion.investmentPhase.colorName).opacity(0.05))
+        .background(Color.fromName(researchQuestion.investmentPhase.colorName).opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(researchQuestion.investmentPhase.colorName).opacity(0.2), lineWidth: 1)
+                .stroke(Color.fromName(researchQuestion.investmentPhase.colorName).opacity(0.2), lineWidth: 1)
         )
     }
     
@@ -452,7 +452,7 @@ struct ResearchQuestionDetailView: View {
                 // Thesis assessment
                 HStack(spacing: 4) {
                     Image(systemName: outcome.thesisAssessment.iconName)
-                        .foregroundStyle(Color(outcome.thesisAssessment.colorName))
+                        .foregroundStyle(Color.fromName(outcome.thesisAssessment.colorName))
                     Text(outcome.thesisAssessment.displayName)
                         .fontWeight(.medium)
                 }
@@ -461,7 +461,7 @@ struct ResearchQuestionDetailView: View {
                 // Timing assessment
                 HStack(spacing: 4) {
                     Image(systemName: outcome.timingAssessment.iconName)
-                        .foregroundStyle(Color(outcome.timingAssessment.colorName))
+                        .foregroundStyle(Color.fromName(outcome.timingAssessment.colorName))
                     Text(outcome.timingAssessment.displayName)
                 }
                 .font(.caption)
@@ -674,8 +674,8 @@ struct ResearchQuestionDetailView: View {
                         .fontWeight(.medium)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color(researchQuestion.investmentPhase.colorName).opacity(0.15))
-                        .foregroundStyle(Color(researchQuestion.investmentPhase.colorName))
+                        .background(Color.fromName(researchQuestion.investmentPhase.colorName).opacity(0.15))
+                        .foregroundStyle(Color.fromName(researchQuestion.investmentPhase.colorName))
                         .clipShape(Capsule())
                         
                         HStack(spacing: 16) {

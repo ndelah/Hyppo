@@ -200,7 +200,7 @@ struct DecisionFormView: View {
                 
                 HStack(spacing: 4) {
                     Image(systemName: researchQuestion.investmentPhase.iconName)
-                        .foregroundStyle(Color(researchQuestion.investmentPhase.colorName))
+                        .foregroundStyle(Color.fromName(researchQuestion.investmentPhase.colorName))
                     Text(researchQuestion.investmentPhase.displayName)
                         .foregroundStyle(.secondary)
                 }

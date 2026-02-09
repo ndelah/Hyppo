@@ -24,7 +24,7 @@ struct DecisionDetailView: View {
     // MARK: - Computed Properties
     
     private var actionColor: Color {
-        Color(decision.actionType.colorName)
+        Color.fromName(decision.actionType.colorName)
     }
     
     // MARK: - Body
