@@ -11,8 +11,8 @@
 - Avoid overengineering: only introduce abstractions when they remove real duplication or risk.
 
 ## Codebase orientation
-- **Before coding**: always read `docs/structure.md` first to understand file layout and locate relevant modules.
-- **After structural changes**: update `docs/structure.md` when adding, removing, or renaming files/folders.
+- **Before coding**: always read `docs/dev/structure.md` first to understand file layout and locate relevant modules.
+- **After structural changes**: update `docs/dev/structure.md` when adding, removing, or renaming files/folders.
 
 ## Architecture
 - Use a layered architecture.
