@@ -33,9 +33,9 @@ func reviewOutcomeFilledIcon(_ outcome: ReviewOutcome) -> String {
 
 func reviewOutcomeColor(_ outcome: ReviewOutcome) -> Color {
     switch outcome {
-    case .reinforce: return .green
-    case .revise: return .orange
-    case .invalidate: return .red
+    case .reinforce: return .statusActive
+    case .revise: return .statusOnHold
+    case .invalidate: return .statusInvalidated
     }
 }
 
@@ -197,7 +197,7 @@ struct ReviewWizardView: View {
                     
                     if step != WizardStep.allCases.last {
                         Rectangle()
-                            .fill(step.rawValue < currentStep.rawValue ? Color.accentColor : Color.gray.opacity(0.3))
+                            .fill(step.rawValue < currentStep.rawValue ? Color.accentColor : Color.statusArchived.opacity(0.3))
                             .frame(height: 2)
                     }
                 }
@@ -209,7 +209,7 @@ struct ReviewWizardView: View {
                 .font(.headline)
         }
         .padding(.vertical, 16)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
     }
     
     private func stepIndicator(for step: WizardStep) -> some View {
@@ -219,7 +219,7 @@ struct ReviewWizardView: View {
         return VStack(spacing: 4) {
             ZStack {
                 Circle()
-                    .fill(isCompleted ? Color.accentColor : (isCurrent ? Color.accentColor.opacity(0.2) : Color.gray.opacity(0.2)))
+                    .fill(isCompleted ? Color.accentColor : (isCurrent ? Color.accentColor.opacity(0.2) : Color.statusArchived.opacity(0.2)))
                     .frame(width: 32, height: 32)
                 
                 if isCompleted {
@@ -266,7 +266,7 @@ struct ReviewWizardView: View {
             // Research question info (shown above conviction health)
             HStack {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.statusActive)
                 Text(researchQuestion.questionText)
                     .font(.headline)
                     .lineLimit(2)
@@ -350,7 +350,7 @@ struct ReviewWizardView: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -390,17 +390,17 @@ struct ReviewWizardView: View {
             if confirmedCount > 0 {
                 Label("\(confirmedCount) confirmed", systemImage: "checkmark.circle.fill")
                     .font(.caption)
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.statusActive)
             }
             if discardedCount > 0 {
                 Label("\(discardedCount) discarded", systemImage: "xmark.circle.fill")
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
             }
             if revisionCount > 0 {
                 Label("\(revisionCount) needs revision", systemImage: "exclamationmark.circle.fill")
                     .font(.caption)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.statusOnHold)
             }
             if pendingCount > 0 {
                 Label("\(pendingCount) under review", systemImage: "circle.dashed")
@@ -447,7 +447,7 @@ struct ReviewWizardView: View {
                                     .font(.caption2)
                             }
                             .frame(width: 44, height: 44)
-                            .background(newConfidence == level ? Color.accentColor : Color(nsColor: .windowBackgroundColor))
+                            .background(newConfidence == level ? Color.accentColor : Color.surface)
                             .foregroundStyle(newConfidence == level ? .white : (newConfidence >= level ? .orange : .primary))
                             .clipShape(Circle())
                         }
@@ -549,7 +549,7 @@ struct ReviewWizardView: View {
                     .foregroundStyle(.secondary)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(nsColor: .textBackgroundColor))
+                    .background(Color.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             
@@ -590,11 +590,11 @@ struct ReviewWizardView: View {
                     .font(.body)
                     .frame(height: 100)
                     .padding(8)
-                    .background(Color(nsColor: .textBackgroundColor))
+                    .background(Color.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(decisionRationale.isEmpty ? Color.red.opacity(0.5) : Color(nsColor: .separatorColor), lineWidth: 1)
+                            .stroke(decisionRationale.isEmpty ? Color.statusInvalidated.opacity(0.5) : Color.appBorder, lineWidth: 1)
                     )
                 
                 Text("Explain why you're making this decision based on your review.")
@@ -660,7 +660,7 @@ struct ReviewWizardView: View {
                                 .foregroundStyle(.secondary)
                                 .padding(8)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color(nsColor: .windowBackgroundColor))
+                                .background(Color.surface)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                     }
@@ -669,11 +669,11 @@ struct ReviewWizardView: View {
                         .font(.body)
                         .frame(height: 60)
                         .padding(8)
-                        .background(Color(nsColor: .textBackgroundColor))
+                        .background(Color.surface)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                                .stroke(Color.appBorder, lineWidth: 1)
                         )
                     
                     Text("Leave blank to keep the current plan. Update when commitments change.")
@@ -694,11 +694,11 @@ struct ReviewWizardView: View {
                         .font(.body)
                         .frame(height: 60)
                         .padding(8)
-                        .background(Color(nsColor: .textBackgroundColor))
+                        .background(Color.surface)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                                .stroke(Color.appBorder, lineWidth: 1)
                         )
                 }
             }
@@ -764,7 +764,7 @@ struct ReviewWizardView: View {
             }
         }
         .padding()
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
     }
     
     // MARK: - Helpers
@@ -776,12 +776,7 @@ struct ReviewWizardView: View {
     
     /// Color for the research question status
     private var statusColor: Color {
-        switch researchQuestion.status {
-        case .active: return .green
-        case .onHold: return .orange
-        case .invalidated: return .red
-        case .archived: return .gray
-        }
+        Color.forStatus(researchQuestion.status)
     }
     
     /// Most recent exit plan on record (used as the current plan)
@@ -926,12 +921,7 @@ private struct DriverAssessmentCard: View {
     
     /// Color for the current status
     private var statusColor: Color {
-        switch assessment.newStatus {
-        case .confirmed: return .green
-        case .discarded: return .red
-        case .needsRevision: return .orange
-        case .pending: return .gray
-        }
+        Color.forDriverStatus(assessment.newStatus)
     }
     
     var body: some View {
@@ -997,12 +987,7 @@ private struct StatusButton: View {
     let action: () -> Void
     
     private var statusColor: Color {
-        switch status {
-        case .confirmed: return .green
-        case .discarded: return .red
-        case .needsRevision: return .orange
-        case .pending: return .gray
-        }
+        Color.forDriverStatus(status)
     }
     
     var body: some View {
@@ -1015,7 +1000,7 @@ private struct StatusButton: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
-            .background(isSelected ? statusColor : Color(nsColor: .windowBackgroundColor))
+            .background(isSelected ? statusColor : Color.surface)
             .foregroundStyle(isSelected ? .white : .secondary)
             .clipShape(Capsule())
             .overlay(
@@ -1059,7 +1044,7 @@ private struct OutcomeSelectionCard: View {
                 }
             }
             .padding()
-            .background(isSelected ? reviewOutcomeColor(outcome).opacity(0.1) : Color(nsColor: .windowBackgroundColor))
+            .background(isSelected ? reviewOutcomeColor(outcome).opacity(0.1) : Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
@@ -1102,7 +1087,7 @@ private struct DecisionActionButton: View {
                 }
             }
             .padding()
-            .background(isSelected ? actionColor.opacity(0.1) : Color(nsColor: .windowBackgroundColor))
+            .background(isSelected ? actionColor.opacity(0.1) : Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(
                 RoundedRectangle(cornerRadius: 10)

@@ -159,7 +159,7 @@ struct ConfidenceChartView: View {
                                 y: .value("Confidence", point.value)
                             )
                             .interpolationMethod(.stepEnd)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.accentColor)
                             .lineStyle(StrokeStyle(lineWidth: 2))
                         }
                     }
@@ -208,7 +208,7 @@ struct ConfidenceChartView: View {
                     HStack(spacing: 16) {
                         HStack(spacing: 4) {
                             Circle()
-                                .fill(Color.blue)
+                                .fill(Color.accentColor)
                                 .frame(width: 8, height: 8)
                             Text("Confidence")
                                 .font(.caption2)
@@ -231,11 +231,11 @@ struct ConfidenceChartView: View {
             }
         }
         .padding()
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+                .stroke(Color.appBorder.opacity(0.3), lineWidth: 1)
         )
     }
 }

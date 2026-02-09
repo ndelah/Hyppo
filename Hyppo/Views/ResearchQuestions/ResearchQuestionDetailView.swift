@@ -290,11 +290,11 @@ struct ResearchQuestionDetailView: View {
             // Tab content
             tabContent
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.5), lineWidth: 1)
+                .stroke(Color.appBorder.opacity(0.5), lineWidth: 1)
         )
     }
     
@@ -306,7 +306,7 @@ struct ResearchQuestionDetailView: View {
             }
             Spacer()
         }
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
     
@@ -407,7 +407,7 @@ struct ResearchQuestionDetailView: View {
     private var awaitingOutcomeBanner: some View {
         HStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.statusOnHold)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text("Outcome Required")
@@ -427,7 +427,7 @@ struct ResearchQuestionDetailView: View {
             .buttonStyle(.borderedProminent)
         }
         .padding()
-        .background(Color.orange.opacity(0.1))
+        .background(Color.statusOnHold.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -499,7 +499,7 @@ struct ResearchQuestionDetailView: View {
                         .foregroundStyle(.secondary)
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(nsColor: .textBackgroundColor).opacity(0.5))
+                        .background(Color.surface.opacity(0.5))
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
             }
@@ -548,16 +548,16 @@ struct ResearchQuestionDetailView: View {
                             .foregroundStyle(.primary)
                             .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.green.opacity(0.08))
+                            .background(Color.statusActive.opacity(0.08))
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                         
                         // Driver resolution summary
                         if researchQuestion.allDriversResolved {
                             HStack(spacing: 12) {
                                 Label("\(researchQuestion.confirmedDriversCount) confirmed", systemImage: "checkmark.seal.fill")
-                                    .foregroundStyle(.green)
+                                    .foregroundStyle(Color.statusActive)
                                 Label("\(researchQuestion.discardedDriversCount) discarded", systemImage: "xmark.seal.fill")
-                                    .foregroundStyle(.red)
+                                    .foregroundStyle(Color.statusInvalidated)
                             }
                             .font(.caption)
                             .fontWeight(.medium)
@@ -776,9 +776,9 @@ struct ResearchQuestionDetailView: View {
                         if researchQuestion.allDriversResolved {
                             HStack(spacing: 12) {
                                 Label("\(researchQuestion.confirmedDriversCount) confirmed", systemImage: "checkmark.seal.fill")
-                                    .foregroundStyle(.green)
+                                    .foregroundStyle(Color.statusActive)
                                 Label("\(researchQuestion.discardedDriversCount) discarded", systemImage: "xmark.seal.fill")
-                                    .foregroundStyle(.red)
+                                    .foregroundStyle(Color.statusInvalidated)
                             }
                             .font(.caption)
                             .padding(.top, 4)
@@ -961,7 +961,7 @@ struct ResearchQuestionDetailView: View {
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 12)
-            .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+            .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             
             if timelineItems.isEmpty {
@@ -1041,12 +1041,7 @@ struct ResearchQuestionDetailView: View {
     }
     
     private var statusColor: Color {
-        switch researchQuestion.status {
-        case .active: return .green
-        case .onHold: return .orange
-        case .invalidated: return .red
-        case .archived: return .gray
-        }
+        Color.forStatus(researchQuestion.status)
     }
     
     // MARK: - Context Menu
@@ -1107,9 +1102,9 @@ private struct ScenarioRow: View {
     
     private var typeColor: Color {
         switch scenario.scenarioType {
-        case .bull: return .green
-        case .bear: return .red
-        case .base: return .blue
+        case .bull: return .statusActive
+        case .bear: return .statusInvalidated
+        case .base: return Color.accentColor
         case .custom: return .purple
         }
     }
@@ -1166,7 +1161,7 @@ private struct CollapsibleSection<Content: View>: View {
             .buttonStyle(.plain)
             .padding(.vertical, 8)
             .padding(.horizontal, 12)
-            .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+            .background(Color.surface)
             
             // Content (collapsible)
             if isExpanded {
@@ -1177,11 +1172,11 @@ private struct CollapsibleSection<Content: View>: View {
                     .padding(.horizontal, 12)
             }
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+                .stroke(Color.appBorder.opacity(0.3), lineWidth: 1)
         )
     }
 }
@@ -1223,7 +1218,7 @@ private struct DescriptionSection<Content: View>: View {
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 12)
-            .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+            .background(Color.surface)
             
             // Content (always visible)
             content()
@@ -1232,7 +1227,7 @@ private struct DescriptionSection<Content: View>: View {
                 .padding(.bottom, 4)
                 .padding(.horizontal, 12)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
@@ -1266,12 +1261,7 @@ private struct CompactDriverRow: View {
     
     /// Color for the driver's current status
     private var statusColor: Color {
-        switch driver.status {
-        case .confirmed: return .green
-        case .discarded: return .red
-        case .needsRevision: return .orange
-        case .pending: return .gray
-        }
+        Color.forDriverStatus(driver.status)
     }
     
     private var hasSubDrivers: Bool {
@@ -1311,8 +1301,8 @@ private struct CompactDriverRow: View {
                 }
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(Color.orange.opacity(0.12))
-                .foregroundStyle(.orange)
+                .background(Color.statusOnHold.opacity(0.12))
+                .foregroundStyle(Color.statusOnHold)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
                 .frame(width: 70, alignment: .trailing)
                 
@@ -1327,7 +1317,7 @@ private struct CompactDriverRow: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
-                    .strikethrough(driver.status == .discarded, color: .red)
+                    .strikethrough(driver.status == .discarded, color: Color.statusInvalidated)
                 
                 // Status badge for non-pending
                 if driver.status != .pending {
@@ -1349,7 +1339,7 @@ private struct CompactDriverRow: View {
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "lightbulb")
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.statusOnHold)
                         .frame(width: 14)
                     
                     Text(logic)
@@ -1372,7 +1362,7 @@ private struct CompactDriverRow: View {
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -1391,12 +1381,7 @@ private struct CompactSubDriverRow: View {
     let driver: Driver
     
     private var statusColor: Color {
-        switch driver.status {
-        case .confirmed: return .green
-        case .discarded: return .red
-        case .needsRevision: return .orange
-        case .pending: return .gray
-        }
+        Color.forDriverStatus(driver.status)
     }
     
     private var statusIconName: String {
@@ -1440,7 +1425,7 @@ private struct CompactSubDriverRow: View {
                 Text(driver.title)
                     .font(.subheadline)
                     .foregroundStyle(driver.status == .discarded ? .tertiary : .secondary)
-                    .strikethrough(driver.status == .discarded, color: .red)
+                    .strikethrough(driver.status == .discarded, color: Color.statusInvalidated)
                 
                 // Status badge for non-pending
                 if driver.status != .pending {
@@ -1461,7 +1446,7 @@ private struct CompactSubDriverRow: View {
                 HStack(alignment: .top, spacing: 6) {
                     Image(systemName: "lightbulb")
                         .font(.caption2)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.statusOnHold)
                     
                     Text(logic)
                         .font(.caption)
@@ -1483,12 +1468,7 @@ private struct DriverDescriptionCard: View {
     
     /// Color for the driver's current status
     private var statusColor: Color {
-        switch driver.status {
-        case .confirmed: return .green
-        case .discarded: return .red
-        case .needsRevision: return .orange
-        case .pending: return .gray
-        }
+        Color.forDriverStatus(driver.status)
     }
     
     var body: some View {
@@ -1504,8 +1484,8 @@ private struct DriverDescriptionCard: View {
                 }
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(Color.orange.opacity(0.12))
-                .foregroundStyle(.orange)
+                .background(Color.statusOnHold.opacity(0.12))
+                .foregroundStyle(Color.statusOnHold)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
                 
                 // Status indicator
@@ -1519,7 +1499,7 @@ private struct DriverDescriptionCard: View {
                     Text(driver.title)
                         .font(.subheadline)
                         .fontWeight(.medium)
-                        .strikethrough(driver.status == .discarded, color: .red)
+                        .strikethrough(driver.status == .discarded, color: Color.statusInvalidated)
                         .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
                     
                     // Status badge
@@ -1571,7 +1551,7 @@ private struct DriverDescriptionCard: View {
             }
         }
         .padding(12)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -1585,12 +1565,7 @@ private struct SubDriverRow: View {
     let driver: Driver
     
     private var statusColor: Color {
-        switch driver.status {
-        case .confirmed: return .green
-        case .discarded: return .red
-        case .needsRevision: return .orange
-        case .pending: return .gray
-        }
+        Color.forDriverStatus(driver.status)
     }
     
     var body: some View {
@@ -1619,7 +1594,7 @@ private struct SubDriverRow: View {
                 
                 Text(driver.title)
                     .font(.caption)
-                    .strikethrough(driver.status == .discarded, color: .red)
+                    .strikethrough(driver.status == .discarded, color: Color.statusInvalidated)
                     .foregroundStyle(driver.status == .discarded ? .tertiary : .secondary)
                 
                 if driver.status != .pending {
@@ -1653,12 +1628,7 @@ private struct DriverStatusRow: View {
     
     /// Color for the driver's current status
     private var statusColor: Color {
-        switch driver.status {
-        case .confirmed: return .green
-        case .discarded: return .red
-        case .needsRevision: return .orange
-        case .pending: return .gray
-        }
+        Color.forDriverStatus(driver.status)
     }
     
     var body: some View {
@@ -1679,8 +1649,8 @@ private struct DriverStatusRow: View {
             }
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(isSubDriver ? Color.indigo.opacity(0.12) : Color.orange.opacity(0.12))
-            .foregroundStyle(isSubDriver ? .indigo : .orange)
+            .background(isSubDriver ? Color.indigo.opacity(0.12) : Color.statusOnHold.opacity(0.12))
+            .foregroundStyle(isSubDriver ? .indigo : Color.statusOnHold)
             .clipShape(RoundedRectangle(cornerRadius: 4))
             
             // Status indicator icon
@@ -1693,7 +1663,7 @@ private struct DriverStatusRow: View {
                 // Driver title
                 Text(driver.title)
                     .font(.subheadline)
-                    .strikethrough(driver.status == .discarded, color: .red)
+                    .strikethrough(driver.status == .discarded, color: Color.statusInvalidated)
                     .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
                 
                 // Status label (only show for non-pending)
@@ -1743,7 +1713,7 @@ struct LogEntryCard: View {
                 if logEntry.isPinned {
                     Image(systemName: "pin.fill")
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.statusOnHold)
                 }
                 
                 // Show sentiment badge if linked to driver
@@ -1755,7 +1725,7 @@ struct LogEntryCard: View {
                 if let sourceUrl = logEntry.sourceUrl, !sourceUrl.isEmpty {
                     Image(systemName: "link")
                         .font(.caption2)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.accentColor)
                 }
                 
                 Spacer()
@@ -1771,7 +1741,7 @@ struct LogEntryCard: View {
                 HStack(spacing: 4) {
                     Image(systemName: "target")
                         .font(.caption2)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.accentColor)
                     Text(driver.title)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -1851,11 +1821,11 @@ struct LogEntryCard: View {
             }
         }
         .padding(density == .compact ? 10 : 16)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: density == .compact ? 8 : 10))
         .overlay(
             RoundedRectangle(cornerRadius: density == .compact ? 8 : 10)
-                .stroke(logEntry.driver != nil ? Color.blue.opacity(0.3) : Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+                .stroke(logEntry.driver != nil ? Color.accentColor.opacity(0.3) : Color.appBorder.opacity(0.3), lineWidth: 1)
         )
     }
     
@@ -1873,9 +1843,9 @@ struct LogEntryCard: View {
     
     private func sentimentColor(_ sentiment: EvidenceSentiment) -> Color {
         switch sentiment {
-        case .supporting: return .green
-        case .contradicting: return .red
-        case .neutral: return .gray
+        case .supporting: return .statusActive
+        case .contradicting: return .statusInvalidated
+        case .neutral: return .statusArchived
         }
     }
     
@@ -1891,18 +1861,18 @@ struct LogEntryCard: View {
     
     private var typeColor: Color {
         switch logEntry.entryType {
-        case .observation: return .blue
+        case .observation: return Color.accentColor
         case .update: return .purple
-        case .risk: return .red
-        case .catalyst: return .orange
-        case .review: return .green
+        case .risk: return .statusInvalidated
+        case .catalyst: return .statusOnHold
+        case .review: return .statusActive
         }
     }
     
     private func colorFor(_ tag: Tag) -> Color {
         guard let colorName = tag.colorName,
               let tagColor = TagColor(rawValue: colorName) else {
-            return .blue
+            return Color.accentColor
         }
         return tagColor.color
     }
@@ -2050,7 +2020,7 @@ struct LogEntryDetailSheet: View {
                             // Link indicator if has source URL
                             if let sourceUrl = logEntry.sourceUrl, !sourceUrl.isEmpty {
                                 Image(systemName: "link")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.accentColor)
                             }
                             
                             Spacer()
@@ -2068,7 +2038,7 @@ struct LogEntryDetailSheet: View {
                         if let driver = logEntry.driver {
                             HStack(spacing: 6) {
                                 Image(systemName: "target")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.accentColor)
                                 Text("Linked to:")
                                     .foregroundStyle(.secondary)
                                 Text(driver.title)
@@ -2082,9 +2052,9 @@ struct LogEntryDetailSheet: View {
                         if let url = logEntry.sourceUrl, !url.isEmpty {
                             HStack(spacing: 6) {
                                 Image(systemName: "link")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.accentColor)
                                 Text(url)
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.accentColor)
                                     .lineLimit(1)
                             }
                             .font(.caption)
@@ -2168,9 +2138,9 @@ struct LogEntryDetailSheet: View {
     
     private func sentimentColor(_ sentiment: EvidenceSentiment) -> Color {
         switch sentiment {
-        case .supporting: return .green
-        case .contradicting: return .red
-        case .neutral: return .gray
+        case .supporting: return .statusActive
+        case .contradicting: return .statusInvalidated
+        case .neutral: return .statusArchived
         }
     }
 }
@@ -2194,14 +2164,14 @@ struct EvidenceTimelineRow: View {
             if evidence.urlRaw != nil && !evidence.urlRaw!.isEmpty {
                 Image(systemName: "link")
                     .font(.caption2)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.accentColor)
             }
             
             // Driver indicator if linked
             if evidence.driver != nil {
                 Image(systemName: "target")
                     .font(.caption2)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.accentColor)
             }
             
             // Title
@@ -2214,11 +2184,11 @@ struct EvidenceTimelineRow: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(evidence.driver != nil ? Color.blue.opacity(0.05) : Color(nsColor: .windowBackgroundColor))
+        .background(evidence.driver != nil ? Color.accentColor.opacity(0.05) : Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .overlay(
             RoundedRectangle(cornerRadius: 4)
-                .stroke(evidence.driver != nil ? Color.blue.opacity(0.2) : Color.clear, lineWidth: 1)
+                .stroke(evidence.driver != nil ? Color.accentColor.opacity(0.2) : Color.clear, lineWidth: 1)
         )
     }
 }
@@ -2249,21 +2219,21 @@ struct EvidenceRow: View {
                 HStack(spacing: 4) {
                     Image(systemName: "target")
                         .font(.caption2)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.accentColor)
                     Text("Linked to:")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(driver.title)
                         .font(.caption)
                         .fontWeight(.medium)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.accentColor)
                 }
             }
             
             if let url = evidence.urlRaw {
                 Text(url)
                     .font(.caption)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.accentColor)
                     .lineLimit(1)
             }
             
@@ -2275,11 +2245,11 @@ struct EvidenceRow: View {
             }
         }
         .padding(10)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .overlay(
             RoundedRectangle(cornerRadius: 6)
-                .stroke(evidence.driver != nil ? Color.blue.opacity(0.3) : Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+                .stroke(evidence.driver != nil ? Color.accentColor.opacity(0.3) : Color.appBorder.opacity(0.3), lineWidth: 1)
         )
     }
 }

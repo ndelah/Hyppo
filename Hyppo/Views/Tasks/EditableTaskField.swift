@@ -332,8 +332,8 @@ private struct EditQuestionBadge: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(Color.cyan.opacity(0.15))
-        .foregroundStyle(.cyan)
+        .background(Color.assetColor.opacity(0.15))
+        .foregroundStyle(Color.assetColor)
         .clipShape(RoundedRectangle(cornerRadius: 4))
     }
     
@@ -372,8 +372,8 @@ private struct EditDriverBadge: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(Color.orange.opacity(0.15))
-        .foregroundStyle(.orange)
+        .background(Color.statusOnHold.opacity(0.15))
+        .foregroundStyle(Color.statusOnHold)
         .clipShape(RoundedRectangle(cornerRadius: 4))
     }
     

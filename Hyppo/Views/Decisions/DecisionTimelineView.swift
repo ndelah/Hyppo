@@ -104,7 +104,7 @@ struct DecisionTimelineItem: View {
             VStack(spacing: 0) {
                 // Top connector
                 Rectangle()
-                    .fill(isFirst ? Color.clear : Color(nsColor: .separatorColor))
+                    .fill(isFirst ? Color.clear : Color.appBorder)
                     .frame(width: 2, height: 12)
                 
                 // Action icon
@@ -120,7 +120,7 @@ struct DecisionTimelineItem: View {
                 
                 // Bottom connector
                 Rectangle()
-                    .fill(isLast ? Color.clear : Color(nsColor: .separatorColor))
+                    .fill(isLast ? Color.clear : Color.appBorder)
                     .frame(width: 2)
                     .frame(maxHeight: .infinity)
             }
@@ -182,7 +182,7 @@ struct DecisionTimelineItem: View {
                 }
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(nsColor: .windowBackgroundColor))
+                .background(Color.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .buttonStyle(.plain)
@@ -209,7 +209,7 @@ struct OutcomeTimelineItem: View {
             // Timeline connector
             VStack(spacing: 0) {
                 Rectangle()
-                    .fill(Color(nsColor: .separatorColor))
+                    .fill(Color.appBorder)
                     .frame(width: 2, height: 12)
                 
                 ZStack {

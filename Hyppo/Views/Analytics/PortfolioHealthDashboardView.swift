@@ -57,7 +57,7 @@ struct PortfolioHealthDashboardView: View {
             }
             .padding(20)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .onAppear(perform: loadAnalytics)
     }
     
@@ -102,7 +102,7 @@ struct PortfolioHealthDashboardView: View {
             VStack(spacing: 8) {
                 ZStack {
                     Circle()
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 12)
+                        .stroke(Color.statusArchived.opacity(0.2), lineWidth: 12)
                         .frame(width: 120, height: 120)
                     
                     Circle()
@@ -140,28 +140,28 @@ struct PortfolioHealthDashboardView: View {
                         value: "\(analytics.totalResearchQuestions)",
                         label: "Research Questions",
                         icon: "doc.text",
-                        color: .blue
+                        color: Color.accentColor
                     )
                     
                     summaryStatItem(
                         value: "\(analytics.totalAssets)",
                         label: "Assets",
                         icon: "building.2",
-                        color: .purple
+                        color: Color.accentColor
                     )
                     
                     summaryStatItem(
                         value: String(format: "%.1f", analytics.averageConfidence),
                         label: "Avg Confidence",
                         icon: "gauge",
-                        color: .orange
+                        color: Color.statusOnHold
                     )
                     
                     summaryStatItem(
                         value: String(format: "%.0f", analytics.averageHealthScore),
                         label: "Avg Health",
                         icon: "heart",
-                        color: .green
+                        color: Color.statusActive
                     )
                 }
             }
@@ -169,7 +169,7 @@ struct PortfolioHealthDashboardView: View {
             Spacer()
         }
         .padding(20)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -197,7 +197,7 @@ struct PortfolioHealthDashboardView: View {
                 value: "\(analytics.totalEvidence)",
                 subtitle: "\(analytics.recentContradictingCount) contradicting (7d)",
                 icon: "doc.badge.plus",
-                color: .blue
+                color: Color.accentColor
             )
             
             metricCard(
@@ -205,7 +205,7 @@ struct PortfolioHealthDashboardView: View {
                 value: "\(analytics.completedTasks)/\(analytics.totalTasks)",
                 subtitle: taskCompletionSubtitle(analytics),
                 icon: "checklist",
-                color: .green
+                color: Color.statusActive
             )
             
             metricCard(
@@ -213,7 +213,7 @@ struct PortfolioHealthDashboardView: View {
                 value: "\(analytics.totalDrivers)",
                 subtitle: "\(analytics.blindSpotCount) blind spots",
                 icon: "target",
-                color: .purple
+                color: Color.accentColor
             )
             
             metricCard(
@@ -221,7 +221,7 @@ struct PortfolioHealthDashboardView: View {
                 value: "\(analytics.overdueReviews)",
                 subtitle: "overdue",
                 icon: "clock.badge.exclamationmark",
-                color: analytics.overdueReviews > 0 ? .orange : .green
+                color: analytics.overdueReviews > 0 ? Color.statusOnHold : .green
             )
         }
     }
@@ -253,7 +253,7 @@ struct PortfolioHealthDashboardView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -265,10 +265,10 @@ struct PortfolioHealthDashboardView: View {
                 .font(.headline)
             
             let statusData = [
-                StatusChartData(status: "Active", count: analytics.activeQuestions, color: .green),
-                StatusChartData(status: "On Hold", count: analytics.onHoldQuestions, color: .orange),
-                StatusChartData(status: "Invalidated", count: analytics.invalidatedQuestions, color: .red),
-                StatusChartData(status: "Archived", count: analytics.archivedQuestions, color: .gray)
+                StatusChartData(status: "Active", count: analytics.activeQuestions, color: Color.statusActive),
+                StatusChartData(status: "On Hold", count: analytics.onHoldQuestions, color: Color.statusOnHold),
+                StatusChartData(status: "Invalidated", count: analytics.invalidatedQuestions, color: Color.statusInvalidated),
+                StatusChartData(status: "Archived", count: analytics.archivedQuestions, color: Color.statusArchived)
             ].filter { $0.count > 0 }
             
             if statusData.isEmpty {
@@ -315,7 +315,7 @@ struct PortfolioHealthDashboardView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -382,7 +382,7 @@ struct PortfolioHealthDashboardView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -392,7 +392,7 @@ struct PortfolioHealthDashboardView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.statusOnHold)
                 Text("Attention Needed")
                     .font(.headline)
             }
@@ -403,7 +403,7 @@ struct PortfolioHealthDashboardView: View {
                         count: analytics.overdueReviews,
                         label: "Overdue Reviews",
                         icon: "clock.badge.exclamationmark",
-                        color: .orange
+                        color: Color.statusOnHold
                     )
                 }
                 
@@ -412,7 +412,7 @@ struct PortfolioHealthDashboardView: View {
                         count: analytics.blindSpotCount,
                         label: "Blind Spots",
                         icon: "eye.slash",
-                        color: .yellow
+                        color: Color.confidenceMedium
                     )
                 }
                 
@@ -421,7 +421,7 @@ struct PortfolioHealthDashboardView: View {
                         count: analytics.staleResearchCount,
                         label: "Stale Research",
                         icon: "hourglass",
-                        color: .gray
+                        color: Color.statusArchived
                     )
                 }
                 
@@ -430,14 +430,14 @@ struct PortfolioHealthDashboardView: View {
                         count: analytics.recentContradictingCount,
                         label: "New Contradicting (7d)",
                         icon: "minus.circle.fill",
-                        color: .red
+                        color: Color.statusInvalidated
                     )
                 }
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.1))
+        .background(Color.statusOnHold.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -456,7 +456,7 @@ struct PortfolioHealthDashboardView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -477,10 +477,10 @@ struct PortfolioHealthDashboardView: View {
     }
     
     private func healthColor(for score: Int) -> Color {
-        if score >= 70 { return .green }
-        if score >= 50 { return .blue }
-        if score >= 30 { return .orange }
-        return .red
+        if score >= 70 { return Color.statusActive }
+        if score >= 50 { return Color.accentColor }
+        if score >= 30 { return Color.statusOnHold }
+        return .statusInvalidated
     }
     
     private func healthLabel(for score: Int) -> String {
@@ -492,12 +492,12 @@ struct PortfolioHealthDashboardView: View {
     
     private func confidenceColor(for level: Int) -> Color {
         switch level {
-        case 1: return .red
-        case 2: return .orange
-        case 3: return .yellow
-        case 4: return .blue
-        case 5: return .green
-        default: return .gray
+        case 1: return .statusInvalidated
+        case 2: return .statusOnHold
+        case 3: return .confidenceMedium
+        case 4: return Color.accentColor
+        case 5: return .statusActive
+        default: return .statusArchived
         }
     }
 }

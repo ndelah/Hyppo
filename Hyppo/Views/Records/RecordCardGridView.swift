@@ -202,7 +202,7 @@ struct RecordCardGridView: View {
                 id: ticker,
                 title: ticker,
                 icon: "building.2",
-                color: .blue,
+                color: Color.accentColor,
                 questions: questions
             )
         }
@@ -212,7 +212,7 @@ struct RecordCardGridView: View {
                 id: "_no_asset",
                 title: "No Asset",
                 icon: "folder",
-                color: .gray,
+                color: Color.statusArchived,
                 questions: noAssetQuestions
             ))
         }
@@ -239,7 +239,7 @@ struct RecordCardGridView: View {
                 id: "confidence_none",
                 title: "Not Set",
                 icon: "gauge",
-                color: .gray,
+                color: Color.statusArchived,
                 questions: notSetQuestions
             ))
         }
@@ -280,7 +280,7 @@ struct RecordCardGridView: View {
                 id: "_untagged",
                 title: "Untagged",
                 icon: "tag.slash",
-                color: .gray,
+                color: Color.statusArchived,
                 questions: untaggedQuestions
             ))
         }
@@ -406,28 +406,17 @@ struct RecordCardGridView: View {
     // MARK: - Colors
     
     private func statusColor(for status: ResearchQuestionStatus) -> Color {
-        switch status {
-        case .active: return .green
-        case .onHold: return .orange
-        case .invalidated: return .red
-        case .archived: return .gray
-        }
+        Color.forStatus(status)
     }
     
     private func confidenceColor(for level: ConfidenceLevel) -> Color {
-        switch level {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
-        }
+        Color.forConfidence(level)
     }
     
     private func tagColor(for tag: Tag) -> Color {
         guard let colorName = tag.colorName,
               let color = TagColor(rawValue: colorName) else {
-            return .blue
+            return Color.accentColor
         }
         return color.color
     }

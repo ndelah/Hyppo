@@ -39,13 +39,13 @@ enum AnalyticsSection: String, CaseIterable, Identifiable {
     /// Color for the section icon
     var iconColor: Color {
         switch self {
-        case .portfolio: return .blue
+        case .portfolio: return Color.accentColor
         case .decisions: return .indigo
         case .evidence: return .purple
-        case .tasks: return .green
-        case .drivers: return .orange
+        case .tasks: return .statusActive
+        case .drivers: return .statusOnHold
         case .reviews: return .teal
-        case .alerts: return .red
+        case .alerts: return .statusInvalidated
         }
     }
     
@@ -124,7 +124,7 @@ struct AnalyticsDashboardView: View {
             }
         }
         .padding(.vertical, 8)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+        .background(Color.surfaceSecondary)
     }
     
     private func sectionButton(_ section: AnalyticsSection) -> some View {
@@ -153,7 +153,7 @@ struct AnalyticsDashboardView: View {
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(alertCount > 0 ? Color.red : Color.gray)
+                                .background(alertCount > 0 ? Color.statusInvalidated : Color.statusArchived)
                                 .clipShape(Capsule())
                         }
                     }

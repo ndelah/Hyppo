@@ -73,7 +73,7 @@ struct SearchPopoverView: View {
             footer
         }
         .frame(width: 580, height: 400)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .alert("Save Search", isPresented: $showingSaveDialog) {
             TextField("Search name", text: $newSearchName)
             Button("Cancel", role: .cancel) {
@@ -103,7 +103,7 @@ struct SearchPopoverView: View {
                 } label: {
                     Text("Clear All")
                         .font(.caption)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.statusInvalidated)
                 }
                 .buttonStyle(.plain)
             }
@@ -398,7 +398,7 @@ struct SearchPopoverView: View {
                             HStack {
                                 Image(systemName: "star.fill")
                                     .frame(width: 20)
-                                    .foregroundStyle(.yellow)
+                                    .foregroundStyle(Color.confidenceMedium)
                                 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(search.name)
@@ -421,7 +421,7 @@ struct SearchPopoverView: View {
                         } label: {
                             Image(systemName: "trash")
                                 .font(.caption)
-                                .foregroundStyle(.red.opacity(0.7))
+                                .foregroundStyle(Color.statusInvalidated.opacity(0.7))
                         }
                         .buttonStyle(.plain)
                     }
@@ -522,28 +522,17 @@ struct SearchPopoverView: View {
     // MARK: - Colors
     
     private func statusColor(for status: ResearchQuestionStatus) -> Color {
-        switch status {
-        case .active: return .green
-        case .onHold: return .orange
-        case .invalidated: return .red
-        case .archived: return .gray
-        }
+        Color.forStatus(status)
     }
     
     private func confidenceColor(for level: ConfidenceLevel) -> Color {
-        switch level {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
-        }
+        Color.forConfidence(level)
     }
     
     private func tagColor(for tag: Tag) -> Color {
         guard let colorName = tag.colorName,
               let tagColor = TagColor(rawValue: colorName) else {
-            return .blue
+            return Color.accentColor
         }
         return tagColor.color
     }
@@ -631,12 +620,12 @@ private struct FilterChip: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
-            .background(isSelected ? color.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
+            .background(isSelected ? color.opacity(0.2) : Color.surface)
             .foregroundStyle(isSelected ? color : .primary)
             .clipShape(Capsule())
             .overlay(
                 Capsule()
-                    .stroke(isSelected ? color : Color(nsColor: .separatorColor), lineWidth: 1)
+                    .stroke(isSelected ? color : Color.appBorder, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

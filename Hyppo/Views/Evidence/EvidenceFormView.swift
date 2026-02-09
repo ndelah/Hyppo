@@ -171,7 +171,7 @@ struct EvidenceFormView: View {
                                 DriverPicker(selectedDriver: $selectedDriver, drivers: rq.topLevelDrivers)
                             } else {
                                 Text("No research question found")
-                                    .foregroundStyle(.red)
+                                    .foregroundStyle(Color.statusInvalidated)
                             }
                         }
                     } else if let driver = selectedDriver {
@@ -188,7 +188,7 @@ struct EvidenceFormView: View {
                                     .fontWeight(.medium)
                             }
                             .padding(8)
-                            .background(Color(nsColor: .windowBackgroundColor))
+                            .background(Color.surface)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
                     }
@@ -252,11 +252,11 @@ struct EvidenceFormView: View {
                             .font(.body)
                             .frame(minHeight: 60)
                             .padding(4)
-                            .background(Color(nsColor: .textBackgroundColor))
+                            .background(Color.surface)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 6)
-                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                                    .stroke(Color.appBorder, lineWidth: 1)
                             )
                     }
                     
@@ -265,12 +265,12 @@ struct EvidenceFormView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             ForEach(validationErrors, id: \.self) { error in
                                 Label(error, systemImage: "exclamationmark.circle")
-                                    .foregroundStyle(.red)
+                                    .foregroundStyle(Color.statusInvalidated)
                                     .font(.caption)
                             }
                         }
                         .padding()
-                        .background(Color.red.opacity(0.1))
+                        .background(Color.statusInvalidated.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
@@ -331,18 +331,18 @@ struct EvidenceFormView: View {
                     
                     Text("\(snippetText.count)/\(Evidence.maxSnippetLength)")
                         .font(.caption2)
-                        .foregroundStyle(snippetText.count > Evidence.maxSnippetLength ? Color.red : Color.gray)
+                        .foregroundStyle(snippetText.count > Evidence.maxSnippetLength ? Color.statusInvalidated : Color.statusArchived)
                 }
                 
                 TextEditor(text: $snippetText)
                     .font(.body)
                     .frame(minHeight: 80)
                     .padding(4)
-                    .background(Color(nsColor: .textBackgroundColor))
+                    .background(Color.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                            .stroke(Color.appBorder, lineWidth: 1)
                     )
                 
                 Text("Keep snippets brief for copyright compliance")
@@ -565,7 +565,7 @@ struct DriverPicker: View {
                     .font(.caption)
             }
             .padding(8)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
     }

@@ -64,7 +64,7 @@ struct RecordCardView: View {
         .clipShape(RoundedRectangle(cornerRadius: isCompact ? 10 : 12))
         .overlay(
             RoundedRectangle(cornerRadius: isCompact ? 10 : 12)
-                .stroke(isSelected ? Color.accentColor : Color(nsColor: .separatorColor), lineWidth: isSelected ? 2 : 1)
+                .stroke(isSelected ? Color.accentColor : Color.appBorder, lineWidth: isSelected ? 2 : 1)
         )
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
@@ -79,8 +79,8 @@ struct RecordCardView: View {
                     .font(.system(size: 12 * textSizeMultiplier, weight: .bold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(Color.cyan.opacity(0.15))
-                    .foregroundStyle(.cyan)
+                    .background(Color.assetBackgroundColor)
+                    .foregroundStyle(Color.assetColor)
                     .clipShape(RoundedRectangle(cornerRadius: 4))
             }
             
@@ -137,7 +137,7 @@ struct RecordCardView: View {
                 MetricBadge(
                     icon: "note.text",
                     text: "\(logCount)",
-                    color: .orange,
+                    color: Color.statusOnHold,
                     isCompact: isCompact
                 )
             }
@@ -179,32 +179,21 @@ struct RecordCardView: View {
     // MARK: - Helpers
     
     private var cardBackground: Color {
-        Color(nsColor: .windowBackgroundColor)
+        Color.surface
     }
     
     private var statusColor: Color {
-        switch question.status {
-        case .active: return .green
-        case .onHold: return .orange
-        case .invalidated: return .red
-        case .archived: return .gray
-        }
+        Color.forStatus(question.status)
     }
     
     private func confidenceColor(for confidence: ConfidenceLevel) -> Color {
-        switch confidence {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
-        }
+        Color.forConfidence(confidence)
     }
     
     private func tagColor(for tag: Tag) -> Color {
         guard let colorName = tag.colorName,
               let tagColor = TagColor(rawValue: colorName) else {
-            return .blue
+            return Color.accentColor
         }
         return tagColor.color
     }

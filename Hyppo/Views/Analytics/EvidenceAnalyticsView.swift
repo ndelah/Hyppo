@@ -60,7 +60,7 @@ struct EvidenceAnalyticsView: View {
             }
             .padding(20)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .onAppear(perform: loadAnalytics)
     }
     
@@ -105,7 +105,7 @@ struct EvidenceAnalyticsView: View {
             VStack(spacing: 8) {
                 ZStack {
                     Circle()
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 10)
+                        .stroke(Color.statusArchived.opacity(0.2), lineWidth: 10)
                         .frame(width: 100, height: 100)
                     
                     // Balance indicator
@@ -143,28 +143,28 @@ struct EvidenceAnalyticsView: View {
                         value: "\(analytics.totalEvidence)",
                         label: "Total Evidence",
                         icon: "doc.text.fill",
-                        color: .blue
+                        color: Color.accentColor
                     )
                     
                     metricCard(
                         value: "\(analytics.supportingCount)",
                         label: "Supporting",
                         icon: "plus.circle.fill",
-                        color: .green
+                        color: Color.statusActive
                     )
                     
                     metricCard(
                         value: "\(analytics.contradictingCount)",
                         label: "Contradicting",
                         icon: "minus.circle.fill",
-                        color: .red
+                        color: Color.statusInvalidated
                     )
                     
                     metricCard(
                         value: "\(analytics.neutralCount)",
                         label: "Neutral",
                         icon: "circle",
-                        color: .gray
+                        color: Color.statusArchived
                     )
                 }
                 
@@ -180,7 +180,7 @@ struct EvidenceAnalyticsView: View {
                         value: "\(analytics.recentContradicting.count)",
                         label: "Contradicting (7d)",
                         icon: "exclamationmark.triangle.fill",
-                        color: analytics.recentContradicting.isEmpty ? .green : .orange
+                        color: analytics.recentContradicting.isEmpty ? Color.statusActive : .orange
                     )
                 }
             }
@@ -188,7 +188,7 @@ struct EvidenceAnalyticsView: View {
             Spacer()
         }
         .padding(20)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -224,9 +224,9 @@ struct EvidenceAnalyticsView: View {
                 emptyChartPlaceholder
             } else {
                 let chartData = [
-                    SentimentChartData(sentiment: "Supporting", count: analytics.supportingCount, color: .green),
-                    SentimentChartData(sentiment: "Neutral", count: analytics.neutralCount, color: .gray),
-                    SentimentChartData(sentiment: "Contradicting", count: analytics.contradictingCount, color: .red)
+                    SentimentChartData(sentiment: "Supporting", count: analytics.supportingCount, color: Color.statusActive),
+                    SentimentChartData(sentiment: "Neutral", count: analytics.neutralCount, color: Color.statusArchived),
+                    SentimentChartData(sentiment: "Contradicting", count: analytics.contradictingCount, color: Color.statusInvalidated)
                 ].filter { $0.count > 0 }
                 
                 Chart(chartData) { item in
@@ -269,7 +269,7 @@ struct EvidenceAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -293,9 +293,9 @@ struct EvidenceAnalyticsView: View {
                 emptyChartPlaceholder
             } else {
                 let chartData = [
-                    FreshnessChartData(range: "< 30 days", count: analytics.evidenceUnder30Days, color: .green),
-                    FreshnessChartData(range: "30-90 days", count: analytics.evidence30To90Days, color: .yellow),
-                    FreshnessChartData(range: "> 90 days", count: analytics.evidenceOver90Days, color: .red)
+                    FreshnessChartData(range: "< 30 days", count: analytics.evidenceUnder30Days, color: Color.statusActive),
+                    FreshnessChartData(range: "30-90 days", count: analytics.evidence30To90Days, color: Color.confidenceMedium),
+                    FreshnessChartData(range: "> 90 days", count: analytics.evidenceOver90Days, color: Color.statusInvalidated)
                 ]
                 
                 // Stacked bar
@@ -338,19 +338,19 @@ struct EvidenceAnalyticsView: View {
                 if analytics.evidenceOver90Days > analytics.totalEvidence / 2 {
                     HStack(spacing: 6) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.statusOnHold)
                         Text("Over half your evidence is older than 90 days")
                             .font(.caption)
                     }
                     .padding(8)
-                    .background(Color.orange.opacity(0.1))
+                    .background(Color.statusOnHold.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -374,7 +374,7 @@ struct EvidenceAnalyticsView: View {
                         x: .value("Count", item.count),
                         y: .value("Source", item.type)
                     )
-                    .foregroundStyle(.blue.gradient)
+                    .foregroundStyle(Color.accentColor.gradient)
                     .annotation(position: .trailing) {
                         Text("\(item.count)")
                             .font(.caption2)
@@ -387,7 +387,7 @@ struct EvidenceAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -437,7 +437,7 @@ struct EvidenceAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -487,14 +487,14 @@ struct EvidenceAnalyticsView: View {
                         }
                         .padding(.vertical, 6)
                         .padding(.horizontal, 8)
-                        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+                        .background(Color.surface)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                 }
             }
         }
         .padding(16)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -504,7 +504,7 @@ struct EvidenceAnalyticsView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
                 Text("Recent Contradicting Evidence")
                     .font(.headline)
                 
@@ -519,7 +519,7 @@ struct EvidenceAnalyticsView: View {
                 ForEach(analytics.recentContradicting.prefix(5)) { evidence in
                     HStack {
                         Image(systemName: "minus.circle.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.statusInvalidated)
                         
                         VStack(alignment: .leading, spacing: 2) {
                             Text(evidence.effectiveTitle)
@@ -546,18 +546,18 @@ struct EvidenceAnalyticsView: View {
                             .font(.caption)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color.red.opacity(0.1))
-                            .foregroundStyle(.red)
+                            .background(Color.statusInvalidated.opacity(0.1))
+                            .foregroundStyle(Color.statusInvalidated)
                             .clipShape(Capsule())
                     }
                     .padding(10)
-                    .background(Color.red.opacity(0.05))
+                    .background(Color.statusInvalidated.opacity(0.05))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
         }
         .padding(16)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -591,24 +591,24 @@ struct EvidenceAnalyticsView: View {
     }
     
     private func balanceColor(for balance: Int) -> Color {
-        if balance > 0 { return .green }
-        if balance < 0 { return .red }
-        return .gray
+        if balance > 0 { return Color.statusActive }
+        if balance < 0 { return Color.statusInvalidated }
+        return .statusArchived
     }
     
     private func freshnessColor(for score: Int) -> Color {
-        if score >= 70 { return .green }
-        if score >= 40 { return .yellow }
-        return .red
+        if score >= 70 { return Color.statusActive }
+        if score >= 40 { return Color.confidenceMedium }
+        return .statusInvalidated
     }
     
     private func evidenceTypeColor(_ type: EvidenceType) -> Color {
         switch type {
-        case .article: return .blue
+        case .article: return Color.accentColor
         case .filing: return .purple
-        case .kpi: return .green
-        case .quote: return .orange
-        case .note: return .gray
+        case .kpi: return .statusActive
+        case .quote: return .statusOnHold
+        case .note: return .statusArchived
         }
     }
     

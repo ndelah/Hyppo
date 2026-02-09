@@ -25,7 +25,7 @@ struct QuickAddTaskPopover: View {
             HStack {
                 Image(systemName: "plus.circle.fill")
                     .font(.title3)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.accentColor)
                 
                 Text("Quick Add Task")
                     .font(.headline)
@@ -37,7 +37,7 @@ struct QuickAddTaskPopover: View {
                     .foregroundStyle(.tertiary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color(nsColor: .windowBackgroundColor))
+                    .background(Color.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 4))
                 
                 Button {
@@ -51,7 +51,7 @@ struct QuickAddTaskPopover: View {
                 .keyboardShortcut(.escape, modifiers: [])
             }
             .padding()
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color.surface)
             
             Divider()
             
@@ -66,14 +66,14 @@ struct QuickAddTaskPopover: View {
                 placeholder: "What do you need to do? (@ for project, # for driver)"
             )
             .padding()
-            .background(Color(nsColor: .textBackgroundColor))
+            .background(Color.surface)
             
             // Tips
             HStack(spacing: 24) {
                 HStack(spacing: 4) {
                     Text("@")
                         .font(.caption.bold())
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.accentColor)
                     Text("assign to project")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -82,7 +82,7 @@ struct QuickAddTaskPopover: View {
                 HStack(spacing: 4) {
                     Text("#")
                         .font(.caption.bold())
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.statusOnHold)
                     Text("assign to driver")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -96,14 +96,14 @@ struct QuickAddTaskPopover: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 10)
-            .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+            .background(Color.surface)
         }
         .frame(width: 500)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                .stroke(Color.appBorder, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.2), radius: 20, y: 10)
         .scaleEffect(isAnimatingIn ? 1 : 0.9)

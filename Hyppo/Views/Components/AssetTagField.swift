@@ -73,10 +73,10 @@ struct AssetTagField: View {
             ZStack(alignment: .leading) {
                 // Background tap area
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(nsColor: .textBackgroundColor))
+                    .fill(Color.surface)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(isFocused ? Color.accentColor : Color(nsColor: .separatorColor), lineWidth: isFocused ? 2 : 1)
+                            .stroke(isFocused ? Color.accentColor : Color.appBorder, lineWidth: isFocused ? 2 : 1)
                     )
                 
                 HStack(spacing: 8) {
@@ -278,7 +278,7 @@ struct AssetTagField: View {
                             .foregroundStyle(.tertiary)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color(nsColor: .separatorColor).opacity(0.5))
+                            .background(Color.appBorder.opacity(0.5))
                             .clipShape(RoundedRectangle(cornerRadius: 3))
                     }
                     .padding(.horizontal, 12)
@@ -299,12 +299,12 @@ struct AssetTagField: View {
                 .padding(.vertical, 8)
             }
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .shadow(color: Color.black.opacity(0.15), radius: 8, y: 4)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                .stroke(Color.appBorder, lineWidth: 1)
         )
     }
     
@@ -323,15 +323,15 @@ struct AssetTagField: View {
             if newName.isEmpty {
                 HStack(spacing: 4) {
                     Image(systemName: "info.circle")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.statusOnHold)
                     Text("Enter company name to create the asset")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.statusOnHold)
                 }
                 .font(.caption)
             } else {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.statusActive)
                     Text("New asset will be created: \(newTicker) - \(newName)")
                         .foregroundStyle(.secondary)
                 }

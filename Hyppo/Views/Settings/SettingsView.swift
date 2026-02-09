@@ -44,7 +44,7 @@ struct SettingsView: View {
         }
         .navigationTitle("")
         .frame(minWidth: 500, minHeight: 400)
-        .background(Color(nsColor: .underPageBackgroundColor))
+        .background(Color.appBackground)
     }
     
     // MARK: - Settings Tab Bar
@@ -64,9 +64,11 @@ struct SettingsView: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 16)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+        .background(Color.surfaceSecondary)
         .overlay(alignment: .bottom) {
-            Divider()
+            Rectangle()
+                .fill(Color.appBorder)
+                .frame(height: 1)
         }
     }
     
@@ -89,7 +91,7 @@ struct SettingsView: View {
                 .padding(.vertical, 6)
                 .background(
                     selectedTab == tab
-                        ? Color.accentColor.opacity(colorContrast == .increased ? 0.2 : 0.1)
+                        ? Color.appAccentSubtle
                         : Color.clear
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -282,7 +284,7 @@ private struct AppearanceSettingsTab: View {
                         }
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(nsColor: .windowBackgroundColor))
+                        .background(Color.surface)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                     .padding(.top, 8)
@@ -411,7 +413,7 @@ private struct AboutSettingsTab: View {
             // App icon placeholder
             Image(systemName: "brain.head.profile")
                 .font(.system(size: 64))
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.accentColor)
             
             VStack(spacing: 4) {
                 Text("Hyppo")

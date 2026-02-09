@@ -184,14 +184,14 @@ struct DecisionAnalyticsView: View {
                     title: "Total Decisions",
                     value: "\(totalDecisions)",
                     icon: "checkmark.circle",
-                    color: .blue
+                    color: Color.accentColor
                 )
                 
                 metricCard(
                     title: "Completed Theses",
                     value: "\(totalCompletedTheses)",
                     icon: "flag.checkered",
-                    color: .purple
+                    color: Color.accentColor
                 )
                 
                 if let accuracy = thesisAccuracyPercentage {
@@ -264,7 +264,7 @@ struct DecisionAnalyticsView: View {
                 }
             }
             .padding()
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -287,7 +287,7 @@ struct DecisionAnalyticsView: View {
                 }
             }
             .padding()
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -357,7 +357,7 @@ struct DecisionAnalyticsView: View {
             }
         }
         .padding()
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -391,14 +391,14 @@ struct DecisionAnalyticsView: View {
                 ForEach(generateInsights(), id: \.self) { insight in
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: "lightbulb.fill")
-                            .foregroundStyle(.yellow)
+                            .foregroundStyle(Color.confidenceMedium)
                         Text(insight)
                             .font(.subheadline)
                     }
                 }
             }
             .padding()
-            .background(Color.yellow.opacity(0.05))
+            .background(Color.confidenceMedium.opacity(0.05))
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -407,11 +407,11 @@ struct DecisionAnalyticsView: View {
     
     private func accuracyColor(_ percentage: Double) -> Color {
         if percentage >= 70 {
-            return .green
+            return .statusActive
         } else if percentage >= 50 {
-            return .orange
+            return .statusOnHold
         } else {
-            return .red
+            return .statusInvalidated
         }
     }
     

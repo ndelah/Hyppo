@@ -190,7 +190,7 @@ struct ResearchQuestionFormView: View {
                 Text("Investment Thesis")
                     .font(.headline)
                 Text("*")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
             }
             
             Text("What must be true for this investment to work?")
@@ -201,11 +201,11 @@ struct ResearchQuestionFormView: View {
                 .font(.body)
                 .frame(minHeight: 80)
                 .padding(4)
-                .background(Color(nsColor: .textBackgroundColor))
+                .background(Color.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        .stroke(Color.appBorder, lineWidth: 1)
                 )
                 .focused($focusedField, equals: .investmentThesis)
                 .interceptTab(
@@ -230,11 +230,11 @@ struct ResearchQuestionFormView: View {
                 .font(.body)
                 .frame(minHeight: 60)
                 .padding(4)
-                .background(Color(nsColor: .textBackgroundColor))
+                .background(Color.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        .stroke(Color.appBorder, lineWidth: 1)
                 )
                 .focused($focusedField, equals: .whyThisMatters)
                 .interceptTab(
@@ -283,7 +283,7 @@ struct ResearchQuestionFormView: View {
                     .font(.caption)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.blue)
+            .foregroundStyle(Color.accentColor)
         }
     }
     
@@ -332,11 +332,11 @@ struct ResearchQuestionFormView: View {
                         .font(.body)
                         .frame(minHeight: 80)
                         .padding(4)
-                        .background(Color(nsColor: .textBackgroundColor))
+                        .background(Color.surface)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                         .overlay(
                             RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                                .stroke(Color.appBorder, lineWidth: 1)
                         )
                 }
             }
@@ -365,7 +365,7 @@ struct ResearchQuestionFormView: View {
                                 .font(.caption2)
                         }
                         .frame(width: 70, height: 50)
-                        .background(confidence == level.rawValue ? Color.blue : Color(nsColor: .windowBackgroundColor))
+                        .background(confidence == level.rawValue ? Color.accentColor : Color.surface)
                         .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? .orange : .primary))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
@@ -379,12 +379,12 @@ struct ResearchQuestionFormView: View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(validationErrors, id: \.self) { error in
                 Label(error, systemImage: "exclamationmark.circle")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
                     .font(.caption)
             }
         }
         .padding()
-        .background(Color.red.opacity(0.1))
+        .background(Color.statusInvalidated.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -559,7 +559,7 @@ struct ScenarioRowEditor: View {
                 onDelete()
             } label: {
                 Image(systemName: "minus.circle.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
             }
             .buttonStyle(.plain)
         }
@@ -587,7 +587,7 @@ struct EditableListSection: View {
                         items.remove(at: index)
                     } label: {
                         Image(systemName: "minus.circle.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.statusInvalidated)
                     }
                     .buttonStyle(.plain)
                 }
@@ -600,7 +600,7 @@ struct EditableListSection: View {
                     .font(.caption)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.blue)
+            .foregroundStyle(Color.accentColor)
         }
     }
 }

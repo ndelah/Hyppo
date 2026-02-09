@@ -394,7 +394,7 @@ struct DragDropModifier: ViewModifier {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Color(nsColor: .windowBackgroundColor))
+                .background(Color.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .shadow(radius: 4)
                 .onAppear { draggedDriverId = item.id }
@@ -590,7 +590,7 @@ struct DriverRowView: View {
         .background(
             RoundedRectangle(cornerRadius: 6)
                 .fill(isSelected ? Color.accentColor.opacity(0.06) :
-                      (isHovering ? Color(nsColor: .quaternarySystemFill) : Color.clear))
+                      (isHovering ? Color.surfaceHover : Color.clear))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 6)
@@ -615,8 +615,8 @@ struct DriverRowView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(driver.isSubDriver ? Color.indigo.opacity(0.12) : Color.orange.opacity(0.12))
-        .foregroundStyle(driver.isSubDriver ? .indigo : .orange)
+        .background(driver.isSubDriver ? Color.indigo.opacity(0.12) : Color.statusOnHold.opacity(0.12))
+        .foregroundStyle(driver.isSubDriver ? .indigo : Color.statusOnHold)
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .animation(.easeInOut(duration: 0.15), value: driver.isSubDriver)
     }
@@ -695,8 +695,8 @@ struct DriverRowView: View {
             Text(shortcut.shortcutText)
                 .padding(.horizontal, 4)
                 .padding(.vertical, 1)
-                .background(shortcut.isSubDriver ? Color.indigo.opacity(0.25) : Color.orange.opacity(0.25))
-                .foregroundStyle(shortcut.isSubDriver ? .indigo : .orange)
+                .background(shortcut.isSubDriver ? Color.indigo.opacity(0.25) : Color.statusOnHold.opacity(0.25))
+                .foregroundStyle(shortcut.isSubDriver ? .indigo : Color.statusOnHold)
                 .clipShape(RoundedRectangle(cornerRadius: 3))
             
             // Text after the shortcut
@@ -816,12 +816,12 @@ struct SourceTypeChip: View {
                 .font(.caption2)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(isSelected ? Color.accentColor : Color(nsColor: .windowBackgroundColor))
+                .background(isSelected ? Color.accentColor : Color.surface)
                 .foregroundStyle(isSelected ? .white : .primary)
                 .clipShape(Capsule())
                 .overlay(
                     Capsule()
-                        .strokeBorder(isSelected ? Color.accentColor : Color(nsColor: .separatorColor), lineWidth: 1)
+                        .strokeBorder(isSelected ? Color.accentColor : Color.appBorder, lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)

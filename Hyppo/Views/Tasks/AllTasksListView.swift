@@ -196,7 +196,7 @@ struct AllTasksListView: View {
                 id: "completed",
                 label: "Including Completed",
                 icon: "checkmark.circle",
-                color: .green,
+                color: Color.statusActive,
                 filterType: .completed
             ))
         }
@@ -209,7 +209,7 @@ struct AllTasksListView: View {
                     id: "question_\(questionId.uuidString)",
                     label: label,
                     icon: "doc.text.magnifyingglass",
-                    color: .blue,
+                    color: Color.accentColor,
                     filterType: .researchQuestion(questionId)
                 ))
             }
@@ -246,7 +246,7 @@ struct AllTasksListView: View {
     private func tagColor(for tag: Tag) -> Color {
         guard let colorName = tag.colorName,
               let tagColorEnum = TagColor(rawValue: colorName) else {
-            return .blue
+            return Color.accentColor
         }
         return tagColorEnum.color
     }
@@ -266,7 +266,7 @@ struct AllTasksListView: View {
             )
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color.surface)
             
             Divider()
             
@@ -306,7 +306,7 @@ struct AllTasksListView: View {
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(config.activeShowInboxOnly ? Color.purple.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
+                        .background(config.activeShowInboxOnly ? Color.purple.opacity(0.2) : Color.surface)
                         .foregroundStyle(config.activeShowInboxOnly ? .purple : .secondary)
                         .clipShape(Capsule())
                     }
@@ -327,7 +327,7 @@ struct AllTasksListView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+        .background(Color.surfaceSecondary)
     }
     
     // MARK: - Search Bar with Filter Tags (Odoo-style)
@@ -379,11 +379,11 @@ struct AllTasksListView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .frame(minWidth: 300, maxWidth: 500)
-            .background(Color(nsColor: .textBackgroundColor))
+            .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 4))
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                    .stroke(Color.appBorder, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -408,7 +408,7 @@ struct AllTasksListView: View {
                     }
                 }
                 .padding()
-                .background(Color(nsColor: .windowBackgroundColor))
+                .background(Color.surface)
                 
                 Divider()
                 
@@ -473,7 +473,7 @@ struct AllTasksListView: View {
                 .frame(maxWidth: 300)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
     }
     
     private var emptyStateTitle: String {
@@ -556,7 +556,7 @@ struct AllTasksListView: View {
             .padding(.horizontal, 24)
         }
         .id("\(currentPage)-\(config.groupByColumn.rawValue)") // Force re-render when page or grouping changes
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
     }
     
     // MARK: - Actions
@@ -669,8 +669,8 @@ struct TodoistTaskRow: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.cyan.opacity(0.12))
-                            .foregroundStyle(.cyan)
+                            .background(Color.assetColor.opacity(0.12))
+                            .foregroundStyle(Color.assetColor)
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                         }
                         .buttonStyle(.plain)
@@ -687,8 +687,8 @@ struct TodoistTaskRow: View {
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color.orange.opacity(0.12))
-                        .foregroundStyle(.orange)
+                        .background(Color.statusOnHold.opacity(0.12))
+                        .foregroundStyle(Color.statusOnHold)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                         .help(driver.title)
                     }
@@ -723,7 +723,7 @@ struct TodoistTaskRow: View {
                         } label: {
                             Image(systemName: "trash")
                                 .font(.system(size: 12 * textSizeMultiplier))
-                                .foregroundStyle(.red.opacity(0.7))
+                                .foregroundStyle(Color.statusInvalidated.opacity(0.7))
                         }
                         .buttonStyle(.plain)
                         .transition(.opacity)
@@ -744,7 +744,7 @@ struct TodoistTaskRow: View {
         )
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(isHovering || isEditing ? Color(nsColor: .windowBackgroundColor).opacity(0.5) : Color.clear)
+                .fill(isHovering || isEditing ? Color.surface : Color.clear)
         )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {

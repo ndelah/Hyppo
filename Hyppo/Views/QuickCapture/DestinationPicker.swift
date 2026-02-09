@@ -175,7 +175,7 @@ struct DestinationPicker: View {
                         showInlineAssetForm = true
                     } label: {
                         Image(systemName: "plus.circle")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.accentColor)
                     }
                     .buttonStyle(.plain)
                     .help("Create new asset")
@@ -285,7 +285,7 @@ struct DestinationPicker: View {
                         showInlineQuestionForm = true
                     } label: {
                         Image(systemName: "plus.circle")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.accentColor)
                     }
                     .buttonStyle(.plain)
                     .help("Create new research question")
@@ -393,7 +393,7 @@ struct InlineAssetForm: View {
             if let error = validationError {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
             }
             
             HStack {
@@ -473,7 +473,7 @@ struct InlineQuestionForm: View {
             if let error = validationError {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
             }
             
             HStack {

@@ -213,10 +213,10 @@ struct QuickCaptureHUD: View {
            Date().timeIntervalSince(lastSave) < 5 {
             HStack {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.statusActive)
                 Text("Saved!")
                     .font(.caption)
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.statusActive)
             }
             .transition(.opacity)
         }
@@ -258,10 +258,10 @@ struct QuickCaptureHUD: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Image(systemName: "link")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.accentColor)
                         Text("URL detected")
                             .font(.caption)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.accentColor)
                     }
                     Text(url.absoluteString)
                         .font(.caption)
@@ -287,10 +287,10 @@ struct QuickCaptureHUD: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Image(systemName: "text.quote")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.statusOnHold)
                         Text("Text snippet detected")
                             .font(.caption)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.statusOnHold)
                     }
                     Text(ClipboardDetector.truncateSnippet(text))
                         .font(.caption)
@@ -517,10 +517,10 @@ struct QuickCaptureHUD: View {
             if let error = service.state.validationError {
                 HStack(spacing: 4) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.statusOnHold)
                     Text(error)
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.statusOnHold)
                 }
             }
             

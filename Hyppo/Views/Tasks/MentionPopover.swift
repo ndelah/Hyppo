@@ -38,7 +38,7 @@ struct ResearchQuestionMention: MentionItem {
         question.asset?.name
     }
     var mentionIcon: String { "doc.text.magnifyingglass" }
-    var mentionColor: Color { .blue }
+    var mentionColor: Color { Color.accentColor }
     
     func hash(into hasher: inout Hasher) {
         hasher.combine(question.questionId)
@@ -64,7 +64,7 @@ struct DriverMention: MentionItem {
         driver.researchQuestion?.asset?.ticker
     }
     var mentionIcon: String { isSubDriver ? "arrow.turn.down.right" : "target" }
-    var mentionColor: Color { .orange }
+    var mentionColor: Color { Color.statusOnHold }
     
     func hash(into hasher: inout Hasher) {
         hasher.combine(driver.driverId)
@@ -149,7 +149,7 @@ struct MentionPopover<Item: MentionItem>: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color.surface)
             
             Divider()
             
@@ -184,11 +184,11 @@ struct MentionPopover<Item: MentionItem>: View {
             }
         }
         .frame(width: 350)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                .stroke(Color.appBorder, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
         .focusable()

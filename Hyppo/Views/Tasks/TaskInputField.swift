@@ -148,7 +148,7 @@ struct TaskInputField: View {
                     } label: {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.title3)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.accentColor)
                     }
                     .buttonStyle(.plain)
                     .keyboardShortcut(.return, modifiers: [])
@@ -156,11 +156,11 @@ struct TaskInputField: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(Color(nsColor: .textBackgroundColor))
+            .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(isTextFieldFocused ? Color.accentColor : Color(nsColor: .separatorColor), lineWidth: 1)
+                    .stroke(isTextFieldFocused ? Color.accentColor : Color.appBorder, lineWidth: 1)
             )
             
             // Mention popovers
@@ -381,8 +381,8 @@ private struct QuestionBadge: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(Color.cyan.opacity(0.15))
-        .foregroundStyle(.cyan)
+        .background(Color.assetColor.opacity(0.15))
+        .foregroundStyle(Color.assetColor)
         .clipShape(RoundedRectangle(cornerRadius: 4))
     }
     
@@ -421,8 +421,8 @@ private struct DriverBadge: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(Color.orange.opacity(0.15))
-        .foregroundStyle(.orange)
+        .background(Color.statusOnHold.opacity(0.15))
+        .foregroundStyle(Color.statusOnHold)
         .clipShape(RoundedRectangle(cornerRadius: 4))
     }
     

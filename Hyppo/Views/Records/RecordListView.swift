@@ -181,28 +181,17 @@ struct RecordListView: View {
     // MARK: - Color Helpers
     
     private func statusColor(for status: ResearchQuestionStatus) -> Color {
-        switch status {
-        case .active: return .green
-        case .onHold: return .orange
-        case .invalidated: return .red
-        case .archived: return .gray
-        }
+        Color.forStatus(status)
     }
     
     private func confidenceColor(for level: ConfidenceLevel) -> Color {
-        switch level {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
-        }
+        Color.forConfidence(level)
     }
     
     private func tagColor(for tag: Tag) -> Color {
         guard let colorName = tag.colorName,
               let tagColorEnum = TagColor(rawValue: colorName) else {
-            return .blue
+            return Color.accentColor
         }
         return tagColorEnum.color
     }
@@ -302,7 +291,7 @@ struct RecordListView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+        .background(Color.surfaceSecondary)
     }
     
     /// Search bar that displays active filters as rectangular tags
@@ -352,11 +341,11 @@ struct RecordListView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .frame(minWidth: 300, maxWidth: 500)
-            .background(Color(nsColor: .textBackgroundColor))
+            .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 4))
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                    .stroke(Color.appBorder, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -381,7 +370,7 @@ struct RecordListView: View {
                     }
                 }
                 .padding()
-                .background(Color(nsColor: .windowBackgroundColor))
+                .background(Color.surface)
                 
                 Divider()
                 
@@ -440,7 +429,7 @@ struct RecordListView: View {
                         .frame(width: 28, height: 24)
                         .background(
                             config.viewMode == mode
-                                ? Color(nsColor: .windowBackgroundColor)
+                                ? Color.surface
                                 : Color.clear
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -449,7 +438,7 @@ struct RecordListView: View {
             }
         }
         .padding(2)
-        .background(Color(nsColor: .separatorColor).opacity(0.3))
+        .background(Color.appBorder.opacity(0.3))
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
     
@@ -636,7 +625,7 @@ private struct ColumnSettingsSheet: View {
                     Button("Reset to Defaults") {
                         config.resetToDefaults()
                     }
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
                 }
             }
             .formStyle(.grouped)

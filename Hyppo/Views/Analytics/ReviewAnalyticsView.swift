@@ -65,7 +65,7 @@ struct ReviewAnalyticsView: View {
             }
             .padding(20)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .onAppear(perform: loadAnalytics)
     }
     
@@ -110,7 +110,7 @@ struct ReviewAnalyticsView: View {
             VStack(spacing: 8) {
                 ZStack {
                     Circle()
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 10)
+                        .stroke(Color.statusArchived.opacity(0.2), lineWidth: 10)
                         .frame(width: 100, height: 100)
                     
                     Circle()
@@ -143,28 +143,28 @@ struct ReviewAnalyticsView: View {
                         value: "\(analytics.dueReviews)",
                         label: "Due Now",
                         icon: "clock.fill",
-                        color: analytics.dueReviews > 0 ? .orange : .green
+                        color: analytics.dueReviews > 0 ? Color.statusOnHold : .green
                     )
                     
                     metricBox(
                         value: "\(analytics.overdueReviews)",
                         label: "Overdue",
                         icon: "exclamationmark.circle.fill",
-                        color: analytics.overdueReviews > 0 ? .red : .green
+                        color: analytics.overdueReviews > 0 ? Color.statusInvalidated : .green
                     )
                     
                     metricBox(
                         value: "\(analytics.snoozedReviews)",
                         label: "Snoozed",
                         icon: "moon.fill",
-                        color: .purple
+                        color: Color.accentColor
                     )
                     
                     metricBox(
                         value: "\(analytics.reviewsSoonCount)",
                         label: "Due Soon (3d)",
                         icon: "calendar.badge.clock",
-                        color: .blue
+                        color: Color.accentColor
                     )
                 }
                 
@@ -173,14 +173,14 @@ struct ReviewAnalyticsView: View {
                         value: "\(analytics.enabledReminders)",
                         label: "Active Reminders",
                         icon: "bell.fill",
-                        color: .green
+                        color: Color.statusActive
                     )
                     
                     metricBox(
                         value: String(format: "%.1f", analytics.averageSnoozeCount),
                         label: "Avg Snoozes",
                         icon: "arrow.clockwise",
-                        color: .orange
+                        color: Color.statusOnHold
                     )
                 }
             }
@@ -188,7 +188,7 @@ struct ReviewAnalyticsView: View {
             Spacer()
         }
         .padding(20)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -241,7 +241,7 @@ struct ReviewAnalyticsView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "checkmark.circle")
                         .font(.title)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.statusActive)
                     Text("No reviews scheduled in this period")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -259,7 +259,7 @@ struct ReviewAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -273,7 +273,7 @@ struct ReviewAnalyticsView: View {
                 
                 if !isLast {
                     Rectangle()
-                        .fill(Color.gray.opacity(0.3))
+                        .fill(Color.statusArchived.opacity(0.3))
                         .frame(width: 2)
                         .frame(minHeight: 40)
                 }
@@ -319,7 +319,7 @@ struct ReviewAnalyticsView: View {
                     if reminder.isSnoozed {
                         Label("Snoozed", systemImage: "moon.fill")
                             .font(.caption)
-                            .foregroundStyle(.purple)
+                            .foregroundStyle(Color.accentColor)
                     }
                 }
             }
@@ -351,9 +351,9 @@ struct ReviewAnalyticsView: View {
                 .frame(height: 150)
             } else {
                 let chartData = [
-                    OutcomeChartData(outcome: "Reinforce", count: outcomes[.reinforce] ?? 0, color: .green),
-                    OutcomeChartData(outcome: "Revise", count: outcomes[.revise] ?? 0, color: .orange),
-                    OutcomeChartData(outcome: "Invalidate", count: outcomes[.invalidate] ?? 0, color: .red)
+                    OutcomeChartData(outcome: "Reinforce", count: outcomes[.reinforce] ?? 0, color: Color.statusActive),
+                    OutcomeChartData(outcome: "Revise", count: outcomes[.revise] ?? 0, color: Color.statusOnHold),
+                    OutcomeChartData(outcome: "Invalidate", count: outcomes[.invalidate] ?? 0, color: Color.statusInvalidated)
                 ].filter { $0.count > 0 }
                 
                 Chart(chartData) { item in
@@ -389,7 +389,7 @@ struct ReviewAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -420,10 +420,10 @@ struct ReviewAnalyticsView: View {
                     GeometryReader { geometry in
                         HStack(spacing: 2) {
                             Rectangle()
-                                .fill(Color.green)
+                                .fill(Color.statusActive)
                                 .frame(width: geometry.size.width * CGFloat(onTime) / CGFloat(total))
                             Rectangle()
-                                .fill(Color.red)
+                                .fill(Color.statusInvalidated)
                                 .frame(width: geometry.size.width * CGFloat(analytics.overdueReviews) / CGFloat(total))
                         }
                         .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -432,13 +432,13 @@ struct ReviewAnalyticsView: View {
                     
                     HStack {
                         HStack(spacing: 4) {
-                            Circle().fill(.green).frame(width: 8, height: 8)
+                            Circle().fill(Color.statusActive).frame(width: 8, height: 8)
                             Text("On Time: \(onTime)")
                                 .font(.caption)
                         }
                         Spacer()
                         HStack(spacing: 4) {
-                            Circle().fill(.red).frame(width: 8, height: 8)
+                            Circle().fill(Color.statusInvalidated).frame(width: 8, height: 8)
                             Text("Overdue: \(analytics.overdueReviews)")
                                 .font(.caption)
                         }
@@ -456,7 +456,7 @@ struct ReviewAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -534,7 +534,7 @@ struct ReviewAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -553,18 +553,18 @@ struct ReviewAnalyticsView: View {
     }
     
     private func adherenceColor(for rate: Double) -> Color {
-        if rate >= 80 { return .green }
-        if rate >= 60 { return .blue }
-        if rate >= 40 { return .orange }
-        return .red
+        if rate >= 80 { return Color.statusActive }
+        if rate >= 60 { return Color.accentColor }
+        if rate >= 40 { return Color.statusOnHold }
+        return .statusInvalidated
     }
     
     private func urgencyColor(for reminder: ReviewReminder) -> Color {
-        guard let days = reminder.daysUntilDue else { return .gray }
-        if days < 0 { return .red }
-        if days == 0 { return .orange }
-        if days <= 3 { return .yellow }
-        return .green
+        guard let days = reminder.daysUntilDue else { return Color.statusArchived }
+        if days < 0 { return Color.statusInvalidated }
+        if days == 0 { return Color.statusOnHold }
+        if days <= 3 { return Color.confidenceMedium }
+        return .statusActive
     }
     
     private func dueDateLabel(days: Int) -> String {
@@ -594,11 +594,11 @@ struct ReviewAnalyticsView: View {
         }
         
         return [
-            HistogramBucket(label: "0-7", count: buckets["0-7"] ?? 0, color: .green),
-            HistogramBucket(label: "8-14", count: buckets["8-14"] ?? 0, color: .blue),
-            HistogramBucket(label: "15-30", count: buckets["15-30"] ?? 0, color: .yellow),
-            HistogramBucket(label: "31-60", count: buckets["31-60"] ?? 0, color: .orange),
-            HistogramBucket(label: "60+", count: buckets["60+"] ?? 0, color: .red)
+            HistogramBucket(label: "0-7", count: buckets["0-7"] ?? 0, color: Color.statusActive),
+            HistogramBucket(label: "8-14", count: buckets["8-14"] ?? 0, color: Color.accentColor),
+            HistogramBucket(label: "15-30", count: buckets["15-30"] ?? 0, color: Color.confidenceMedium),
+            HistogramBucket(label: "31-60", count: buckets["31-60"] ?? 0, color: Color.statusOnHold),
+            HistogramBucket(label: "60+", count: buckets["60+"] ?? 0, color: Color.statusInvalidated)
         ]
     }
 }

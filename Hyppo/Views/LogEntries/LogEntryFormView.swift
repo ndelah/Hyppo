@@ -192,11 +192,11 @@ struct LogEntryFormView: View {
                             .font(.body)
                             .frame(minHeight: 100)
                             .padding(4)
-                            .background(Color(nsColor: .textBackgroundColor))
+                            .background(Color.surface)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 6)
-                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                                    .stroke(Color.appBorder, lineWidth: 1)
                             )
                     }
                     
@@ -210,12 +210,12 @@ struct LogEntryFormView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             ForEach(validationErrors, id: \.self) { error in
                                 Label(error, systemImage: "exclamationmark.circle")
-                                    .foregroundStyle(.red)
+                                    .foregroundStyle(Color.statusInvalidated)
                                     .font(.caption)
                             }
                         }
                         .padding()
-                        .background(Color.red.opacity(0.1))
+                        .background(Color.statusInvalidated.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
@@ -237,7 +237,7 @@ struct LogEntryFormView: View {
             // Section header
             HStack(spacing: 6) {
                 Image(systemName: "target")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.accentColor)
                 Text("Link to Assumption (Optional)")
                     .font(.caption)
                     .fontWeight(.semibold)
@@ -292,13 +292,13 @@ struct LogEntryFormView: View {
                     }
                 }
                 .padding(12)
-                .background(Color.blue.opacity(0.05))
+                .background(Color.accentColor.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .padding(12)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -326,7 +326,7 @@ struct LogEntryFormView: View {
             if selectedDriver != nil {
                 HStack(spacing: 4) {
                     Image(systemName: "link.circle.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.accentColor)
                     Text("Will update conviction")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -497,7 +497,7 @@ struct LogDriverPicker: View {
                 if let selected = selectedDriver {
                     HStack(spacing: 6) {
                         Image(systemName: "target")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.accentColor)
                         Text(selected.title)
                             .fontWeight(.medium)
                     }
@@ -511,7 +511,7 @@ struct LogDriverPicker: View {
                     .foregroundStyle(.tertiary)
             }
             .padding(10)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .menuStyle(.borderlessButton)

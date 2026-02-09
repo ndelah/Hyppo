@@ -88,7 +88,7 @@ struct ExportImportView: View {
                     if importMode == .replace {
                         Label("Warning: Replace mode will delete all existing data!", systemImage: "exclamationmark.triangle")
                             .font(.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.statusInvalidated)
                     }
                     
                     HStack {

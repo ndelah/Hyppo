@@ -331,7 +331,7 @@ struct GlobalSearchView: View {
                         }
                     }
                     .padding(10)
-                    .background(Color(nsColor: .windowBackgroundColor))
+                    .background(Color.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     
                     // Quick filters
@@ -357,7 +357,7 @@ struct GlobalSearchView: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color(nsColor: .windowBackgroundColor))
+                            .background(Color.surface)
                             .clipShape(Capsule())
                         }
                         
@@ -395,7 +395,7 @@ struct GlobalSearchView: View {
                                 }
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(selectedTag != nil ? Color.accentColor.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
+                                .background(selectedTag != nil ? Color.accentColor.opacity(0.2) : Color.surface)
                                 .clipShape(Capsule())
                             }
                         }
@@ -433,7 +433,7 @@ struct GlobalSearchView: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(selectedConfidence != nil ? Color.accentColor.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
+                            .background(selectedConfidence != nil ? Color.accentColor.opacity(0.2) : Color.surface)
                             .clipShape(Capsule())
                         }
                         
@@ -487,12 +487,12 @@ struct GlobalSearchView: View {
                             Spacer()
                         }
                         .padding(8)
-                        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+                        .background(Color.surface)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
                 .padding()
-                .background(Color(nsColor: .windowBackgroundColor))
+                .background(Color.surface)
                 
                 Divider()
                 

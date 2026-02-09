@@ -273,7 +273,7 @@ struct ResearchWizardView: View {
                             Text(newAssetTicker.uppercased())
                                 .font(.caption)
                                 .fontWeight(.semibold)
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(Color.accentColor)
                         }
                     } else {
                         Text("Creating new research question")
@@ -303,7 +303,7 @@ struct ResearchWizardView: View {
         VStack(spacing: 6) {
             ZStack {
                 Circle()
-                    .fill(step <= currentStep ? Color.accentColor : Color(nsColor: .separatorColor))
+                    .fill(step <= currentStep ? Color.accentColor : Color.appBorder)
                     .frame(width: 36, height: 36)
                 
                 if step < currentStep {
@@ -327,7 +327,7 @@ struct ResearchWizardView: View {
     
     private func stepConnector(completed: Bool) -> some View {
         Rectangle()
-            .fill(completed ? Color.accentColor : Color(nsColor: .separatorColor))
+            .fill(completed ? Color.accentColor : Color.appBorder)
             .frame(height: 2)
             .frame(maxWidth: 60)
     }
@@ -363,7 +363,7 @@ struct ResearchWizardView: View {
                     Text("Investment Thesis")
                         .font(.headline)
                     Text("*")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.statusInvalidated)
                 }
                 
                 Text("What must be true for this investment to work?")
@@ -373,9 +373,9 @@ struct ResearchWizardView: View {
                 TextEditor(text: $investmentThesis)
                     .frame(minHeight: 80, maxHeight: 120)
                     .padding(8)
-                    .background(Color(nsColor: .textBackgroundColor))
+                    .background(Color.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(nsColor: .separatorColor)))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.appBorder))
                     .focused($focusedField, equals: .investmentThesis)
                     .interceptTab(
                         isActive: focusedField == .investmentThesis,
@@ -397,9 +397,9 @@ struct ResearchWizardView: View {
                 TextEditor(text: $whyThisMatters)
                     .frame(minHeight: 60, maxHeight: 100)
                     .padding(8)
-                    .background(Color(nsColor: .textBackgroundColor))
+                    .background(Color.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(nsColor: .separatorColor)))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.appBorder))
                     .focused($focusedField, equals: .whyThisMatters)
                     .interceptTab(
                         isActive: focusedField == .whyThisMatters,
@@ -433,7 +433,7 @@ struct ResearchWizardView: View {
                 if topLevelCount > 0 {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.statusActive)
                         if subDriverCount > 0 {
                             Text("\(topLevelCount) driver\(topLevelCount == 1 ? "" : "s"), \(subDriverCount) sub-driver\(subDriverCount == 1 ? "" : "s") defined")
                                 .font(.caption)
@@ -469,7 +469,7 @@ struct ResearchWizardView: View {
                                     .font(.caption2)
                             }
                             .frame(width: 60, height: 44)
-                            .background(confidence == level.rawValue ? Color.accentColor : Color(nsColor: .windowBackgroundColor))
+                            .background(confidence == level.rawValue ? Color.accentColor : Color.surface)
                             .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? .orange : .primary))
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
@@ -534,12 +534,12 @@ struct ResearchWizardView: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 5)
-                            .background(Color(nsColor: .windowBackgroundColor))
+                            .background(Color.surface)
                             .foregroundStyle(.secondary)
                             .clipShape(Capsule())
                             .overlay(
                                 Capsule()
-                                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                                    .stroke(Color.appBorder, lineWidth: 1)
                             )
                         }
                         .buttonStyle(.plain)
@@ -607,7 +607,7 @@ struct ResearchWizardView: View {
     private func tagColor(for tag: Tag) -> Color {
         guard let colorName = tag.colorName,
               let color = TagColor(rawValue: colorName) else {
-            return .blue
+            return Color.accentColor
         }
         return color.color
     }
@@ -705,14 +705,14 @@ struct ResearchWizardView: View {
                         }
                     }
                 } else if isCreatingNewAsset && !newAssetTicker.isEmpty && !newAssetName.isEmpty {
-                    reviewSection(icon: "chart.line.uptrend.xyaxis", title: "New Asset (will be created)", color: .blue) {
+                    reviewSection(icon: "chart.line.uptrend.xyaxis", title: "New Asset (will be created)", color: Color.accentColor) {
                         HStack(spacing: 8) {
                             Text(newAssetTicker.uppercased())
                                 .font(.subheadline)
                                 .fontWeight(.bold)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(Color.blue.opacity(0.15))
+                                .background(Color.accentColor.opacity(0.15))
                                 .clipShape(RoundedRectangle(cornerRadius: 4))
                             Text(newAssetName)
                                 .font(.subheadline)
@@ -722,7 +722,7 @@ struct ResearchWizardView: View {
                 
                 // Thesis & Context
                 VStack(alignment: .leading, spacing: 12) {
-                    reviewSection(icon: "lightbulb.fill", title: "Investment Thesis", color: .blue) {
+                    reviewSection(icon: "lightbulb.fill", title: "Investment Thesis", color: Color.accentColor) {
                         Text(investmentThesis)
                             .font(.subheadline)
                     }
@@ -739,7 +739,7 @@ struct ResearchWizardView: View {
                 
                 // Assumptions
                 if !driversWithGroupedSubDrivers.isEmpty {
-                    reviewSection(icon: "target", title: "Key Assumptions (\(driversWithGroupedSubDrivers.count))", color: .green) {
+                    reviewSection(icon: "target", title: "Key Assumptions (\(driversWithGroupedSubDrivers.count))", color: Color.statusActive) {
                         VStack(alignment: .leading, spacing: 12) {
                             ForEach(Array(driversWithGroupedSubDrivers.enumerated()), id: \.offset) { index, item in
                                 VStack(alignment: .leading, spacing: 4) {
@@ -759,8 +759,8 @@ struct ResearchWizardView: View {
                                         }
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 2)
-                                        .background(Color.orange.opacity(0.12))
-                                        .foregroundStyle(.orange)
+                                        .background(Color.statusOnHold.opacity(0.12))
+                                        .foregroundStyle(Color.statusOnHold)
                                         .clipShape(RoundedRectangle(cornerRadius: 4))
                                         
                                         Text(item.driver.title)
@@ -823,7 +823,7 @@ struct ResearchWizardView: View {
                 
                 // Confidence
                 if let conf = confidence, let level = ConfidenceLevel(rawValue: conf) {
-                    reviewSection(icon: "star.fill", title: "Confidence", color: .orange) {
+                    reviewSection(icon: "star.fill", title: "Confidence", color: Color.statusOnHold) {
                         Text(level.displayName)
                             .font(.subheadline)
                     }
@@ -855,7 +855,7 @@ struct ResearchWizardView: View {
                 
             }
             .padding()
-            .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+            .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             
             // Readiness check
@@ -914,7 +914,7 @@ struct ResearchWizardView: View {
             }
         }
         .padding()
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.3))
+        .background(Color.surface.opacity(0.3))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -1104,7 +1104,7 @@ private struct WizardTagToggleChip: View {
     private var tagColor: Color {
         guard let colorName = tag.colorName,
               let color = TagColor(rawValue: colorName) else {
-            return .blue
+            return Color.accentColor
         }
         return color.color
     }
@@ -1120,12 +1120,12 @@ private struct WizardTagToggleChip: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
-            .background(isSelected ? tagColor.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
+            .background(isSelected ? tagColor.opacity(0.2) : Color.surface)
             .foregroundStyle(isSelected ? tagColor : .primary)
             .clipShape(Capsule())
             .overlay(
                 Capsule()
-                    .stroke(isSelected ? tagColor : Color(nsColor: .separatorColor), lineWidth: 1)
+                    .stroke(isSelected ? tagColor : Color.appBorder, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

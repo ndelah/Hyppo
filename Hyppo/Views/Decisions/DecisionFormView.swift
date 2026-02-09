@@ -242,7 +242,7 @@ struct DecisionFormView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -276,7 +276,7 @@ struct DecisionFormView: View {
             .background(
                 selectedAction == action
                     ? actionColor.opacity(0.2)
-                    : Color(nsColor: .windowBackgroundColor)
+                    : Color.surface
             )
             .foregroundStyle(
                 selectedAction == action
@@ -307,11 +307,11 @@ struct DecisionFormView: View {
                 .font(.body)
                 .frame(minHeight: 80)
                 .padding(4)
-                .background(Color(nsColor: .textBackgroundColor))
+                .background(Color.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        .stroke(Color.appBorder, lineWidth: 1)
                 )
             
             Text(rationaleHint)
@@ -394,7 +394,7 @@ struct DecisionFormView: View {
             }
         }
         .padding()
-        .background(Color.green.opacity(0.05))
+        .background(Color.statusActive.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -415,7 +415,7 @@ struct DecisionFormView: View {
                         .foregroundStyle(.secondary)
                         .padding(8)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(nsColor: .windowBackgroundColor))
+                        .background(Color.surface)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
             }
@@ -424,11 +424,11 @@ struct DecisionFormView: View {
                 .font(.body)
                 .frame(minHeight: 60)
                 .padding(4)
-                .background(Color(nsColor: .textBackgroundColor))
+                .background(Color.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        .stroke(Color.appBorder, lineWidth: 1)
                 )
             
             Text("Leave blank to keep the current plan. Update when commitments change.")
@@ -490,33 +490,33 @@ struct DecisionFormView: View {
                     icon: "star.fill",
                     label: "Confidence",
                     value: researchQuestion.confidence?.shortLabel ?? "Not set",
-                    color: .yellow
+                    color: Color.confidenceMedium
                 )
                 
                 snapshotItem(
                     icon: "checkmark.circle.fill",
                     label: "Confirmed",
                     value: "\(researchQuestion.confirmedDriversCount)",
-                    color: .green
+                    color: Color.statusActive
                 )
                 
                 snapshotItem(
                     icon: "circle.dashed",
                     label: "Under Review",
                     value: "\(researchQuestion.pendingDriversCount)",
-                    color: .gray
+                    color: Color.statusArchived
                 )
                 
                 snapshotItem(
                     icon: "xmark.circle.fill",
                     label: "Discarded",
                     value: "\(researchQuestion.discardedDriversCount)",
-                    color: .red
+                    color: Color.statusInvalidated
                 )
             }
         }
         .padding()
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -537,19 +537,19 @@ struct DecisionFormView: View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(validationErrors, id: \.self) { error in
                 Label(error, systemImage: "exclamationmark.circle")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
                     .font(.caption)
             }
         }
         .padding()
-        .background(Color.red.opacity(0.1))
+        .background(Color.statusInvalidated.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
     private var terminalActionWarning: some View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.statusOnHold)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(selectedAction == .exit ? "Exiting Position" : "Abandoning Thesis")
@@ -564,7 +564,7 @@ struct DecisionFormView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.1))
+        .background(Color.statusOnHold.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     

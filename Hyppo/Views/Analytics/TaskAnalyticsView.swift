@@ -60,7 +60,7 @@ struct TaskAnalyticsView: View {
             }
             .padding(20)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .onAppear(perform: loadAnalytics)
     }
     
@@ -105,7 +105,7 @@ struct TaskAnalyticsView: View {
             VStack(spacing: 8) {
                 ZStack {
                     Circle()
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 10)
+                        .stroke(Color.statusArchived.opacity(0.2), lineWidth: 10)
                         .frame(width: 100, height: 100)
                     
                     Circle()
@@ -139,28 +139,28 @@ struct TaskAnalyticsView: View {
                         value: "\(analytics.totalTasks)",
                         label: "Total Tasks",
                         icon: "checklist",
-                        color: .blue
+                        color: Color.accentColor
                     )
                     
                     metricCard(
                         value: "\(analytics.completedTasks)",
                         label: "Completed",
                         icon: "checkmark.circle.fill",
-                        color: .green
+                        color: Color.statusActive
                     )
                     
                     metricCard(
                         value: "\(analytics.openTasks)",
                         label: "Open",
                         icon: "circle",
-                        color: .orange
+                        color: Color.statusOnHold
                     )
                     
                     metricCard(
                         value: "\(analytics.inboxTasks)",
                         label: "Inbox",
                         icon: "tray.fill",
-                        color: analytics.inboxTasks > 5 ? .orange : .blue
+                        color: analytics.inboxTasks > 5 ? Color.statusOnHold : .blue
                     )
                 }
                 
@@ -169,7 +169,7 @@ struct TaskAnalyticsView: View {
                         value: "\(analytics.staleTasks)",
                         label: "Stale (>30d)",
                         icon: "clock.badge.exclamationmark",
-                        color: analytics.staleTasks > 0 ? .red : .green
+                        color: analytics.staleTasks > 0 ? Color.statusInvalidated : .green
                     )
                 }
             }
@@ -177,7 +177,7 @@ struct TaskAnalyticsView: View {
             Spacer()
         }
         .padding(20)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -213,10 +213,10 @@ struct TaskAnalyticsView: View {
                 emptyChartPlaceholder
             } else {
                 let chartData = [
-                    TaskStatusChartData(status: "Completed", count: analytics.completedTasks, color: .green),
-                    TaskStatusChartData(status: "Open", count: analytics.openTasks - analytics.staleTasks, color: .blue),
-                    TaskStatusChartData(status: "Stale", count: analytics.staleTasks, color: .red),
-                    TaskStatusChartData(status: "Inbox", count: analytics.inboxTasks, color: .purple)
+                    TaskStatusChartData(status: "Completed", count: analytics.completedTasks, color: Color.statusActive),
+                    TaskStatusChartData(status: "Open", count: analytics.openTasks - analytics.staleTasks, color: Color.accentColor),
+                    TaskStatusChartData(status: "Stale", count: analytics.staleTasks, color: Color.statusInvalidated),
+                    TaskStatusChartData(status: "Inbox", count: analytics.inboxTasks, color: Color.accentColor)
                 ].filter { $0.count > 0 }
                 
                 Chart(chartData) { item in
@@ -256,7 +256,7 @@ struct TaskAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -286,7 +286,7 @@ struct TaskAnalyticsView: View {
                             label: "Average",
                             value: String(format: "%.1f days", avg),
                             icon: "chart.line.uptrend.xyaxis",
-                            color: .blue
+                            color: Color.accentColor
                         )
                     }
                     
@@ -296,7 +296,7 @@ struct TaskAnalyticsView: View {
                             label: "Fastest",
                             value: "\(fastest) \(fastest == 1 ? "day" : "days")",
                             icon: "hare.fill",
-                            color: .green
+                            color: Color.statusActive
                         )
                     }
                     
@@ -306,7 +306,7 @@ struct TaskAnalyticsView: View {
                             label: "Slowest",
                             value: "\(slowest) \(slowest == 1 ? "day" : "days")",
                             icon: "tortoise.fill",
-                            color: .orange
+                            color: Color.statusOnHold
                         )
                     }
                 }
@@ -316,19 +316,19 @@ struct TaskAnalyticsView: View {
                 if let avg = analytics.averageCompletionDays {
                     HStack(spacing: 6) {
                         Image(systemName: avg <= 7 ? "checkmark.circle.fill" : "info.circle.fill")
-                            .foregroundStyle(avg <= 7 ? .green : .blue)
+                            .foregroundStyle(avg <= 7 ? Color.statusActive : .blue)
                         Text(completionTimeInsight(avg))
                             .font(.caption)
                     }
                     .padding(8)
-                    .background((avg <= 7 ? Color.green : Color.blue).opacity(0.1))
+                    .background((avg <= 7 ? Color.statusActive : Color.accentColor).opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -378,7 +378,7 @@ struct TaskAnalyticsView: View {
                         x: .value("Week", dataPoint.label),
                         y: .value("Count", dataPoint.count)
                     )
-                    .foregroundStyle(.green.gradient)
+                    .foregroundStyle(Color.statusActive.gradient)
                     .annotation(position: .top) {
                         if dataPoint.count > 0 {
                             Text("\(dataPoint.count)")
@@ -413,7 +413,7 @@ struct TaskAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -440,7 +440,7 @@ struct TaskAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -474,10 +474,10 @@ struct TaskAnalyticsView: View {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Rectangle()
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(Color.statusArchived.opacity(0.2))
                     
                     Rectangle()
-                        .fill(progress >= 1 ? Color.green : Color.blue)
+                        .fill(progress >= 1 ? Color.statusActive : Color.accentColor)
                         .frame(width: geometry.size.width * CGFloat(progress))
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 3))
@@ -487,12 +487,12 @@ struct TaskAnalyticsView: View {
             Text("\(completed)/\(total)")
                 .font(.caption)
                 .fontWeight(.medium)
-                .foregroundStyle(completed == total ? .green : .primary)
+                .foregroundStyle(completed == total ? Color.statusActive : .primary)
                 .frame(width: 40, alignment: .trailing)
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 8)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
     
@@ -502,7 +502,7 @@ struct TaskAnalyticsView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
                 Text("Stale Tasks Warning")
                     .font(.headline)
             }
@@ -520,7 +520,7 @@ struct TaskAnalyticsView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.red.opacity(0.1))
+        .background(Color.statusInvalidated.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -556,10 +556,10 @@ struct TaskAnalyticsView: View {
     }
     
     private func completionColor(for rate: Double) -> Color {
-        if rate >= 75 { return .green }
-        if rate >= 50 { return .blue }
-        if rate >= 25 { return .orange }
-        return .red
+        if rate >= 75 { return Color.statusActive }
+        if rate >= 50 { return Color.accentColor }
+        if rate >= 25 { return Color.statusOnHold }
+        return .statusInvalidated
     }
     
     private func completionTimeInsight(_ avgDays: Double) -> String {

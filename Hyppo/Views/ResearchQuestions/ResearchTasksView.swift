@@ -72,11 +72,11 @@ struct ResearchTasksView: View {
                 completedToggle
             }
         }
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.3))
+        .background(Color.surface.opacity(0.3))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                .stroke(Color.appBorder, lineWidth: 1)
         )
     }
     
@@ -95,7 +95,7 @@ struct ResearchTasksView: View {
             }
         }
         .padding()
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
     }
     
     private var progressBadge: some View {
@@ -105,7 +105,7 @@ struct ResearchTasksView: View {
                 ZStack(alignment: .leading) {
                     // Background
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(Color(nsColor: .separatorColor))
+                        .fill(Color.appBorder)
                         .frame(height: 4)
                     
                     // Progress
@@ -124,7 +124,7 @@ struct ResearchTasksView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(Capsule())
     }
     
@@ -134,9 +134,9 @@ struct ResearchTasksView: View {
     }
     
     private var progressColor: Color {
-        if progressRatio >= 1.0 { return .green }
-        if progressRatio >= 0.5 { return .blue }
-        return .orange
+        if progressRatio >= 1.0 { return Color.statusActive }
+        if progressRatio >= 0.5 { return Color.accentColor }
+        return .statusOnHold
     }
     
     // MARK: - Empty State
@@ -211,7 +211,7 @@ struct ResearchTasksView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color.surface)
         }
     }
     
@@ -269,7 +269,7 @@ struct SimpleTaskRow: View {
                     Button { saveEdit() } label: {
                         Image(systemName: "checkmark")
                             .font(.caption)
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.statusActive)
                     }
                     .buttonStyle(.plain)
                     
@@ -299,7 +299,7 @@ struct SimpleTaskRow: View {
                                 .font(.caption2)
                                 .lineLimit(1)
                         }
-                        .foregroundStyle(.orange.opacity(0.8))
+                        .foregroundStyle(Color.statusOnHold.opacity(0.8))
                     }
                 }
                 .fixedSize(horizontal: false, vertical: true)
@@ -316,7 +316,7 @@ struct SimpleTaskRow: View {
                 } label: {
                     Image(systemName: "trash")
                         .font(.caption)
-                        .foregroundStyle(.red.opacity(0.6))
+                        .foregroundStyle(Color.statusInvalidated.opacity(0.6))
                 }
                 .buttonStyle(.plain)
                 .transition(.opacity)
@@ -326,7 +326,7 @@ struct SimpleTaskRow: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 4)
-                .fill(isHovering || isEditing ? Color(nsColor: .windowBackgroundColor).opacity(0.5) : Color.clear)
+                .fill(isHovering || isEditing ? Color.surface : Color.clear)
         )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.1)) {

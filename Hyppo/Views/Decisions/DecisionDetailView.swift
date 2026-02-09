@@ -127,7 +127,7 @@ struct DecisionDetailView: View {
                 .font(.body)
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(nsColor: .windowBackgroundColor))
+                .background(Color.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }
@@ -141,32 +141,32 @@ struct DecisionDetailView: View {
                     icon: "star.fill",
                     label: "Confidence",
                     value: decision.confidenceLevel?.shortLabel ?? "Not set",
-                    color: .yellow
+                    color: Color.confidenceMedium
                 )
                 
                 snapshotItem(
                     icon: "checkmark.circle.fill",
                     label: "Confirmed",
                     value: "\(decision.driversConfirmedCount)",
-                    color: .green
+                    color: Color.statusActive
                 )
                 
                 snapshotItem(
                     icon: "circle.dashed",
                     label: "Under Review",
                     value: "\(decision.driversPendingCount)",
-                    color: .gray
+                    color: Color.statusArchived
                 )
                 
                 snapshotItem(
                     icon: "xmark.circle.fill",
                     label: "Discarded",
                     value: "\(decision.driversDiscardedCount)",
-                    color: .red
+                    color: Color.statusInvalidated
                 )
             }
             .padding()
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }
@@ -222,7 +222,7 @@ struct DecisionDetailView: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.green.opacity(0.05))
+            .background(Color.statusActive.opacity(0.05))
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }
@@ -235,7 +235,7 @@ struct DecisionDetailView: View {
                 .font(.subheadline)
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.orange.opacity(0.05))
+                .background(Color.statusOnHold.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }
@@ -248,7 +248,7 @@ struct DecisionDetailView: View {
                 .font(.subheadline)
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.blue.opacity(0.05))
+                .background(Color.accentColor.opacity(0.05))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }
@@ -262,7 +262,7 @@ struct DecisionDetailView: View {
                 .fontWeight(.semibold)
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(nsColor: .windowBackgroundColor))
+                .background(Color.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }

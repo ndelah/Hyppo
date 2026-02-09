@@ -55,7 +55,7 @@ struct ReviewReminderView: View {
             }
         }
         .padding(10)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .sheet(isPresented: $showingCadenceSheet) {
             CadenceConfigSheet(researchQuestion: researchQuestion)
@@ -212,14 +212,14 @@ struct ReviewReminderView: View {
     
     private func statusColor(for reminder: ReviewReminder) -> Color {
         if reminder.isSnoozed {
-            return .orange
+            return .statusOnHold
         } else if reminder.isDue {
             if let days = reminder.daysUntilDue, days < 0 {
-                return .red // Overdue
+                return Color.statusInvalidated // Overdue
             }
-            return .yellow // Due today
+            return Color.confidenceMedium // Due today
         } else {
-            return .green // Upcoming
+            return Color.statusActive // Upcoming
         }
     }
     
@@ -321,7 +321,7 @@ struct CadenceConfigSheet: View {
                     if !notificationService.isAuthorized {
                         HStack {
                             Image(systemName: "exclamationmark.triangle")
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(Color.statusOnHold)
                             Text("Notifications are not enabled")
                                 .font(.caption)
                             Spacer()
@@ -333,7 +333,7 @@ struct CadenceConfigSheet: View {
                     } else {
                         Label("Notifications enabled", systemImage: "checkmark.circle")
                             .font(.caption)
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.statusActive)
                     }
                 } header: {
                     Text("Notifications")
@@ -415,9 +415,9 @@ struct ReviewDueBadge: View {
     
     private var badgeColor: Color {
         guard let reminder = reminder, let days = reminder.daysUntilDue else {
-            return .yellow
+            return .confidenceMedium
         }
-        return days < 0 ? .red : .yellow
+        return days < 0 ? Color.statusInvalidated : Color.confidenceMedium
     }
 }
 
@@ -482,27 +482,27 @@ struct ReviewReminderBadge: View {
     /// Badge color based on reminder state
     private var badgeColor: Color {
         guard let reminder = researchQuestion.reviewReminder else {
-            return .gray
+            return .statusArchived
         }
         
         if !reminder.isEnabled {
-            return .gray
+            return .statusArchived
         }
         
         if reminder.isSnoozed {
-            return .orange
+            return .statusOnHold
         }
         
         guard let days = reminder.daysUntilDue else {
-            return .green
+            return .statusActive
         }
         
         if days < 0 {
-            return .red // Overdue
+            return Color.statusInvalidated // Overdue
         } else if days == 0 {
-            return .yellow // Due today
+            return Color.confidenceMedium // Due today
         } else {
-            return .green // Upcoming
+            return Color.statusActive // Upcoming
         }
     }
     

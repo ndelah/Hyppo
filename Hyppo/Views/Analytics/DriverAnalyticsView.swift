@@ -56,7 +56,7 @@ struct DriverAnalyticsView: View {
             }
             .padding(20)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .onAppear(perform: loadAnalytics)
     }
     
@@ -101,7 +101,7 @@ struct DriverAnalyticsView: View {
             VStack(spacing: 8) {
                 ZStack {
                     Circle()
-                        .stroke(Color.gray.opacity(0.2), lineWidth: 10)
+                        .stroke(Color.statusArchived.opacity(0.2), lineWidth: 10)
                         .frame(width: 100, height: 100)
                     
                     Circle()
@@ -135,28 +135,28 @@ struct DriverAnalyticsView: View {
                         value: "\(analytics.totalDrivers)",
                         label: "Total Drivers",
                         icon: "target",
-                        color: .blue
+                        color: Color.accentColor
                     )
                     
                     metricCard(
                         value: "\(analytics.pendingDrivers)",
                         label: "Under Review",
                         icon: "circle.dashed",
-                        color: .gray
+                        color: Color.statusArchived
                     )
                     
                     metricCard(
                         value: "\(analytics.confirmedDrivers)",
                         label: "Confirmed",
                         icon: "checkmark.seal.fill",
-                        color: .green
+                        color: Color.statusActive
                     )
                     
                     metricCard(
                         value: "\(analytics.discardedDrivers)",
                         label: "Discarded",
                         icon: "xmark.seal.fill",
-                        color: .red
+                        color: Color.statusInvalidated
                     )
                 }
                 
@@ -165,21 +165,21 @@ struct DriverAnalyticsView: View {
                         value: "\(analytics.needsRevisionDrivers)",
                         label: "Needs Revision",
                         icon: "exclamationmark.circle.fill",
-                        color: .orange
+                        color: Color.statusOnHold
                     )
                     
                     metricCard(
                         value: String(format: "%.0f%%", analytics.evidenceCoverage),
                         label: "Evidence Coverage",
                         icon: "doc.text.fill",
-                        color: analytics.evidenceCoverage >= 70 ? .green : .orange
+                        color: analytics.evidenceCoverage >= 70 ? Color.statusActive : .orange
                     )
                     
                     metricCard(
                         value: "\(analytics.driversWithBlindSpots)",
                         label: "Blind Spots",
                         icon: "eye.slash.fill",
-                        color: analytics.driversWithBlindSpots > 0 ? .orange : .green
+                        color: analytics.driversWithBlindSpots > 0 ? Color.statusOnHold : .green
                     )
                 }
             }
@@ -187,7 +187,7 @@ struct DriverAnalyticsView: View {
             Spacer()
         }
         .padding(20)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -228,28 +228,28 @@ struct DriverAnalyticsView: View {
                         label: "Total",
                         count: analytics.totalDrivers,
                         maxCount: analytics.totalDrivers,
-                        color: .blue
+                        color: Color.accentColor
                     )
                     
                     funnelBar(
                         label: "Tested",
                         count: analytics.totalDrivers - analytics.pendingDrivers,
                         maxCount: analytics.totalDrivers,
-                        color: .purple
+                        color: Color.accentColor
                     )
                     
                     funnelBar(
                         label: "Confirmed",
                         count: analytics.confirmedDrivers,
                         maxCount: analytics.totalDrivers,
-                        color: .green
+                        color: Color.statusActive
                     )
                     
                     funnelBar(
                         label: "Discarded",
                         count: analytics.discardedDrivers,
                         maxCount: analytics.totalDrivers,
-                        color: .red
+                        color: Color.statusInvalidated
                     )
                 }
                 .frame(height: 180)
@@ -275,14 +275,14 @@ struct DriverAnalyticsView: View {
                         Text(String(format: "%.0f%%", analytics.confirmationRate))
                             .font(.caption)
                             .fontWeight(.medium)
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.statusActive)
                     }
                 }
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -297,7 +297,7 @@ struct DriverAnalyticsView: View {
                 
                 ZStack(alignment: .leading) {
                     Rectangle()
-                        .fill(Color.gray.opacity(0.1))
+                        .fill(Color.statusArchived.opacity(0.1))
                     
                     Rectangle()
                         .fill(color.gradient)
@@ -327,15 +327,15 @@ struct DriverAnalyticsView: View {
                 Text(String(format: "%.0f%%", analytics.evidenceCoverage))
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundStyle(analytics.evidenceCoverage >= 70 ? .green : .orange)
+                    .foregroundStyle(analytics.evidenceCoverage >= 70 ? Color.statusActive : .orange)
             }
             
             if analytics.totalDrivers == 0 {
                 emptyChartPlaceholder
             } else {
                 let chartData = [
-                    CoverageChartData(category: "With Evidence", count: analytics.driversWithEvidence, color: .green),
-                    CoverageChartData(category: "Blind Spots", count: analytics.driversWithBlindSpots, color: .orange)
+                    CoverageChartData(category: "With Evidence", count: analytics.driversWithEvidence, color: Color.statusActive),
+                    CoverageChartData(category: "Blind Spots", count: analytics.driversWithBlindSpots, color: Color.statusOnHold)
                 ]
                 
                 Chart(chartData) { item in
@@ -369,19 +369,19 @@ struct DriverAnalyticsView: View {
                 if analytics.driversWithBlindSpots > 0 {
                     HStack(spacing: 6) {
                         Image(systemName: "eye.slash.fill")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.statusOnHold)
                         Text("\(analytics.driversWithBlindSpots) driver\(analytics.driversWithBlindSpots == 1 ? "" : "s") need evidence")
                             .font(.caption)
                     }
                     .padding(8)
-                    .background(Color.orange.opacity(0.1))
+                    .background(Color.statusOnHold.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -400,10 +400,10 @@ struct DriverAnalyticsView: View {
                     .padding(24)
             } else {
                 let chartData = [
-                    DriverStatusChartData(status: "Under Review", count: analytics.pendingDrivers, color: .gray),
-                    DriverStatusChartData(status: "Confirmed", count: analytics.confirmedDrivers, color: .green),
-                    DriverStatusChartData(status: "Discarded", count: analytics.discardedDrivers, color: .red),
-                    DriverStatusChartData(status: "Needs Revision", count: analytics.needsRevisionDrivers, color: .orange)
+                    DriverStatusChartData(status: "Under Review", count: analytics.pendingDrivers, color: Color.statusArchived),
+                    DriverStatusChartData(status: "Confirmed", count: analytics.confirmedDrivers, color: Color.statusActive),
+                    DriverStatusChartData(status: "Discarded", count: analytics.discardedDrivers, color: Color.statusInvalidated),
+                    DriverStatusChartData(status: "Needs Revision", count: analytics.needsRevisionDrivers, color: Color.statusOnHold)
                 ].filter { $0.count > 0 }
                 
                 Chart(chartData) { item in
@@ -427,7 +427,7 @@ struct DriverAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -454,7 +454,7 @@ struct DriverAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -492,26 +492,26 @@ struct DriverAnalyticsView: View {
             // Status badges
             HStack(spacing: 8) {
                 if confirmed > 0 {
-                    statusBadge(count: confirmed, label: "Confirmed", color: .green, icon: "checkmark.seal.fill")
+                    statusBadge(count: confirmed, label: "Confirmed", color: Color.statusActive, icon: "checkmark.seal.fill")
                 }
                 if discarded > 0 {
-                    statusBadge(count: discarded, label: "Discarded", color: .red, icon: "xmark.seal.fill")
+                    statusBadge(count: discarded, label: "Discarded", color: Color.statusInvalidated, icon: "xmark.seal.fill")
                 }
                 if pending > 0 {
-                    statusBadge(count: pending, label: "Under Review", color: .gray, icon: "circle.dashed")
+                    statusBadge(count: pending, label: "Under Review", color: Color.statusArchived, icon: "circle.dashed")
                 }
                 if needsRevision > 0 {
-                    statusBadge(count: needsRevision, label: "Revision", color: .orange, icon: "exclamationmark.circle.fill")
+                    statusBadge(count: needsRevision, label: "Revision", color: Color.statusOnHold, icon: "exclamationmark.circle.fill")
                 }
                 if blindSpots > 0 {
-                    statusBadge(count: blindSpots, label: "Blind Spots", color: .yellow, icon: "eye.slash")
+                    statusBadge(count: blindSpots, label: "Blind Spots", color: Color.confidenceMedium, icon: "eye.slash")
                 }
                 
                 Spacer()
             }
         }
         .padding(12)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -537,7 +537,7 @@ struct DriverAnalyticsView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.statusOnHold)
                 Text("Potential Confirmation Bias")
                     .font(.headline)
             }
@@ -548,7 +548,7 @@ struct DriverAnalyticsView: View {
             
             HStack(spacing: 8) {
                 Label("Confirmed", systemImage: "checkmark.seal.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.statusActive)
                 Text("\(analytics.confirmedDrivers)")
                     .fontWeight(.bold)
                 
@@ -556,18 +556,18 @@ struct DriverAnalyticsView: View {
                     .foregroundStyle(.tertiary)
                 
                 Label("Discarded", systemImage: "xmark.seal.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
                 Text("\(analytics.discardedDrivers)")
                     .fontWeight(.bold)
             }
             .font(.caption)
             .padding(8)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.1))
+        .background(Color.statusOnHold.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -601,10 +601,10 @@ struct DriverAnalyticsView: View {
     }
     
     private func validationColor(for progress: Double) -> Color {
-        if progress >= 75 { return .green }
-        if progress >= 50 { return .blue }
-        if progress >= 25 { return .orange }
-        return .gray
+        if progress >= 75 { return Color.statusActive }
+        if progress >= 50 { return Color.accentColor }
+        if progress >= 25 { return Color.statusOnHold }
+        return .statusArchived
     }
     
     private func shouldShowBiasWarning(_ analytics: DriverAnalytics) -> Bool {

@@ -113,7 +113,7 @@ struct RecordKanbanView: View {
                 id: ticker,
                 title: ticker,
                 icon: "building.2",
-                color: .blue,
+                color: Color.accentColor,
                 questions: groups[ticker]!.sorted { $0.updatedAt > $1.updatedAt },
                 status: nil
             )
@@ -124,7 +124,7 @@ struct RecordKanbanView: View {
                 id: "_no_asset",
                 title: "No Asset",
                 icon: "folder",
-                color: .gray,
+                color: Color.statusArchived,
                 questions: noAssetQuestions.sorted { $0.updatedAt > $1.updatedAt },
                 status: nil
             ))
@@ -148,7 +148,7 @@ struct RecordKanbanView: View {
                 id: "confidence_none",
                 title: "Not Set",
                 icon: "gauge",
-                color: .gray,
+                color: Color.statusArchived,
                 questions: questions.filter { $0.confidenceCurrent == nil }.sorted { $0.updatedAt > $1.updatedAt },
                 status: nil
             )
@@ -189,7 +189,7 @@ struct RecordKanbanView: View {
                 id: "_untagged",
                 title: "Untagged",
                 icon: "tag.slash",
-                color: .gray,
+                color: Color.statusArchived,
                 questions: untaggedQuestions.sorted { $0.updatedAt > $1.updatedAt },
                 status: nil
             ))
@@ -315,7 +315,7 @@ struct RecordKanbanView: View {
                 .fontWeight(.medium)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
-                .background(Color(nsColor: .windowBackgroundColor))
+                .background(Color.surface)
                 .clipShape(Capsule())
         }
         .padding(.horizontal, 12)
@@ -329,20 +329,20 @@ struct RecordKanbanView: View {
         VStack(spacing: 8) {
             Image(systemName: isTargeted ? "arrow.down.circle.fill" : "tray")
                 .font(.title2)
-                .foregroundStyle(isTargeted ? Color.blue : Color.gray.opacity(0.5))
+                .foregroundStyle(isTargeted ? Color.accentColor : Color.statusArchived.opacity(0.5))
             
             Text(isTargeted ? "Drop here" : "No questions")
                 .font(.caption)
-                .foregroundStyle(isTargeted ? Color.blue : Color.gray.opacity(0.5))
+                .foregroundStyle(isTargeted ? Color.accentColor : Color.statusArchived.opacity(0.5))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 32)
-        .background(isTargeted ? Color.blue.opacity(0.1) : Color(nsColor: .separatorColor).opacity(0.1))
+        .background(isTargeted ? Color.appAccentSubtle : Color.appBorder.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(style: StrokeStyle(lineWidth: 2, dash: isTargeted ? [] : [6, 4]))
-                .foregroundStyle(isTargeted ? Color.blue : Color(nsColor: .separatorColor).opacity(0.3))
+                .foregroundStyle(isTargeted ? Color.accentColor : Color.appBorder.opacity(0.3))
         )
         .animation(.easeInOut(duration: 0.2), value: isTargeted)
     }
@@ -377,32 +377,21 @@ struct RecordKanbanView: View {
     // MARK: - Styling
     
     private var columnBackground: Color {
-        Color(nsColor: .windowBackgroundColor).opacity(0.5)
+        Color.surface
     }
     
     private func statusColor(for status: ResearchQuestionStatus) -> Color {
-        switch status {
-        case .active: return .green
-        case .onHold: return .orange
-        case .invalidated: return .red
-        case .archived: return .gray
-        }
+        Color.forStatus(status)
     }
     
     private func confidenceColor(for level: ConfidenceLevel) -> Color {
-        switch level {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
-        }
+        Color.forConfidence(level)
     }
     
     private func tagColor(for tag: Tag) -> Color {
         guard let colorName = tag.colorName,
               let color = TagColor(rawValue: colorName) else {
-            return .blue
+            return Color.accentColor
         }
         return color.color
     }

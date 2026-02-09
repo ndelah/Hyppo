@@ -130,7 +130,7 @@ struct OutcomeFormView: View {
                 
                 HStack(spacing: 4) {
                     Image(systemName: isAbandoned ? "xmark.circle" : "arrow.uturn.down.circle")
-                        .foregroundStyle(isAbandoned ? .red : .orange)
+                        .foregroundStyle(isAbandoned ? Color.statusInvalidated : Color.statusOnHold)
                     Text(isAbandoned ? "Thesis Abandoned" : "Position Exited")
                         .foregroundStyle(.secondary)
                 }
@@ -233,7 +233,7 @@ struct OutcomeFormView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -247,11 +247,11 @@ struct OutcomeFormView: View {
                 .font(.body)
                 .frame(minHeight: 100)
                 .padding(4)
-                .background(Color(nsColor: .textBackgroundColor))
+                .background(Color.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        .stroke(Color.appBorder, lineWidth: 1)
                 )
             
             Text(isAbandoned
@@ -312,7 +312,7 @@ struct OutcomeFormView: View {
             }
         }
         .padding()
-        .background(Color.blue.opacity(0.05))
+        .background(Color.accentColor.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -336,7 +336,7 @@ struct OutcomeFormView: View {
             .background(
                 isSelected
                     ? Color(color).opacity(0.2)
-                    : Color(nsColor: .windowBackgroundColor)
+                    : Color.surface
             )
             .foregroundStyle(
                 isSelected
@@ -393,11 +393,11 @@ struct OutcomeFormView: View {
                     .font(.body)
                     .frame(minHeight: 60)
                     .padding(4)
-                    .background(Color(nsColor: .textBackgroundColor))
+                    .background(Color.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                            .stroke(Color.appBorder, lineWidth: 1)
                     )
             }
             
@@ -434,12 +434,12 @@ struct OutcomeFormView: View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(validationErrors, id: \.self) { error in
                 Label(error, systemImage: "exclamationmark.circle")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
                     .font(.caption)
             }
         }
         .padding()
-        .background(Color.red.opacity(0.1))
+        .background(Color.statusInvalidated.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     

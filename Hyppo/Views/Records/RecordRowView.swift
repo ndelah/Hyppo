@@ -86,7 +86,7 @@ struct RecordRowView: View {
                 } label: {
                     Image(systemName: isChecked ? "checkmark.square.fill" : "square")
                         .font(.system(size: 16))
-                        .foregroundStyle(isChecked ? .blue : .secondary)
+                        .foregroundStyle(isChecked ? Color.accentColor : .secondary)
                 }
                 .buttonStyle(.plain)
                 .frame(width: checkboxColumnWidth)
@@ -378,22 +378,11 @@ struct RecordRowView: View {
     // MARK: - Helpers
     
     private var statusColor: Color {
-        switch question.status {
-        case .active: return .green
-        case .onHold: return .orange
-        case .invalidated: return .red
-        case .archived: return .gray
-        }
+        Color.forStatus(question.status)
     }
     
     private func confidenceColor(for confidence: ConfidenceLevel) -> Color {
-        switch confidence {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
-        }
+        Color.forConfidence(confidence)
     }
     
 }
@@ -444,7 +433,7 @@ private struct AssetPickerPopover: View {
                             Spacer()
                             if selectedAsset == nil {
                                 Image(systemName: "checkmark")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.accentColor)
                             }
                         }
                         .padding(.horizontal, 12)
@@ -452,7 +441,7 @@ private struct AssetPickerPopover: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                    .background(Color.surface.opacity(0.5))
                     
                     Divider()
                         .padding(.vertical, 4)
@@ -474,7 +463,7 @@ private struct AssetPickerPopover: View {
                                 Spacer()
                                 if selectedAsset?.assetId == asset.assetId {
                                     Image(systemName: "checkmark")
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(Color.accentColor)
                                 }
                             }
                             .padding(.horizontal, 12)
@@ -525,7 +514,7 @@ private struct StatusPickerPopover: View {
                             
                             if currentStatus == status {
                                 Image(systemName: "checkmark")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.accentColor)
                             }
                         }
                         .padding(.horizontal, 12)
@@ -541,12 +530,7 @@ private struct StatusPickerPopover: View {
     }
     
     private func statusColor(for status: ResearchQuestionStatus) -> Color {
-        switch status {
-        case .active: return .green
-        case .onHold: return .orange
-        case .invalidated: return .red
-        case .archived: return .gray
-        }
+        Color.forStatus(status)
     }
 }
 
@@ -577,7 +561,7 @@ private struct ConfidencePickerPopover: View {
                         Spacer()
                         if currentConfidence == nil {
                             Image(systemName: "checkmark")
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(Color.accentColor)
                         }
                     }
                     .padding(.horizontal, 12)
@@ -606,7 +590,7 @@ private struct ConfidencePickerPopover: View {
                             
                             if currentConfidence == level {
                                 Image(systemName: "checkmark")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.accentColor)
                             }
                         }
                         .padding(.horizontal, 12)
@@ -622,13 +606,7 @@ private struct ConfidencePickerPopover: View {
     }
     
     private func confidenceColor(for level: ConfidenceLevel) -> Color {
-        switch level {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
-        }
+        Color.forConfidence(level)
     }
 }
 
@@ -654,7 +632,7 @@ private struct TagPill: View {
     private var tagColor: Color {
         guard let colorName = tag.colorName,
               let tagColor = TagColor(rawValue: colorName) else {
-            return .blue
+            return Color.accentColor
         }
         return tagColor.color
     }

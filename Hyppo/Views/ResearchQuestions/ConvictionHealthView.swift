@@ -165,10 +165,10 @@ struct ConvictionHealthSummary {
         
         var color: Color {
             switch self {
-            case .strong: return .green
-            case .moderate: return .blue
-            case .weak: return .orange
-            case .critical: return .red
+            case .strong: return .statusActive
+            case .moderate: return Color.accentColor
+            case .weak: return .statusOnHold
+            case .critical: return .statusInvalidated
             }
         }
         
@@ -203,9 +203,9 @@ struct ConvictionHealthSummary {
         
         var color: Color {
             switch self {
-            case .improving: return .green
-            case .degrading: return .red
-            case .flat: return .gray
+            case .improving: return .statusActive
+            case .degrading: return .statusInvalidated
+            case .flat: return .statusArchived
             }
         }
     }
@@ -328,7 +328,7 @@ struct ConvictionHealthView: View {
             }
         }
         .padding(isCompact ? 12 : 16)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -419,22 +419,22 @@ struct ConvictionHealthView: View {
                 HStack(spacing: 2) {
                     if summary.totalSupporting > 0 {
                         Rectangle()
-                            .fill(Color.green)
+                            .fill(Color.statusActive)
                             .frame(width: max(4, geometry.size.width * CGFloat(summary.totalSupporting) / CGFloat(max(1, total))))
                     }
                     if summary.totalNeutral > 0 {
                         Rectangle()
-                            .fill(Color.gray.opacity(0.4))
+                            .fill(Color.statusArchived.opacity(0.4))
                             .frame(width: max(4, geometry.size.width * CGFloat(summary.totalNeutral) / CGFloat(max(1, total))))
                     }
                     if summary.totalContradicting > 0 {
                         Rectangle()
-                            .fill(Color.red)
+                            .fill(Color.statusInvalidated)
                             .frame(width: max(4, geometry.size.width * CGFloat(summary.totalContradicting) / CGFloat(max(1, total))))
                     }
                     if total == 0 {
                         Rectangle()
-                            .fill(Color.gray.opacity(0.2))
+                            .fill(Color.statusArchived.opacity(0.2))
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -444,9 +444,9 @@ struct ConvictionHealthView: View {
             .accessibilityLabel("Evidence balance: \(summary.totalSupporting) supporting, \(summary.totalNeutral) neutral, \(summary.totalContradicting) contradicting")
             
             HStack(spacing: 16) {
-                evidenceLegendItem(count: summary.totalSupporting, label: "Supporting", color: .green)
-                evidenceLegendItem(count: summary.totalNeutral, label: "Neutral", color: .gray)
-                evidenceLegendItem(count: summary.totalContradicting, label: "Contradicting", color: .red)
+                evidenceLegendItem(count: summary.totalSupporting, label: "Supporting", color: Color.statusActive)
+                evidenceLegendItem(count: summary.totalNeutral, label: "Neutral", color: Color.statusArchived)
+                evidenceLegendItem(count: summary.totalContradicting, label: "Contradicting", color: Color.statusInvalidated)
             }
             .font(.caption)
         }
@@ -466,9 +466,9 @@ struct ConvictionHealthView: View {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(Color.statusArchived.opacity(0.2))
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.blue.opacity(0.8))
+                        .fill(Color.accentColor.opacity(0.8))
                         .frame(width: geometry.size.width * CGFloat(summary.driverCoverageRatio))
                 }
             }
@@ -483,7 +483,7 @@ struct ConvictionHealthView: View {
                 if summary.blindSpotCount > 0 {
                     HStack(spacing: 4) {
                         Image(systemName: "eye.slash.fill")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.statusOnHold)
                         Text("\(summary.blindSpotCount) blind spot\(summary.blindSpotCount == 1 ? "" : "s")")
                             .foregroundStyle(.secondary)
                     }
@@ -556,7 +556,7 @@ struct ConvictionHealthView: View {
                 Text(driver.title)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .strikethrough(driver.status == .discarded, color: .red)
+                    .strikethrough(driver.status == .discarded, color: Color.statusInvalidated)
                     .foregroundStyle(driver.status == .discarded ? .secondary : .primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
@@ -565,10 +565,11 @@ struct ConvictionHealthView: View {
                     .frame(width: 50)
                 
                 let balance = driver.totalEvidenceBalance
+                let balanceColor: Color = balance > 0 ? .statusActive : (balance < 0 ? .statusInvalidated : .secondary)
                 Text(balance > 0 ? "+\(balance)" : "\(balance)")
                     .font(.caption)
                     .fontWeight(.bold)
-                    .foregroundStyle(balance > 0 ? .green : (balance < 0 ? .red : .secondary))
+                    .foregroundStyle(balanceColor)
                     .frame(width: 50)
                 
                 // Evidence-based status (Data column)
@@ -587,7 +588,7 @@ struct ConvictionHealthView: View {
                     HStack {
                         Text("  → \(sub.title)")
                             .font(.caption)
-                            .strikethrough(sub.status == .discarded, color: .red)
+                            .strikethrough(sub.status == .discarded, color: Color.statusInvalidated)
                             .foregroundStyle(sub.status == .discarded ? .tertiary : .secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         
@@ -597,9 +598,10 @@ struct ConvictionHealthView: View {
                             .frame(width: 50)
                         
                         let balance = sub.totalEvidenceBalance
+                        let subBalanceColor: Color = balance > 0 ? .statusActive : (balance < 0 ? .statusInvalidated : .secondary)
                         Text(balance > 0 ? "+\(balance)" : "\(balance)")
                             .font(.caption2)
-                            .foregroundStyle(balance > 0 ? .green.opacity(0.8) : (balance < 0 ? .red.opacity(0.8) : .secondary))
+                            .foregroundStyle(subBalanceColor.opacity(balance != 0 ? 0.8 : 1.0))
                             .frame(width: 50)
                         
                         evidenceStatusBadge(for: sub)
@@ -623,7 +625,7 @@ struct ConvictionHealthView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.statusInvalidated)
                 Text("Recent Contradicting Evidence")
                     .font(.subheadline)
                     .fontWeight(.semibold)
@@ -638,7 +640,7 @@ struct ConvictionHealthView: View {
                     HStack {
                         Image(systemName: "minus.circle.fill")
                             .font(.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.statusInvalidated)
                         
                         Text(evidence.effectiveTitle)
                             .font(.caption)
@@ -663,7 +665,7 @@ struct ConvictionHealthView: View {
             }
         }
         .padding(12)
-        .background(Color.red.opacity(0.05))
+        .background(Color.statusInvalidated.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -681,7 +683,7 @@ struct ConvictionHealthView: View {
             if summary.blindSpotCount > 0 {
                 HStack(spacing: 8) {
                     Image(systemName: "eye.slash.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.statusOnHold)
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(summary.blindSpotCount) assumption\(summary.blindSpotCount == 1 ? "" : "s") need evidence")
@@ -696,7 +698,7 @@ struct ConvictionHealthView: View {
                 }
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.orange.opacity(0.1))
+                .background(Color.statusOnHold.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
             
@@ -704,13 +706,13 @@ struct ConvictionHealthView: View {
             if !summary.recentContradictingEvidence.isEmpty {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.statusInvalidated)
                     Text("\(summary.recentContradictingEvidence.count) new contradicting evidence this week")
                         .font(.caption)
                 }
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.red.opacity(0.1))
+                .background(Color.statusInvalidated.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
         }
@@ -725,13 +727,13 @@ struct ConvictionHealthView: View {
         
         return Group {
             if hasBlindSpot {
-                badge("Blind Spot", color: .orange, icon: "eye.slash")
+                badge("Blind Spot", color: Color.statusOnHold, icon: "eye.slash")
             } else if balance > 0 {
-                badge("Supported", color: .green, icon: "checkmark.circle")
+                badge("Supported", color: Color.statusActive, icon: "checkmark.circle")
             } else if balance < 0 {
-                badge("Challenged", color: .red, icon: "exclamationmark.circle")
+                badge("Challenged", color: Color.statusInvalidated, icon: "exclamationmark.circle")
             } else {
-                badge("Neutral", color: .gray, icon: "circle")
+                badge("Neutral", color: Color.statusArchived, icon: "circle")
             }
         }
     }
@@ -745,13 +747,13 @@ struct ConvictionHealthView: View {
         return Group {
             switch status {
             case .confirmed:
-                badge("Confirmed", color: .green, icon: "checkmark.seal.fill")
+                badge("Confirmed", color: Color.statusActive, icon: "checkmark.seal.fill")
             case .discarded:
-                badge("Discarded", color: .red, icon: "xmark.seal.fill")
+                badge("Discarded", color: Color.statusInvalidated, icon: "xmark.seal.fill")
             case .needsRevision:
-                badge("Revision", color: .orange, icon: "exclamationmark.circle.fill")
+                badge("Revision", color: Color.statusOnHold, icon: "exclamationmark.circle.fill")
             case .pending:
-                badge("Under Review", color: .gray, icon: "circle.dashed")
+                badge("Under Review", color: Color.statusArchived, icon: "circle.dashed")
             }
         }
     }

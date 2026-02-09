@@ -92,9 +92,11 @@ struct OdooStyleNavigationView: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+        .background(Color.surfaceSecondary)
         .overlay(alignment: .bottom) {
-            Divider()
+            Rectangle()
+                .fill(Color.appBorder)
+                .frame(height: 1)
         }
     }
     
@@ -121,7 +123,7 @@ struct OdooStyleNavigationView: View {
                 .padding(.vertical, 8)
                 .background(
                     selectedTab == tab
-                        ? Color.accentColor.opacity(colorContrast == .increased ? 0.2 : 0.1)
+                        ? Color.appAccentSubtle
                         : Color.clear
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -175,7 +177,7 @@ struct ComingSoonView: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .underPageBackgroundColor))
+        .background(Color.appBackground)
     }
 }
 

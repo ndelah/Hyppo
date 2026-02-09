@@ -178,7 +178,7 @@ struct RecordTableView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .clipped()
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+        .background(Color.surfaceSecondary)
     }
     
     // MARK: - Pagination Controls
@@ -238,7 +238,7 @@ struct RecordTableView: View {
                 if column.isSortable && config.sortColumn == column {
                     Image(systemName: config.sortAscending ? "chevron.up" : "chevron.down")
                         .font(.caption2)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.accentColor)
                 }
             }
             .foregroundStyle(.primary)
@@ -273,7 +273,7 @@ struct RecordTableView: View {
         } label: {
             Image(systemName: allPageSelected ? "checkmark.square.fill" : (somePageSelected ? "minus.square.fill" : "square"))
                 .font(.system(size: 16))
-                .foregroundStyle(allPageSelected || somePageSelected ? .blue : .secondary)
+                .foregroundStyle(allPageSelected || somePageSelected ? Color.accentColor : .secondary)
         }
         .buttonStyle(.plain)
         .frame(width: checkboxColumnWidth)
@@ -419,7 +419,7 @@ struct RecordTableView: View {
             }
         }
         .id(currentPage) // Force re-render when page changes
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         // Bulk edit popovers
         .popover(isPresented: $showingBulkAssetPopover, arrowEdge: .bottom) {
             BulkAssetPickerPopover(
@@ -670,7 +670,7 @@ private struct ResizableDivider: View {
     
     var body: some View {
         Rectangle()
-            .fill(isDragging ? Color.accentColor : Color(nsColor: .separatorColor))
+            .fill(isDragging ? Color.accentColor : Color.appBorder)
             .frame(width: isDragging ? 3 : 1, height: 24)
             .contentShape(Rectangle().size(width: 10, height: 44))
             .gesture(
@@ -756,7 +756,7 @@ private struct ColumnVisibilityPopover: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.statusInvalidated)
                 .font(.caption)
             }
             .padding()
@@ -780,7 +780,7 @@ struct RowActionsPopover: View {
             // Header with selection count
             HStack {
                 Image(systemName: "checklist")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.accentColor)
                 Text("Row Actions")
                     .font(.headline)
                 Spacer()
@@ -789,7 +789,7 @@ struct RowActionsPopover: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.1))
+                    .background(Color.accentColor.opacity(0.1))
                     .clipShape(Capsule())
             }
             .padding(.horizontal, 12)
@@ -805,7 +805,7 @@ struct RowActionsPopover: View {
                     HStack(spacing: 8) {
                         Image(systemName: "doc.on.doc")
                             .font(.system(size: 14))
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.accentColor)
                             .frame(width: 20)
                         
                         Text("Duplicate")
@@ -833,12 +833,12 @@ struct RowActionsPopover: View {
                     HStack(spacing: 8) {
                         Image(systemName: "trash")
                             .font(.system(size: 14))
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.statusInvalidated)
                             .frame(width: 20)
                         
                         Text("Delete")
                             .font(.system(size: 13))
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.statusInvalidated)
                         
                         Spacer()
                         
@@ -891,7 +891,7 @@ private struct BulkAssetPickerPopover: View {
             // Header with selection count
             HStack {
                 Image(systemName: "square.stack.3d.up.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.accentColor)
                 Text("Change Asset")
                     .font(.headline)
                 Spacer()
@@ -900,7 +900,7 @@ private struct BulkAssetPickerPopover: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.1))
+                    .background(Color.accentColor.opacity(0.1))
                     .clipShape(Capsule())
             }
             .padding(.horizontal, 12)
@@ -938,7 +938,7 @@ private struct BulkAssetPickerPopover: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                    .background(Color.surface.opacity(0.5))
                     
                     Divider()
                         .padding(.vertical, 4)
@@ -983,7 +983,7 @@ private struct BulkStatusPickerPopover: View {
             // Header with selection count
             HStack {
                 Image(systemName: "flag.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.accentColor)
                 Text("Change Status")
                     .font(.headline)
                 Spacer()
@@ -992,7 +992,7 @@ private struct BulkStatusPickerPopover: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.1))
+                    .background(Color.accentColor.opacity(0.1))
                     .clipShape(Capsule())
             }
             .padding(.horizontal, 12)
@@ -1034,12 +1034,7 @@ private struct BulkStatusPickerPopover: View {
     }
     
     private func statusColor(for status: ResearchQuestionStatus) -> Color {
-        switch status {
-        case .active: return .green
-        case .onHold: return .orange
-        case .invalidated: return .red
-        case .archived: return .gray
-        }
+        Color.forStatus(status)
     }
 }
 
@@ -1053,7 +1048,7 @@ private struct BulkConfidencePickerPopover: View {
             // Header with selection count
             HStack {
                 Image(systemName: "star.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.accentColor)
                 Text("Change Confidence")
                     .font(.headline)
                 Spacer()
@@ -1062,7 +1057,7 @@ private struct BulkConfidencePickerPopover: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.1))
+                    .background(Color.accentColor.opacity(0.1))
                     .clipShape(Capsule())
             }
             .padding(.horizontal, 12)
@@ -1124,13 +1119,7 @@ private struct BulkConfidencePickerPopover: View {
     }
     
     private func confidenceColor(for level: ConfidenceLevel) -> Color {
-        switch level {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
-        }
+        Color.forConfidence(level)
     }
 }
 

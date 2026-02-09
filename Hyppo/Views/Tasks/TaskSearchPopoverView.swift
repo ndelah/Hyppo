@@ -76,7 +76,7 @@ struct TaskSearchPopoverView: View {
             footer
         }
         .frame(width: 580, height: 400)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .alert("Save Search", isPresented: $showingSaveDialog) {
             TextField("Search name", text: $newSearchName)
             Button("Cancel", role: .cancel) {
@@ -106,7 +106,7 @@ struct TaskSearchPopoverView: View {
                 } label: {
                     Text("Clear All")
                         .font(.caption)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.statusInvalidated)
                 }
                 .buttonStyle(.plain)
             }
@@ -232,7 +232,7 @@ struct TaskSearchPopoverView: View {
                             title: "Include Completed",
                             icon: "checkmark.circle",
                             isSelected: config.activeShowCompletedTasks,
-                            color: .green
+                            color: Color.statusActive
                         ) {
                             config.activeShowCompletedTasks.toggle()
                         }
@@ -254,7 +254,7 @@ struct TaskSearchPopoverView: View {
                                 title: questionDisplayName(question),
                                 icon: "doc.text.magnifyingglass",
                                 isSelected: config.activeResearchQuestionIds.contains(question.questionId),
-                                color: .blue
+                                color: Color.accentColor
                             ) {
                                 toggleQuestionFilter(question)
                             }
@@ -363,7 +363,7 @@ struct TaskSearchPopoverView: View {
                             HStack {
                                 Image(systemName: "star.fill")
                                     .frame(width: 20)
-                                    .foregroundStyle(.yellow)
+                                    .foregroundStyle(Color.confidenceMedium)
                                 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(search.name)
@@ -386,7 +386,7 @@ struct TaskSearchPopoverView: View {
                         } label: {
                             Image(systemName: "trash")
                                 .font(.caption)
-                                .foregroundStyle(.red.opacity(0.7))
+                                .foregroundStyle(Color.statusInvalidated.opacity(0.7))
                         }
                         .buttonStyle(.plain)
                     }
@@ -477,7 +477,7 @@ struct TaskSearchPopoverView: View {
     private func tagColor(for tag: Tag) -> Color {
         guard let colorName = tag.colorName,
               let tagColor = TagColor(rawValue: colorName) else {
-            return .blue
+            return Color.accentColor
         }
         return tagColor.color
     }
@@ -503,12 +503,12 @@ private struct TaskFilterChip: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
-            .background(isSelected ? color.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
+            .background(isSelected ? color.opacity(0.2) : Color.surface)
             .foregroundStyle(isSelected ? color : .primary)
             .clipShape(Capsule())
             .overlay(
                 Capsule()
-                    .stroke(isSelected ? color : Color(nsColor: .separatorColor), lineWidth: 1)
+                    .stroke(isSelected ? color : Color.appBorder, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

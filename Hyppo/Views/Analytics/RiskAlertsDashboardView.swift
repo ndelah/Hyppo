@@ -52,7 +52,7 @@ struct RiskAlertsDashboardView: View {
             }
             .padding(20)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .onAppear(perform: loadAlerts)
     }
     
@@ -74,7 +74,7 @@ struct RiskAlertsDashboardView: View {
         VStack(spacing: 20) {
             Image(systemName: "checkmark.shield.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.statusActive)
             
             Text("All Clear!")
                 .font(.title2)
@@ -90,7 +90,7 @@ struct RiskAlertsDashboardView: View {
                 VStack {
                     Image(systemName: "doc.text.fill")
                         .font(.title2)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.accentColor)
                     Text("Research Active")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -99,7 +99,7 @@ struct RiskAlertsDashboardView: View {
                 VStack {
                     Image(systemName: "clock.fill")
                         .font(.title2)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.statusActive)
                     Text("Reviews On Time")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -108,7 +108,7 @@ struct RiskAlertsDashboardView: View {
                 VStack {
                     Image(systemName: "eye.fill")
                         .font(.title2)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.accentColor)
                     Text("No Blind Spots")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -230,7 +230,7 @@ struct RiskAlertsDashboardView: View {
                 .font(.subheadline)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color(nsColor: .windowBackgroundColor))
+                .background(Color.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)
@@ -255,7 +255,7 @@ struct RiskAlertsDashboardView: View {
                 .font(.subheadline)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color(nsColor: .windowBackgroundColor))
+                .background(Color.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)
@@ -293,7 +293,7 @@ struct RiskAlertsDashboardView: View {
                     x: .value("Count", item.count),
                     y: .value("Type", item.type)
                 )
-                .foregroundStyle(.orange.gradient)
+                .foregroundStyle(Color.statusOnHold.gradient)
                 .annotation(position: .trailing) {
                     Text("\(item.count)")
                         .font(.caption2)
@@ -305,7 +305,7 @@ struct RiskAlertsDashboardView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -321,9 +321,9 @@ struct RiskAlertsDashboardView: View {
             let infoCount = alertCount(for: .info)
             
             let chartData = [
-                SeverityChartData(severity: "Critical", count: criticalCount, color: .red),
-                SeverityChartData(severity: "Warning", count: warningCount, color: .orange),
-                SeverityChartData(severity: "Info", count: infoCount, color: .blue)
+                SeverityChartData(severity: "Critical", count: criticalCount, color: Color.statusInvalidated),
+                SeverityChartData(severity: "Warning", count: warningCount, color: Color.statusOnHold),
+                SeverityChartData(severity: "Info", count: infoCount, color: Color.accentColor)
             ].filter { $0.count > 0 }
             
             if chartData.isEmpty {
@@ -363,7 +363,7 @@ struct RiskAlertsDashboardView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -397,7 +397,7 @@ struct RiskAlertsDashboardView: View {
             }
         }
         .padding(16)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.surface)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
@@ -434,7 +434,7 @@ struct RiskAlertsDashboardView: View {
                         .fontWeight(.medium)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.gray.opacity(0.15))
+                        .background(Color.statusArchived.opacity(0.15))
                         .clipShape(Capsule())
                 }
                 
@@ -499,9 +499,9 @@ struct RiskAlertsDashboardView: View {
     
     private func severityColor(_ severity: RiskAlert.AlertSeverity) -> Color {
         switch severity {
-        case .critical: return .red
-        case .warning: return .orange
-        case .info: return .blue
+        case .critical: return .statusInvalidated
+        case .warning: return .statusOnHold
+        case .info: return Color.accentColor
         }
     }
     
