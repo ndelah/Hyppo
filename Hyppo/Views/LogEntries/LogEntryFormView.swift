@@ -2,7 +2,7 @@
  LogEntryFormView provides a form for creating or editing a log entry.
  
  Supports quick capture with minimal required fields while allowing
- optional metadata like confidence level, entry type, and tags.
+ optional metadata like entry type and tags.
  
  When a Driver is selected, the log entry becomes linked to the McKinsey
  framework and automatically creates Evidence that updates conviction scores.
