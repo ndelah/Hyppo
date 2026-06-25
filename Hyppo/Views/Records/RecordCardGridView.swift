@@ -4,7 +4,6 @@
  Supports dynamic grouping by various properties with section headers:
  - Status: Active, On Hold, Invalidated, Archived
  - Asset: Grouped by ticker
- - Confidence: Grouped by confidence level
  - Tags: Grouped by tag name
  - Created/Updated Date: Grouped by month
  
@@ -158,8 +157,6 @@ struct RecordCardGridView: View {
             return statusGroupedSections
         case .asset:
             return assetGroupedSections
-        case .confidence:
-            return confidenceGroupedSections
         case .tags:
             return tagGroupedSections
         case .createdDate:
@@ -214,33 +211,6 @@ struct RecordCardGridView: View {
                 icon: "folder",
                 color: .gray,
                 questions: noAssetQuestions
-            ))
-        }
-        
-        return sections
-    }
-    
-    private var confidenceGroupedSections: [CardSection] {
-        var sections = ConfidenceLevel.allCases.compactMap { level -> CardSection? in
-            let sectionQuestions = sortedQuestions.filter { $0.confidenceCurrent == level.rawValue }
-            guard !sectionQuestions.isEmpty else { return nil }
-            return CardSection(
-                id: "confidence_\(level.rawValue)",
-                title: level.displayName,
-                icon: "gauge",
-                color: confidenceColor(for: level),
-                questions: sectionQuestions
-            )
-        }
-        
-        let notSetQuestions = sortedQuestions.filter { $0.confidenceCurrent == nil }
-        if !notSetQuestions.isEmpty {
-            sections.append(CardSection(
-                id: "confidence_none",
-                title: "Not Set",
-                icon: "gauge",
-                color: .gray,
-                questions: notSetQuestions
             ))
         }
         
@@ -356,11 +326,6 @@ struct RecordCardGridView: View {
             case .status:
                 result = lhs.statusRaw.localizedCaseInsensitiveCompare(rhs.statusRaw) == .orderedAscending
                 
-            case .confidence:
-                let lhsConf = lhs.confidenceCurrent ?? 0
-                let rhsConf = rhs.confidenceCurrent ?? 0
-                result = lhsConf < rhsConf
-                
             case .created:
                 result = lhs.createdAt < rhs.createdAt
                 
@@ -414,16 +379,6 @@ struct RecordCardGridView: View {
         }
     }
     
-    private func confidenceColor(for level: ConfidenceLevel) -> Color {
-        switch level {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
-        }
-    }
-    
     private func tagColor(for tag: Tag) -> Color {
         guard let colorName = tag.colorName,
               let color = TagColor(rawValue: colorName) else {
@@ -438,20 +393,17 @@ struct RecordCardGridView: View {
 #Preview {
     let question1 = ResearchQuestion(
         questionText: "Can AAPL sustain services revenue growth?",
-        context: "Services now represent 20% of revenue",
-        confidence: 4
+        context: "Services now represent 20% of revenue"
     )
     
     let question2 = ResearchQuestion(
         questionText: "Will AI demand drive semiconductor growth?",
-        context: "Data center spending accelerating",
-        confidence: 3
+        context: "Data center spending accelerating"
     )
     
     let question3 = ResearchQuestion(
         questionText: "Is MSFT's cloud position defensible?",
-        context: "Azure growth vs AWS competition",
-        confidence: 4
+        context: "Azure growth vs AWS competition"
     )
     
     return RecordCardGridView(

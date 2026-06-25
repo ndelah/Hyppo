@@ -4,7 +4,6 @@
  Supports dynamic grouping by various properties:
  - Status (default): Active, On Hold, Invalidated, Archived
  - Asset: Grouped by ticker
- - Confidence: Grouped by confidence level
  - Tags: Grouped by tag name
  - Created/Updated Date: Grouped by month
  
@@ -70,8 +69,6 @@ struct RecordKanbanView: View {
             return statusGroupedColumns
         case .asset:
             return assetGroupedColumns
-        case .confidence:
-            return confidenceGroupedColumns
         case .tags:
             return tagGroupedColumns
         case .createdDate:
@@ -131,28 +128,6 @@ struct RecordKanbanView: View {
         }
         
         return columns
-    }
-    
-    private var confidenceGroupedColumns: [KanbanColumn] {
-        ConfidenceLevel.allCases.map { level in
-            KanbanColumn(
-                id: "confidence_\(level.rawValue)",
-                title: level.displayName,
-                icon: "gauge",
-                color: confidenceColor(for: level),
-                questions: questions.filter { $0.confidenceCurrent == level.rawValue }.sorted { $0.updatedAt > $1.updatedAt },
-                status: nil
-            )
-        } + [
-            KanbanColumn(
-                id: "confidence_none",
-                title: "Not Set",
-                icon: "gauge",
-                color: .gray,
-                questions: questions.filter { $0.confidenceCurrent == nil }.sorted { $0.updatedAt > $1.updatedAt },
-                status: nil
-            )
-        ]
     }
     
     private var tagGroupedColumns: [KanbanColumn] {
@@ -389,16 +364,6 @@ struct RecordKanbanView: View {
         }
     }
     
-    private func confidenceColor(for level: ConfidenceLevel) -> Color {
-        switch level {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
-        }
-    }
-    
     private func tagColor(for tag: Tag) -> Color {
         guard let colorName = tag.colorName,
               let color = TagColor(rawValue: colorName) else {
@@ -487,20 +452,17 @@ private struct KanbanDropDelegate: DropDelegate {
 #Preview {
     let active1 = ResearchQuestion(
         questionText: "Can AAPL sustain services revenue growth?",
-        context: "Services now represent 20% of revenue",
-        confidence: 4
+        context: "Services now represent 20% of revenue"
     )
     
     let active2 = ResearchQuestion(
         questionText: "Will iPhone growth continue in emerging markets?",
-        context: "India and Southeast Asia expansion",
-        confidence: 3
+        context: "India and Southeast Asia expansion"
     )
     
     let onHold = ResearchQuestion(
         questionText: "What's the potential for Apple Car?",
-        context: "Project Titan status unclear",
-        confidence: 2
+        context: "Project Titan status unclear"
     )
     onHold.status = .onHold
     

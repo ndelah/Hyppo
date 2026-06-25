@@ -52,11 +52,6 @@ struct RecordListView: View {
             result = result.filter { config.activeStatusFilters.contains($0.statusRaw) }
         }
         
-        // Filter by confidence
-        if let confidenceFilter = config.activeConfidenceFilter {
-            result = result.filter { $0.confidenceCurrent == confidenceFilter }
-        }
-        
         // Filter by tags
         if !config.activeTagIds.isEmpty {
             result = result.filter { question in
@@ -113,7 +108,6 @@ struct RecordListView: View {
     private var activeFilterCount: Int {
         var count = 0
         count += config.activeStatusFilters.count
-        if config.activeConfidenceFilter != nil { count += 1 }
         count += config.activeTagIds.count
         if config.activeStartDate != nil { count += 1 }
         if config.activeEndDate != nil { count += 1 }
@@ -135,18 +129,6 @@ struct RecordListView: View {
                     filterType: .status(statusRaw)
                 ))
             }
-        }
-        
-        // Confidence filter
-        if let confidenceRaw = config.activeConfidenceFilter,
-           let confidence = ConfidenceLevel(rawValue: confidenceRaw) {
-            tags.append(RecordFilterTag(
-                id: "confidence_\(confidenceRaw)",
-                label: confidence.displayName,
-                icon: "gauge",
-                color: confidenceColor(for: confidence),
-                filterType: .confidence
-            ))
         }
         
         // Tag filters
@@ -184,16 +166,6 @@ struct RecordListView: View {
         case .onHold: return .orange
         case .invalidated: return .red
         case .archived: return .gray
-        }
-    }
-    
-    private func confidenceColor(for level: ConfidenceLevel) -> Color {
-        switch level {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
         }
     }
     
@@ -442,8 +414,6 @@ struct RecordListView: View {
         switch tag.filterType {
         case .status(let rawValue):
             config.activeStatusFilters.remove(rawValue)
-        case .confidence:
-            config.activeConfidenceFilter = nil
         case .tag(let tagId):
             config.activeTagIds.remove(tagId)
         case .groupBy:
@@ -494,7 +464,6 @@ struct RecordFilterTag: Identifiable {
     
     enum FilterType {
         case status(String)
-        case confidence
         case tag(UUID)
         case groupBy
     }

@@ -259,8 +259,7 @@ struct ReviewReminderView: View {
         // Create a simple review log entry (for quick complete without wizard)
         let logEntry = LogEntry.createReviewLog(
             outcome: ReviewOutcome.reinforce,
-            summary: "Quick review completed - thesis still valid",
-            confidence: researchQuestion.confidenceCurrent
+            summary: "Quick review completed - thesis still valid"
         )
         modelContext.insert(logEntry)
         logEntry.researchQuestion = researchQuestion
@@ -753,8 +752,7 @@ struct ReviewReminderBadge: View {
         
         let logEntry = LogEntry.createReviewLog(
             outcome: ReviewOutcome.reinforce,
-            summary: "Quick review completed - thesis still valid",
-            confidence: researchQuestion.confidenceCurrent
+            summary: "Quick review completed - thesis still valid"
         )
         modelContext.insert(logEntry)
         logEntry.researchQuestion = researchQuestion

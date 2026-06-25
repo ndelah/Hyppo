@@ -55,7 +55,6 @@ struct ResearchQuestionFormView: View {
     @State private var catalysts: [String] = []
     @State private var keyRisks: [String] = []
     @State private var preMortemText: String = ""
-    @State private var confidence: Int? = nil
     @State private var validationErrors: [String] = []
     
     // MARK: - Initialization
@@ -86,8 +85,6 @@ struct ResearchQuestionFormView: View {
                 )
             }
             _drivers = State(initialValue: dtos)
-            
-            _confidence = State(initialValue: question.confidenceCurrent)
         }
     }
     
@@ -121,9 +118,6 @@ struct ResearchQuestionFormView: View {
                             .font(.headline)
                         DriverOutlineView(drivers: $drivers, prompt: "What assumptions must be true?")
                     }
-                    
-                    // Confidence section
-                    confidenceSection
                     
                     // Validation errors
                     if !validationErrors.isEmpty {
@@ -296,37 +290,6 @@ struct ResearchQuestionFormView: View {
         }
     }
     
-    private var confidenceSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Confidence Level")
-                .font(.headline)
-            
-            HStack(spacing: 12) {
-                ForEach(ConfidenceLevel.allCases, id: \.rawValue) { level in
-                    Button {
-                        if confidence == level.rawValue {
-                            confidence = nil
-                        } else {
-                            confidence = level.rawValue
-                        }
-                    } label: {
-                        VStack(spacing: 4) {
-                            Image(systemName: (confidence ?? 0) >= level.rawValue ? "star.fill" : "star")
-                                .font(.title3)
-                            Text(level.displayName)
-                                .font(.caption2)
-                        }
-                        .frame(width: 70, height: 50)
-                        .background(confidence == level.rawValue ? Color.blue : Color(nsColor: .windowBackgroundColor))
-                        .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? .orange : .primary))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-    
     private var validationErrorsSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(validationErrors, id: \.self) { error in
@@ -380,8 +343,7 @@ struct ResearchQuestionFormView: View {
             let question = ResearchQuestion(
                 questionText: trimmedThesis,
                 context: trimmedContext.isEmpty ? nil : trimmedContext,
-                thesisStatement: trimmedThesis,
-                confidence: confidence
+                thesisStatement: trimmedThesis
             )
             saveDrivers(to: question)
             onSave(question)
@@ -390,8 +352,7 @@ struct ResearchQuestionFormView: View {
             question.update(
                 questionText: trimmedThesis,
                 context: trimmedContext.isEmpty ? nil : trimmedContext,
-                thesisStatement: trimmedThesis,
-                confidence: confidence
+                thesisStatement: trimmedThesis
             )
             
             // Clear existing and re-save

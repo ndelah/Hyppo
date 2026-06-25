@@ -99,7 +99,6 @@ struct ReviewWizardView: View {
     @State private var currentStep: WizardStep = .overview
     @State private var driverAssessments: [DriverAssessment] = []
     @State private var selectedOutcome: ReviewOutcome = .reinforce
-    @State private var newConfidence: Int = 3
     @State private var overallNotes: String = ""
     @State private var showingConfirmation = false
     
@@ -423,43 +422,6 @@ struct ReviewWizardView: View {
             
             Divider()
             
-            // Confidence adjustment
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Update Confidence Level")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                
-                HStack(spacing: 12) {
-                    ForEach(1...5, id: \.self) { level in
-                        Button {
-                            newConfidence = level
-                        } label: {
-                            VStack(spacing: 2) {
-                                Image(systemName: newConfidence >= level ? "star.fill" : "star")
-                                    .font(.title2)
-                                Text("\(level)")
-                                    .font(.caption2)
-                            }
-                            .frame(width: 44, height: 44)
-                            .background(newConfidence == level ? Color.accentColor : Color(nsColor: .windowBackgroundColor))
-                            .foregroundStyle(newConfidence == level ? .white : (newConfidence >= level ? .orange : .primary))
-                            .clipShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    
-                    Spacer()
-                    
-                    if let level = ConfidenceLevel(rawValue: newConfidence) {
-                        Text(level.displayName)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            
-            Divider()
-            
             // Overall notes
             VStack(alignment: .leading, spacing: 8) {
                 Text("Additional Notes")
@@ -521,13 +483,6 @@ struct ReviewWizardView: View {
                         ? "No assumptions defined"
                         : "\(confirmedCount) confirmed, \(discardedCount) discarded",
                     isWarning: discardedCount > 0
-                )
-                
-                // Confidence
-                summaryRow(
-                    label: "Confidence",
-                    value: "\(researchQuestion.confidenceCurrent ?? 3) → \(newConfidence)",
-                    isWarning: newConfidence < (researchQuestion.confidenceCurrent ?? 3)
                 )
                 
                 // Status change (if invalidating)
@@ -680,7 +635,6 @@ struct ReviewWizardView: View {
     
     private func initializeAssessments() {
         driverAssessments = (researchQuestion.drivers ?? []).map { DriverAssessment(driver: $0) }
-        newConfidence = researchQuestion.confidenceCurrent ?? 3
     }
     
     /// Color for the research question status
@@ -721,13 +675,6 @@ struct ReviewWizardView: View {
             body += "\n"
         }
         
-        // Confidence
-        let oldConfidence = researchQuestion.confidenceCurrent ?? 3
-        if newConfidence != oldConfidence {
-            body += "### Confidence Update\n"
-            body += "Changed from \(oldConfidence)/5 to \(newConfidence)/5\n\n"
-        }
-        
         // Additional notes
         if !overallNotes.isEmpty {
             body += "### Additional Notes\n"
@@ -744,7 +691,6 @@ struct ReviewWizardView: View {
             title: logTitle,
             body: generateLogBody(),
             entryType: .review,
-            confidence: newConfidence,
             occurredAt: Date(),
             isSystemGenerated: false
         )
@@ -755,7 +701,6 @@ struct ReviewWizardView: View {
         updateDriverStatuses()
         
         // Update research question
-        researchQuestion.confidenceCurrent = newConfidence
         researchQuestion.lastReviewedAt = Date()
         
         // Handle conclusion if provided

@@ -215,11 +215,6 @@ struct RecordTableView: View {
             case .status:
                 result = lhs.statusRaw.localizedCaseInsensitiveCompare(rhs.statusRaw) == .orderedAscending
                 
-            case .confidence:
-                let lhsConf = lhs.confidenceCurrent ?? 0
-                let rhsConf = rhs.confidenceCurrent ?? 0
-                result = lhsConf < rhsConf
-                
             case .created:
                 result = lhs.createdAt < rhs.createdAt
                 
@@ -376,14 +371,12 @@ private struct ColumnVisibilityPopover: View {
 #Preview {
     let question1 = ResearchQuestion(
         questionText: "Can AAPL sustain services revenue growth?",
-        context: "Services now represent 20% of revenue",
-        confidence: 4
+        context: "Services now represent 20% of revenue"
     )
     
     let question2 = ResearchQuestion(
         questionText: "Will AI demand drive semiconductor growth?",
-        context: "Data center spending accelerating",
-        confidence: 3
+        context: "Data center spending accelerating"
     )
     
     return RecordTableView(
