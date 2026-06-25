@@ -5,7 +5,6 @@
  - Portfolio-level health scores and statistics
  - Time-based activity metrics
  - Evidence analytics (source diversity, sentiment balance, freshness)
- - Task completion metrics
  - Driver validation funnel statistics
  - Review adherence and alert conditions
  */
@@ -32,8 +31,6 @@ struct PortfolioAnalytics {
     let averageConfidence: Double
     let totalDrivers: Int
     let totalEvidence: Int
-    let totalTasks: Int
-    let completedTasks: Int
     
     // Alerts
     let overdueReviews: Int
@@ -47,12 +44,6 @@ struct PortfolioAnalytics {
         
         // Factor in average health scores
         score += Int((averageHealthScore - 50) * 0.4)
-        
-        // Factor in task completion rate
-        if totalTasks > 0 {
-            let completionRate = Double(completedTasks) / Double(totalTasks)
-            score += Int((completionRate - 0.5) * 20)
-        }
         
         // Penalize for issues
         let questionCount = max(1, totalResearchQuestions)
@@ -77,39 +68,6 @@ struct PortfolioAnalytics {
             .invalidated: invalidatedQuestions,
             .archived: archivedQuestions
         ]
-    }
-}
-
-// MARK: - Time-Based Analytics
-
-/**
- Time-series data point for activity charts.
- */
-struct ActivityDataPoint: Identifiable {
-    let id = UUID()
-    let date: Date
-    let count: Int
-    let label: String
-}
-
-/**
- Time-based activity metrics.
- */
-struct TimeAnalytics {
-    let tasksCompletedByWeek: [ActivityDataPoint]
-    let evidenceAddedByWeek: [ActivityDataPoint]
-    let logEntriesByWeek: [ActivityDataPoint]
-    let activityByDay: [Date: Int]  // For heatmap
-    
-    /// Total activity in the selected period
-    var totalActivity: Int {
-        activityByDay.values.reduce(0, +)
-    }
-    
-    /// Average daily activity
-    var averageDailyActivity: Double {
-        guard !activityByDay.isEmpty else { return 0 }
-        return Double(totalActivity) / Double(activityByDay.count)
     }
 }
 
@@ -159,37 +117,6 @@ struct EvidenceAnalytics {
         let staleWeight = Double(evidenceOver90Days) * 0.0
         let weightedSum = freshWeight + mediumWeight + staleWeight
         return Int((weightedSum / Double(totalEvidence)) * 100)
-    }
-}
-
-// MARK: - Task Analytics
-
-/**
- Task-related metrics.
- */
-struct TaskAnalytics {
-    let totalTasks: Int
-    let completedTasks: Int
-    let inboxTasks: Int
-    let staleTasks: Int  // Open > 30 days
-    
-    // Completion time stats
-    let averageCompletionDays: Double?
-    let fastestCompletionDays: Int?
-    let slowestCompletionDays: Int?
-    
-    // By research question
-    let tasksByQuestion: [(question: ResearchQuestion, total: Int, completed: Int)]
-    
-    /// Completion rate as percentage
-    var completionRate: Double {
-        guard totalTasks > 0 else { return 0 }
-        return Double(completedTasks) / Double(totalTasks) * 100
-    }
-    
-    /// Open (incomplete) task count
-    var openTasks: Int {
-        totalTasks - completedTasks
     }
 }
 
@@ -350,7 +277,6 @@ final class AnalyticsService {
         let questions = fetchAll(ResearchQuestion.self, from: modelContext)
         let drivers = fetchAll(Driver.self, from: modelContext)
         let evidence = fetchAll(Evidence.self, from: modelContext)
-        let tasks = fetchAll(ResearchTask.self, from: modelContext)
         let reminders = fetchAll(ReviewReminder.self, from: modelContext)
         
         // Count by status
@@ -369,9 +295,6 @@ final class AnalyticsService {
         // Calculate average confidence
         let confidences = questions.compactMap { $0.confidenceCurrent }
         let avgConfidence = confidences.isEmpty ? 3.0 : Double(confidences.reduce(0, +)) / Double(confidences.count)
-        
-        // Count completed tasks
-        let completedTasks = tasks.filter { $0.isCompleted }.count
         
         // Count overdue reviews
         let overdueReviews = reminders.filter { $0.isEnabled && $0.isDue && ($0.daysUntilDue ?? 0) < 0 }.count
@@ -399,8 +322,6 @@ final class AnalyticsService {
             averageConfidence: avgConfidence,
             totalDrivers: drivers.count,
             totalEvidence: evidence.count,
-            totalTasks: tasks.count,
-            completedTasks: completedTasks,
             overdueReviews: overdueReviews,
             blindSpotCount: blindSpotCount,
             staleResearchCount: staleCount,
@@ -427,60 +348,6 @@ final class AnalyticsService {
         }
         
         return distribution
-    }
-    
-    // MARK: - Time Analytics
-    
-    /**
-     Computes time-based activity metrics.
-     
-     - Parameters:
-       - modelContext: The SwiftData model context
-       - days: Number of days to analyze (default 90)
-     - Returns: Time analytics summary
-     */
-    func computeTimeAnalytics(modelContext: ModelContext, days: Int = 90) -> TimeAnalytics {
-        let tasks = fetchAll(ResearchTask.self, from: modelContext)
-        let evidence = fetchAll(Evidence.self, from: modelContext)
-        let logEntries = fetchAll(LogEntry.self, from: modelContext)
-        
-        let calendar = Calendar.current
-        let startDate = calendar.date(byAdding: .day, value: -days, to: Date()) ?? Date()
-        
-        // Group tasks by week
-        let completedTasks = tasks.filter { $0.isCompleted && ($0.completedAt ?? Date.distantPast) > startDate }
-        let tasksByWeek = groupByWeek(items: completedTasks, dateExtractor: { $0.completedAt ?? Date() })
-        
-        // Group evidence by week
-        let recentEvidence = evidence.filter { $0.capturedAt > startDate }
-        let evidenceByWeek = groupByWeek(items: recentEvidence, dateExtractor: { $0.capturedAt })
-        
-        // Group log entries by week
-        let recentLogs = logEntries.filter { $0.occurredAt > startDate }
-        let logsByWeek = groupByWeek(items: recentLogs, dateExtractor: { $0.occurredAt })
-        
-        // Activity by day for heatmap
-        var activityByDay: [Date: Int] = [:]
-        let allDates = Set(
-            completedTasks.map { calendar.startOfDay(for: $0.completedAt ?? Date()) } +
-            recentEvidence.map { calendar.startOfDay(for: $0.capturedAt) } +
-            recentLogs.map { calendar.startOfDay(for: $0.occurredAt) }
-        )
-        
-        for date in allDates {
-            let dayStart = calendar.startOfDay(for: date)
-            let tasksOnDay = completedTasks.filter { calendar.isDate($0.completedAt ?? Date(), inSameDayAs: date) }.count
-            let evidenceOnDay = recentEvidence.filter { calendar.isDate($0.capturedAt, inSameDayAs: date) }.count
-            let logsOnDay = recentLogs.filter { calendar.isDate($0.occurredAt, inSameDayAs: date) }.count
-            activityByDay[dayStart] = tasksOnDay + evidenceOnDay + logsOnDay
-        }
-        
-        return TimeAnalytics(
-            tasksCompletedByWeek: tasksByWeek,
-            evidenceAddedByWeek: evidenceByWeek,
-            logEntriesByWeek: logsByWeek,
-            activityByDay: activityByDay
-        )
     }
     
     // MARK: - Evidence Analytics
@@ -544,61 +411,6 @@ final class AnalyticsService {
             evidence30To90Days: between30And90,
             evidenceOver90Days: over90,
             recentContradicting: recentContradicting
-        )
-    }
-    
-    // MARK: - Task Analytics
-    
-    /**
-     Computes task-related metrics.
-     
-     - Parameter modelContext: The SwiftData model context
-     - Returns: Task analytics summary
-     */
-    func computeTaskAnalytics(modelContext: ModelContext) -> TaskAnalytics {
-        let tasks = fetchAll(ResearchTask.self, from: modelContext)
-        let questions = fetchAll(ResearchQuestion.self, from: modelContext)
-        
-        let completed = tasks.filter { $0.isCompleted }
-        let inbox = tasks.filter { $0.isInbox }
-        
-        // Stale tasks (open > 30 days)
-        let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
-        let stale = tasks.filter { !$0.isCompleted && $0.createdAt < thirtyDaysAgo }
-        
-        // Completion time statistics
-        var completionDays: [Int] = []
-        for task in completed {
-            if let completedAt = task.completedAt {
-                let days = Calendar.current.dateComponents([.day], from: task.createdAt, to: completedAt).day ?? 0
-                completionDays.append(days)
-            }
-        }
-        
-        let avgCompletion = completionDays.isEmpty ? nil : Double(completionDays.reduce(0, +)) / Double(completionDays.count)
-        let fastest = completionDays.min()
-        let slowest = completionDays.max()
-        
-        // Tasks by research question
-        var tasksByQuestion: [(ResearchQuestion, Int, Int)] = []
-        for question in questions.filter({ $0.status == .active }) {
-            let allTasks = question.allTasks
-            let completedCount = allTasks.filter { $0.isCompleted }.count
-            if !allTasks.isEmpty {
-                tasksByQuestion.append((question, allTasks.count, completedCount))
-            }
-        }
-        tasksByQuestion.sort { $0.1 - $0.2 > $1.1 - $1.2 }  // Sort by incomplete count desc
-        
-        return TaskAnalytics(
-            totalTasks: tasks.count,
-            completedTasks: completed.count,
-            inboxTasks: inbox.count,
-            staleTasks: stale.count,
-            averageCompletionDays: avgCompletion,
-            fastestCompletionDays: fastest,
-            slowestCompletionDays: slowest,
-            tasksByQuestion: tasksByQuestion
         )
     }
     
@@ -844,27 +656,6 @@ final class AnalyticsService {
     private func fetchAll<T: PersistentModel>(_ type: T.Type, from modelContext: ModelContext) -> [T] {
         let descriptor = FetchDescriptor<T>()
         return (try? modelContext.fetch(descriptor)) ?? []
-    }
-    
-    /**
-     Groups items by week and returns data points for charts.
-     */
-    private func groupByWeek<T>(items: [T], dateExtractor: (T) -> Date) -> [ActivityDataPoint] {
-        let calendar = Calendar.current
-        var weekCounts: [Date: Int] = [:]
-        
-        for item in items {
-            let date = dateExtractor(item)
-            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)) ?? date
-            weekCounts[weekStart, default: 0] += 1
-        }
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        
-        return weekCounts
-            .sorted { $0.key < $1.key }
-            .map { ActivityDataPoint(date: $0.key, count: $0.value, label: formatter.string(from: $0.key)) }
     }
 }
 

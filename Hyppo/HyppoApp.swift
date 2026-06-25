@@ -2,8 +2,8 @@
  Hyppo application entry point.
  
  Configures the SwiftData model container with all entity types
- and installs the root navigation shell. Provides Settings window access,
- Quick Capture HUD, and Quick Add Task functionality.
+ and installs the root navigation shell. Provides Settings window access
+ and the Quick Capture HUD.
  */
 
 import SwiftUI
@@ -14,7 +14,6 @@ struct HyppoApp: App {
     // MARK: - Services
     
     @StateObject private var quickCaptureService = QuickCaptureService.shared
-    @StateObject private var quickAddTaskService = QuickAddTaskService.shared
     
     // MARK: - Initialization
     
@@ -22,7 +21,7 @@ struct HyppoApp: App {
         DebugLogger.info(
             location: "HyppoApp:init",
             message: "Hyppo app initializing",
-            data: ["models": "Asset, ResearchQuestion, LogEntry, Evidence, Tag, ReviewReminder, Driver, ResearchTask"]
+            data: ["models": "Asset, ResearchQuestion, LogEntry, Evidence, Tag, ReviewReminder, Driver"]
         )
     }
     
@@ -47,8 +46,7 @@ struct HyppoApp: App {
             Evidence.self,
             Tag.self,
             ReviewReminder.self,
-            Driver.self,
-            ResearchTask.self
+            Driver.self
         ])
         
         do {
@@ -132,10 +130,6 @@ struct HyppoApp: App {
                         QuickCaptureHUD(service: quickCaptureService)
                             .modelContainer(sharedModelContainer)
                     }
-                    .sheet(isPresented: $quickAddTaskService.isPopoverVisible) {
-                        QuickAddTaskPopover()
-                            .modelContainer(sharedModelContainer)
-                    }
                     .task {
                         // Run migration on first launch after update
                         await runMigrationIfNeeded()
@@ -162,11 +156,6 @@ struct HyppoApp: App {
                     NotificationCenter.default.post(name: .addLogEntry, object: nil)
                 }
                 .keyboardShortcut("l", modifiers: [.command, .shift])
-                
-                Button("New Task") {
-                    quickAddTaskService.showPopover()
-                }
-                .keyboardShortcut("t", modifiers: [.command, .shift])
                 
                 Divider()
                 

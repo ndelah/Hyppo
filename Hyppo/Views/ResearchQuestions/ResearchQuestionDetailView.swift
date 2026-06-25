@@ -14,7 +14,6 @@ import UniformTypeIdentifiers
 enum ResearchDetailTab: String, CaseIterable, Identifiable {
     case description = "Description"
     case health = "Health"
-    case tasks = "Tasks"
     
     var id: String { rawValue }
 }
@@ -172,7 +171,7 @@ struct ResearchQuestionDetailView: View {
     
     // MARK: - Subviews
     
-    /// Tabbed menu section with Description, Health, and Tasks tabs
+    /// Tabbed menu section with Description and Health tabs
     private var tabbedMenuSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Tab bar
@@ -189,7 +188,7 @@ struct ResearchQuestionDetailView: View {
         )
     }
     
-    /// Tab bar with Description, Health, and Tasks tabs
+    /// Tab bar with Description and Health tabs
     private var tabBar: some View {
         HStack(spacing: 0) {
             ForEach(ResearchDetailTab.allCases) { tab in
@@ -238,9 +237,6 @@ struct ResearchQuestionDetailView: View {
         case .health:
             healthTabContent
                 .padding()
-                .transition(.opacity)
-        case .tasks:
-            tasksTabContent
                 .transition(.opacity)
         }
     }
@@ -367,11 +363,6 @@ struct ResearchQuestionDetailView: View {
                 .padding(.vertical, 24)
             }
         }
-    }
-    
-    /// Tasks tab content - shows research tasks
-    private var tasksTabContent: some View {
-        ResearchTasksView(researchQuestion: researchQuestion)
     }
     
     private var questionHeader: some View {

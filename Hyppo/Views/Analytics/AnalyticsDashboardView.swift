@@ -4,7 +4,7 @@
  Features:
  - Sidebar navigation for different analytics sections
  - Portfolio Health overview (default)
- - Evidence, Task, Driver, Review analytics
+ - Evidence, Driver, Review analytics
  - Risk Alerts dashboard
  */
 
@@ -15,7 +15,6 @@ import SwiftData
 enum AnalyticsSection: String, CaseIterable, Identifiable {
     case portfolio = "Portfolio Health"
     case evidence = "Evidence"
-    case tasks = "Tasks"
     case drivers = "Drivers"
     case reviews = "Reviews"
     case alerts = "Risk Alerts"
@@ -27,7 +26,6 @@ enum AnalyticsSection: String, CaseIterable, Identifiable {
         switch self {
         case .portfolio: return "chart.pie.fill"
         case .evidence: return "doc.text.fill"
-        case .tasks: return "checklist"
         case .drivers: return "target"
         case .reviews: return "calendar.badge.clock"
         case .alerts: return "exclamationmark.triangle.fill"
@@ -39,7 +37,6 @@ enum AnalyticsSection: String, CaseIterable, Identifiable {
         switch self {
         case .portfolio: return .blue
         case .evidence: return .purple
-        case .tasks: return .green
         case .drivers: return .orange
         case .reviews: return .teal
         case .alerts: return .red
@@ -51,7 +48,6 @@ enum AnalyticsSection: String, CaseIterable, Identifiable {
         switch self {
         case .portfolio: return "Overall health metrics"
         case .evidence: return "Source analysis & freshness"
-        case .tasks: return "Completion & backlog"
         case .drivers: return "Validation funnel"
         case .reviews: return "Schedule & adherence"
         case .alerts: return "Proactive warnings"
@@ -182,8 +178,6 @@ struct AnalyticsDashboardView: View {
             PortfolioHealthDashboardView()
         case .evidence:
             EvidenceAnalyticsView()
-        case .tasks:
-            TaskAnalyticsView()
         case .drivers:
             DriverAnalyticsView()
         case .reviews:
@@ -214,7 +208,6 @@ struct AnalyticsDashboardView: View {
             ResearchQuestion.self,
             Driver.self,
             Evidence.self,
-            ResearchTask.self,
             LogEntry.self,
             ReviewReminder.self,
             Tag.self
