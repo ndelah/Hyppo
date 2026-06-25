@@ -637,7 +637,7 @@ struct ResearchQuestionDetailView: View {
                 Button {
                     showingAddLogEntry = true
                 } label: {
-                    Label("Add Log", systemImage: "plus")
+                    Label("Add Log Entry", systemImage: "plus")
                         .font(.caption)
                 }
                 .buttonStyle(.borderless)
@@ -1335,11 +1335,15 @@ struct LogEntryCard: View {
         VStack(alignment: .leading, spacing: density == .compact ? 4 : 8) {
             // Header row
             HStack {
-                // Type icon
-                Image(systemName: logEntry.entryType.iconName)
-                    .foregroundStyle(typeColor)
-                    .font(density == .compact ? .caption : .body)
-                
+                // Type pill: the only colored element. The icon ("logo") and the
+                // action name always travel together inside the pill.
+                typePill
+
+                // Show sentiment badge if linked to driver
+                if let sentiment = logEntry.sentiment {
+                    sentimentBadge(sentiment)
+                }
+
                 Text(logEntry.title)
                     .font(density == .compact ? .subheadline : .headline)
                     .lineLimit(1)
@@ -1347,23 +1351,7 @@ struct LogEntryCard: View {
                 if logEntry.isPinned {
                     Image(systemName: "pin.fill")
                         .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-                
-                // Compact: show type badge inline
-                if density == .compact {
-                    Text(logEntry.entryType.displayName)
-                        .font(.caption2)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(typeColor.opacity(0.15))
-                        .foregroundStyle(typeColor)
-                        .clipShape(Capsule())
-                }
-                
-                // Show sentiment badge if linked to driver
-                if let sentiment = logEntry.sentiment {
-                    sentimentBadge(sentiment)
+                        .foregroundStyle(.secondary)
                 }
                 
                 Spacer()
@@ -1379,7 +1367,7 @@ struct LogEntryCard: View {
                 HStack(spacing: 4) {
                     Image(systemName: "target")
                         .font(.caption2)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(.secondary)
                     Text(driver.title)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -1398,17 +1386,6 @@ struct LogEntryCard: View {
             // Metadata row (hide in compact mode)
             if density.showMetadataRow {
                 HStack(spacing: 12) {
-                    // Entry type badge (not in compact, shown in header)
-                    if density != .compact {
-                        Text(logEntry.entryType.displayName)
-                            .font(.caption2)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(typeColor.opacity(0.15))
-                            .foregroundStyle(typeColor)
-                            .clipShape(Capsule())
-                    }
-                    
                     // Evidence count
                     if logEntry.evidenceCount > 0 {
                         Label("\(logEntry.evidenceCount)", systemImage: "link")
@@ -1458,10 +1435,25 @@ struct LogEntryCard: View {
         .clipShape(RoundedRectangle(cornerRadius: density == .compact ? 8 : 10))
         .overlay(
             RoundedRectangle(cornerRadius: density == .compact ? 8 : 10)
-                .stroke(logEntry.driver != nil ? Color.blue.opacity(0.3) : Color(nsColor: .separatorColor).opacity(0.5), lineWidth: 1)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.5), lineWidth: 1)
         )
     }
-    
+
+    /// Unified type pill containing the entry's icon ("logo") and action name.
+    /// This is the sole carrier of color in a timeline card.
+    private var typePill: some View {
+        HStack(spacing: 4) {
+            Image(systemName: logEntry.entryType.iconName)
+            Text(logEntry.entryType.displayName)
+        }
+        .font(.caption2)
+        .padding(.horizontal, density == .compact ? 6 : 8)
+        .padding(.vertical, density == .compact ? 2 : 3)
+        .background(typeColor.opacity(0.15))
+        .foregroundStyle(typeColor)
+        .clipShape(Capsule())
+    }
+
     private func sentimentBadge(_ sentiment: EvidenceSentiment) -> some View {
         HStack(spacing: 2) {
             Image(systemName: sentiment.iconName)
@@ -1530,11 +1522,17 @@ struct LogEntryDetailSheet: View {
                     // Header
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Image(systemName: logEntry.entryType.iconName)
-                                .foregroundStyle(typeColor)
-                            Text(logEntry.entryType.displayName)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            // Type pill: icon ("logo") and action name together.
+                            HStack(spacing: 4) {
+                                Image(systemName: logEntry.entryType.iconName)
+                                Text(logEntry.entryType.displayName)
+                            }
+                            .font(.caption.bold())
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(typeColor.opacity(0.15))
+                            .foregroundStyle(typeColor)
+                            .clipShape(Capsule())
                             
                             Spacer()
                             
@@ -1556,7 +1554,7 @@ struct LogEntryDetailSheet: View {
                         if let driver = logEntry.driver {
                             HStack(spacing: 6) {
                                 Image(systemName: "target")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(.secondary)
                                 Text("Linked to:")
                                     .foregroundStyle(.secondary)
                                 Text(driver.title)
@@ -1570,12 +1568,11 @@ struct LogEntryDetailSheet: View {
                         if let url = logEntry.sourceUrl, !url.isEmpty {
                             HStack(spacing: 6) {
                                 Image(systemName: "link")
-                                    .foregroundStyle(.blue)
                                 Text(url)
-                                    .foregroundStyle(.blue)
                                     .lineLimit(1)
                             }
                             .font(.caption)
+                            .foregroundStyle(.secondary)
                         }
                     }
                     
@@ -1697,7 +1694,7 @@ struct EvidenceRow: View {
             if let url = evidence.urlRaw {
                 Text(url)
                     .font(.caption)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             
