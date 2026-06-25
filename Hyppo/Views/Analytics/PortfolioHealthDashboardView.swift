@@ -4,7 +4,6 @@
  Features:
  - Overall portfolio health score gauge
  - Status distribution breakdown (Active/On Hold/Invalidated/Archived)
- - Confidence distribution chart
  - Key metrics summary cards
  - Asset coverage visualization
  */
@@ -21,7 +20,6 @@ struct PortfolioHealthDashboardView: View {
     // MARK: - State
     
     @State private var analytics: PortfolioAnalytics?
-    @State private var confidenceDistribution: [Int: Int] = [:]
     @State private var isLoading = true
     
     // MARK: - Body
@@ -39,13 +37,7 @@ struct PortfolioHealthDashboardView: View {
                     keyMetricsRow(analytics)
                     
                     // Charts section
-                    HStack(alignment: .top, spacing: 20) {
-                        // Status distribution
-                        statusDistributionChart(analytics)
-                        
-                        // Confidence distribution
-                        confidenceDistributionChart
-                    }
+                    statusDistributionChart(analytics)
                     
                     // Alerts summary
                     if analytics.overdueReviews > 0 || analytics.blindSpotCount > 0 || analytics.staleResearchCount > 0 {
@@ -148,13 +140,6 @@ struct PortfolioHealthDashboardView: View {
                         label: "Assets",
                         icon: "building.2",
                         color: .purple
-                    )
-                    
-                    summaryStatItem(
-                        value: String(format: "%.1f", analytics.averageConfidence),
-                        label: "Avg Confidence",
-                        icon: "gauge",
-                        color: .orange
                     )
                     
                     summaryStatItem(
@@ -319,73 +304,6 @@ struct PortfolioHealthDashboardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
     
-    // MARK: - Confidence Distribution Chart
-    
-    private var confidenceDistributionChart: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Confidence Distribution")
-                .font(.headline)
-            
-            let chartData = (1...5).map { level in
-                ConfidenceChartData(level: level, count: confidenceDistribution[level] ?? 0)
-            }
-            
-            let hasData = chartData.contains { $0.count > 0 }
-            
-            if !hasData {
-                Text("No confidence data")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .frame(height: 150)
-            } else {
-                Chart(chartData) { item in
-                    BarMark(
-                        x: .value("Level", item.levelLabel),
-                        y: .value("Count", item.count)
-                    )
-                    .foregroundStyle(confidenceColor(for: item.level))
-                    .annotation(position: .top) {
-                        if item.count > 0 {
-                            Text("\(item.count)")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                .chartXAxis {
-                    AxisMarks(values: .automatic) { value in
-                        AxisValueLabel()
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks(values: .automatic) { value in
-                        AxisGridLine()
-                        AxisValueLabel()
-                    }
-                }
-                .frame(height: 180)
-            }
-            
-            // Legend
-            HStack(spacing: 12) {
-                ForEach(1...5, id: \.self) { level in
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(confidenceColor(for: level))
-                            .frame(width: 8, height: 8)
-                        Text(ConfidenceLevel(rawValue: level)?.displayName ?? "")
-                            .font(.caption2)
-                    }
-                }
-            }
-            .foregroundStyle(.secondary)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-    }
-    
     // MARK: - Alerts Summary
     
     private func alertsSummary(_ analytics: PortfolioAnalytics) -> some View {
@@ -466,11 +384,9 @@ struct PortfolioHealthDashboardView: View {
         Task {
             let service = AnalyticsService.shared
             let portfolioAnalytics = service.computePortfolioAnalytics(modelContext: modelContext)
-            let confDist = service.computeConfidenceDistribution(modelContext: modelContext)
             
             await MainActor.run {
                 self.analytics = portfolioAnalytics
-                self.confidenceDistribution = confDist
                 self.isLoading = false
             }
         }
@@ -489,17 +405,6 @@ struct PortfolioHealthDashboardView: View {
         if score >= 30 { return "Weak" }
         return "Critical"
     }
-    
-    private func confidenceColor(for level: Int) -> Color {
-        switch level {
-        case 1: return .red
-        case 2: return .orange
-        case 3: return .yellow
-        case 4: return .blue
-        case 5: return .green
-        default: return .gray
-        }
-    }
 }
 
 // MARK: - Chart Data Types
@@ -509,16 +414,6 @@ struct StatusChartData: Identifiable {
     let status: String
     let count: Int
     let color: Color
-}
-
-struct ConfidenceChartData: Identifiable {
-    let id = UUID()
-    let level: Int
-    let count: Int
-    
-    var levelLabel: String {
-        ConfidenceLevel(rawValue: level)?.displayName ?? "\(level)"
-    }
 }
 
 // MARK: - Preview

@@ -1,7 +1,7 @@
 /**
  Shared enumerations for the Hyppo data model.
  
- Contains type definitions for scenario types, confidence levels,
+ Contains type definitions for scenario types,
  log entry types, evidence types, and review outcomes used throughout the application.
  */
 
@@ -272,40 +272,6 @@ enum DriverStatus: String, Codable, CaseIterable, Identifiable {
     /// Whether this status represents a resolved (non-pending) state
     var isResolved: Bool {
         self != .pending
-    }
-}
-
-// MARK: - Confidence
-
-/**
- Represents the user's confidence level in a research question or log entry.
- 
- Confidence is rated on a 1-5 scale, where 1 is lowest
- and 5 is highest conviction.
- */
-enum ConfidenceLevel: Int, Codable, CaseIterable, Identifiable {
-    case veryLow = 1
-    case low = 2
-    case medium = 3
-    case high = 4
-    case veryHigh = 5
-    
-    var id: Int { rawValue }
-    
-    /// Display label for the confidence level
-    var displayName: String {
-        switch self {
-        case .veryLow: return "Very Low"
-        case .low: return "Low"
-        case .medium: return "Medium"
-        case .high: return "High"
-        case .veryHigh: return "Very High"
-        }
-    }
-    
-    /// Short label for compact display
-    var shortLabel: String {
-        String(repeating: "★", count: rawValue) + String(repeating: "☆", count: 5 - rawValue)
     }
 }
 

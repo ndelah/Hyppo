@@ -110,16 +110,6 @@ struct RecordCardView: View {
     
     private var metricsRow: some View {
         HStack(spacing: isCompact ? 8 : 16) {
-            // Confidence
-            if let confidence = question.confidence {
-                MetricBadge(
-                    icon: "gauge",
-                    text: confidence.shortLabel,
-                    color: confidenceColor(for: confidence),
-                    isCompact: isCompact
-                )
-            }
-            
             // Drivers count
             let driverCount = question.drivers?.count ?? 0
             if driverCount > 0 {
@@ -191,16 +181,6 @@ struct RecordCardView: View {
         }
     }
     
-    private func confidenceColor(for confidence: ConfidenceLevel) -> Color {
-        switch confidence {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
-        }
-    }
-    
     private func tagColor(for tag: Tag) -> Color {
         guard let colorName = tag.colorName,
               let tagColor = TagColor(rawValue: colorName) else {
@@ -237,8 +217,7 @@ private struct MetricBadge: View {
 #Preview("Default Card") {
     let question = ResearchQuestion(
         questionText: "Can AAPL sustain services revenue growth at 15%+ annually?",
-        context: "Services now represent 20% of revenue and growing",
-        confidence: 4
+        context: "Services now represent 20% of revenue and growing"
     )
     
     return RecordCardView(question: question, isSelected: false)
@@ -249,8 +228,7 @@ private struct MetricBadge: View {
 #Preview("Compact Card") {
     let question = ResearchQuestion(
         questionText: "Will AI demand drive semiconductor growth?",
-        context: "Data center spending accelerating",
-        confidence: 3
+        context: "Data center spending accelerating"
     )
     
     return RecordCardView(question: question, isSelected: true, isCompact: true)

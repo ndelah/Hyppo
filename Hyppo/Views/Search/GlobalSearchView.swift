@@ -36,7 +36,6 @@ struct GlobalSearchView: View {
     @State private var searchText = ""
     @State private var selectedEntityType: EntityType? = nil
     @State private var selectedTag: Tag? = nil
-    @State private var selectedConfidence: ConfidenceLevel? = nil
     @State private var dateRange: DateRange? = nil
     @State private var showingAdvancedFilters = false
     
@@ -253,13 +252,6 @@ struct GlobalSearchView: View {
             }
         }
         
-        // Confidence filter
-        if let confidence = selectedConfidence {
-            guard let questionConfidence = question.confidence, questionConfidence == confidence else {
-                return false
-            }
-        }
-        
         // Date filter
         if let range = dateRange {
             if !range.contains(question.createdAt) && !range.contains(question.updatedAt) {
@@ -398,43 +390,6 @@ struct GlobalSearchView: View {
                                 .background(selectedTag != nil ? Color.accentColor.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
                                 .clipShape(Capsule())
                             }
-                        }
-                        
-                        // Confidence filter
-                        Menu {
-                            Button {
-                                selectedConfidence = nil
-                            } label: {
-                                if selectedConfidence == nil {
-                                    Label("All Confidence", systemImage: "checkmark")
-                                } else {
-                                    Text("All Confidence")
-                                }
-                            }
-                            
-                            Divider()
-                            
-                            ForEach(ConfidenceLevel.allCases) { level in
-                                Button {
-                                    selectedConfidence = selectedConfidence == level ? nil : level
-                                } label: {
-                                    if selectedConfidence == level {
-                                        Label("\(level.shortLabel) - \(level.displayName)", systemImage: "checkmark")
-                                    } else {
-                                        Text("\(level.shortLabel) - \(level.displayName)")
-                                    }
-                                }
-                            }
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "gauge")
-                                Text(selectedConfidence?.shortLabel ?? "All Confidence")
-                                    .font(.caption)
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(selectedConfidence != nil ? Color.accentColor.opacity(0.2) : Color(nsColor: .windowBackgroundColor))
-                            .clipShape(Capsule())
                         }
                         
                         Spacer()

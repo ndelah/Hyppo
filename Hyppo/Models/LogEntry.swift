@@ -24,9 +24,6 @@ final class LogEntry {
     /// Type of the log entry
     var entryTypeRaw: String
     
-    /// Confidence level at time of entry (1-5, optional)
-    var confidence: Int?
-    
     /// Whether this entry was system-generated (e.g., auto revision log)
     var isSystemGenerated: Bool
     
@@ -75,7 +72,6 @@ final class LogEntry {
        - title: Title of the log entry
        - body: Body content of the log entry
        - entryType: Type of the log entry
-       - confidence: Optional confidence level (1-5)
        - occurredAt: When the event occurred (defaults to now)
        - isSystemGenerated: Whether system-generated (defaults to false)
      */
@@ -83,7 +79,6 @@ final class LogEntry {
         title: String,
         body: String,
         entryType: LogEntryType = .observation,
-        confidence: Int? = nil,
         occurredAt: Date = Date(),
         isSystemGenerated: Bool = false
     ) {
@@ -91,7 +86,6 @@ final class LogEntry {
         self.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         self.body = body.trimmingCharacters(in: .whitespacesAndNewlines)
         self.entryTypeRaw = entryType.rawValue
-        self.confidence = confidence
         self.isSystemGenerated = isSystemGenerated
         self.isPinned = false
         self.occurredAt = occurredAt
@@ -105,17 +99,6 @@ final class LogEntry {
     var entryType: LogEntryType {
         get { LogEntryType(rawValue: entryTypeRaw) ?? .observation }
         set { entryTypeRaw = newValue.rawValue }
-    }
-    
-    /// Confidence level as enum
-    var confidenceLevel: ConfidenceLevel? {
-        get {
-            guard let value = confidence else { return nil }
-            return ConfidenceLevel(rawValue: value)
-        }
-        set {
-            confidence = newValue?.rawValue
-        }
     }
     
     /// Sentiment as enum (for McKinsey framework)
@@ -226,10 +209,6 @@ extension LogEntry {
             errors.append("Body content is required")
         }
         
-        if let confidence = confidence, (confidence < 1 || confidence > 5) {
-            errors.append("Confidence must be between 1 and 5")
-        }
-        
         return errors
     }
 }
@@ -238,53 +217,21 @@ extension LogEntry {
 
 extension LogEntry {
     /**
-     Creates a system-generated update log entry for research question revisions.
-     
-     - Parameters:
-       - diffSummary: Summary of what changed
-       - confidenceBefore: Previous confidence level
-       - confidenceAfter: New confidence level
-     - Returns: A new system-generated log entry
-     */
-    static func createRevisionLog(
-        diffSummary: String,
-        confidenceBefore: Int?,
-        confidenceAfter: Int?
-    ) -> LogEntry {
-        var body = diffSummary
-        
-        if let before = confidenceBefore, let after = confidenceAfter, before != after {
-            body += "\n\nConfidence changed from \(before)/5 to \(after)/5"
-        }
-        
-        return LogEntry(
-            title: "Research Updated",
-            body: body,
-            entryType: .update,
-            confidence: confidenceAfter,
-            isSystemGenerated: true
-        )
-    }
-    
-    /**
      Creates a system-generated review log entry.
      
      - Parameters:
        - outcome: The review outcome
        - summary: Summary of the review
-       - confidence: Confidence level after review
      - Returns: A new system-generated log entry
      */
     static func createReviewLog(
         outcome: ReviewOutcome,
-        summary: String,
-        confidence: Int?
+        summary: String
     ) -> LogEntry {
         return LogEntry(
             title: "Review: \(outcome.displayName)",
             body: summary,
             entryType: .review,
-            confidence: confidence,
             isSystemGenerated: true
         )
     }

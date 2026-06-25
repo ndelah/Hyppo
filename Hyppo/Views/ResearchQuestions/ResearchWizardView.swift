@@ -50,9 +50,6 @@ struct ResearchWizardView: View {
     
     @State private var selectedDriverId: UUID?
     
-    /// Confidence level for the research question (1-5 scale)
-    @State private var confidence: Int? = nil
-    
     /// Selected tags for the research question
     @State private var selectedTags: [Tag] = []
     
@@ -73,7 +70,6 @@ struct ResearchWizardView: View {
             // Use thesisStatement if available, otherwise fall back to questionText for backwards compat
             _investmentThesis = State(initialValue: question.thesisStatement ?? question.questionText)
             _whyThisMatters = State(initialValue: question.context ?? "")
-            _confidence = State(initialValue: question.confidenceCurrent)
             
             let dtos = (question.drivers ?? []).filter { $0.parentDriver == nil }.map { d in
                 DriverDTO(
@@ -344,36 +340,6 @@ struct ResearchWizardView: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(.top, 4)
-                }
-            }
-            
-            // Confidence Level
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Confidence Level")
-                    .font(.headline)
-                
-                HStack(spacing: 8) {
-                    ForEach(ConfidenceLevel.allCases, id: \.rawValue) { level in
-                        Button {
-                            if confidence == level.rawValue {
-                                confidence = nil
-                            } else {
-                                confidence = level.rawValue
-                            }
-                        } label: {
-                            VStack(spacing: 4) {
-                                Image(systemName: (confidence ?? 0) >= level.rawValue ? "star.fill" : "star")
-                                    .font(.body)
-                                Text(level.displayName)
-                                    .font(.caption2)
-                            }
-                            .frame(width: 60, height: 44)
-                            .background(confidence == level.rawValue ? Color.accentColor : Color(nsColor: .windowBackgroundColor))
-                            .foregroundStyle(confidence == level.rawValue ? .white : ((confidence ?? 0) >= level.rawValue ? .orange : .primary))
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                        .buttonStyle(.plain)
-                    }
                 }
             }
             
@@ -805,14 +771,6 @@ struct ResearchWizardView: View {
                     Divider()
                 }
                 
-                // Confidence
-                if let conf = confidence, let level = ConfidenceLevel(rawValue: conf) {
-                    reviewSection(icon: "star.fill", title: "Confidence", color: .orange) {
-                        Text(level.displayName)
-                            .font(.subheadline)
-                    }
-                }
-                
                 // Tags
                 if !selectedTags.isEmpty {
                     Divider()
@@ -882,7 +840,6 @@ struct ResearchWizardView: View {
                 checklistItem(passed: !investmentThesis.isEmpty, text: "Investment thesis defined")
                 checklistItem(passed: !validDriversForDesign.isEmpty, text: "Assumptions added")
                 checklistItem(passed: driversWithLogicCount > 0, text: "Logic defined (\(driversWithLogicCount)/\(validDriversForDesign.count))")
-                checklistItem(passed: confidence != nil, text: "Confidence set")
             }
         }
         .padding()
@@ -999,8 +956,7 @@ struct ResearchWizardView: View {
             existing.update(
                 questionText: trimmedThesis,
                 context: trimmedContext.isEmpty ? nil : trimmedContext,
-                thesisStatement: trimmedThesis,
-                confidence: confidence
+                thesisStatement: trimmedThesis
             )
             
             // Clear existing drivers
@@ -1016,8 +972,7 @@ struct ResearchWizardView: View {
             rq = ResearchQuestion(
                 questionText: trimmedThesis,
                 context: trimmedContext.isEmpty ? nil : trimmedContext,
-                thesisStatement: trimmedThesis,
-                confidence: confidence
+                thesisStatement: trimmedThesis
             )
             // Assign the final asset (either provided, selected, or newly created)
             if let assetToAssign = finalAsset {

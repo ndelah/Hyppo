@@ -2,7 +2,7 @@
  SearchPopoverView provides an advanced search interface with filters, grouping, and saved searches.
  
  Modeled after Odoo's search bar, this popover contains three sections:
- - Filters: Status, confidence, tags, and date range filters
+ - Filters: Status, tags, and date range filters
  - Group By: Options to group records by various properties
  - Favorites: Save and apply search configurations
  */
@@ -207,50 +207,26 @@ struct SearchPopoverView: View {
     
     private var filtersContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Top row: Status and Confidence side by side
-            HStack(alignment: .top, spacing: 24) {
-                // Status filters (multi-select)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Status")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    FlowLayout(spacing: 6) {
-                        ForEach(ResearchQuestionStatus.allCases) { status in
-                            FilterChip(
-                                title: status.displayName,
-                                icon: status.iconName,
-                                isSelected: config.activeStatusFilters.contains(status.rawValue),
-                                color: statusColor(for: status)
-                            ) {
-                                toggleStatusFilter(status)
-                            }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // Status filters (multi-select)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Status")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 
-                // Confidence filter
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Confidence")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    FlowLayout(spacing: 6) {
-                        ForEach(ConfidenceLevel.allCases) { level in
-                            FilterChip(
-                                title: level.displayName,
-                                icon: "gauge",
-                                isSelected: config.activeConfidenceFilter == level.rawValue,
-                                color: confidenceColor(for: level)
-                            ) {
-                                toggleConfidenceFilter(level)
-                            }
+                FlowLayout(spacing: 6) {
+                    ForEach(ResearchQuestionStatus.allCases) { status in
+                        FilterChip(
+                            title: status.displayName,
+                            icon: status.iconName,
+                            isSelected: config.activeStatusFilters.contains(status.rawValue),
+                            color: statusColor(for: status)
+                        ) {
+                            toggleStatusFilter(status)
                         }
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             // Bottom row: Tags and Date Range side by side
             HStack(alignment: .top, spacing: 24) {
@@ -441,7 +417,6 @@ struct SearchPopoverView: View {
     private var activeFilterCount: Int {
         var count = 0
         count += config.activeStatusFilters.count
-        if config.activeConfidenceFilter != nil { count += 1 }
         count += config.activeTagIds.count
         if config.activeStartDate != nil { count += 1 }
         if config.activeEndDate != nil { count += 1 }
@@ -455,14 +430,6 @@ struct SearchPopoverView: View {
             config.activeStatusFilters.remove(status.rawValue)
         } else {
             config.activeStatusFilters.insert(status.rawValue)
-        }
-    }
-    
-    private func toggleConfidenceFilter(_ level: ConfidenceLevel) {
-        if config.activeConfidenceFilter == level.rawValue {
-            config.activeConfidenceFilter = nil
-        } else {
-            config.activeConfidenceFilter = level.rawValue
         }
     }
     
@@ -503,9 +470,6 @@ struct SearchPopoverView: View {
         if !search.statusFilters.isEmpty {
             parts.append("\(search.statusFilters.count) status")
         }
-        if search.confidenceFilter != nil {
-            parts.append("confidence")
-        }
         if !search.tagIds.isEmpty {
             parts.append("\(search.tagIds.count) tags")
         }
@@ -527,16 +491,6 @@ struct SearchPopoverView: View {
         case .onHold: return .orange
         case .invalidated: return .red
         case .archived: return .gray
-        }
-    }
-    
-    private func confidenceColor(for level: ConfidenceLevel) -> Color {
-        switch level {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
         }
     }
     

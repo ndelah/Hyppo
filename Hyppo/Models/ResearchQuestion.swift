@@ -120,9 +120,6 @@ final class ResearchQuestion {
     /// The core thesis statement - what must be true for this investment to work
     var thesisStatement: String?
     
-    /// Current confidence level (1-5)
-    var confidenceCurrent: Int?
-    
     /// Raw status value for persistence
     var statusRaw: String
     
@@ -162,17 +159,6 @@ final class ResearchQuestion {
         }
     }
     
-    /// Confidence level as enum
-    var confidence: ConfidenceLevel? {
-        get {
-            guard let value = confidenceCurrent else { return nil }
-            return ConfidenceLevel(rawValue: value)
-        }
-        set {
-            confidenceCurrent = newValue?.rawValue
-        }
-    }
-    
     // MARK: - Relationships
     
     /// Parent asset this research question belongs to
@@ -209,19 +195,16 @@ final class ResearchQuestion {
        - catalysts: Optional list of potential catalysts
        - keyRisks: Optional list of key risks
        - scenarios: Optional list of simple scenarios (bull/base/bear outcomes)
-       - confidence: Optional confidence level (1-5)
      */
     init(
         questionText: String,
         context: String? = nil,
-        thesisStatement: String? = nil,
-        confidence: Int? = nil
+        thesisStatement: String? = nil
     ) {
         self.questionId = UUID()
         self.questionText = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
         self.context = context?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.thesisStatement = thesisStatement?.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.confidenceCurrent = confidence
         self.statusRaw = ResearchQuestionStatus.active.rawValue
         self.versionNumber = 1
         self.createdAt = Date()
@@ -273,9 +256,6 @@ final class ResearchQuestion {
         if !scenarios.isEmpty {
             let scenarioText = scenariosCount == 1 ? "scenario" : "scenarios"
             parts.append("\(scenariosCount) \(scenarioText)")
-        }
-        if let confidence = confidence {
-            parts.append(confidence.shortLabel)
         }
         return parts.joined(separator: " • ")
     }
@@ -396,18 +376,15 @@ final class ResearchQuestion {
        - catalysts: Updated catalysts
        - keyRisks: Updated key risks
        - scenarios: Updated scenarios
-       - confidence: Updated confidence level
      */
     func update(
         questionText: String,
         context: String?,
-        thesisStatement: String?,
-        confidence: Int?
+        thesisStatement: String?
     ) {
         self.questionText = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
         self.context = context?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.thesisStatement = thesisStatement?.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.confidenceCurrent = confidence
         self.versionNumber += 1
         self.updatedAt = Date()
         self.lastUpdatedAt = Date()
@@ -508,10 +485,6 @@ extension ResearchQuestion {
         
         if questionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             errors.append("Question text is required")
-        }
-        
-        if let confidence = confidenceCurrent, (confidence < 1 || confidence > 5) {
-            errors.append("Confidence must be between 1 and 5")
         }
         
         return errors

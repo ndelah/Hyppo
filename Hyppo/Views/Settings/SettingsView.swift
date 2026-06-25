@@ -122,7 +122,6 @@ private enum SettingsTab: String, CaseIterable {
 // MARK: - General Settings Tab
 
 private struct GeneralSettingsTab: View {
-    @AppStorage("defaultConfidenceLevel") private var defaultConfidenceLevel: Int = 3
     @AppStorage("showSystemLogs") private var showSystemLogs: Bool = true
     @AppStorage("displayDensity") private var displayDensity: String = DisplayDensity.comfortable.rawValue
     @AppStorage("dateFormatPreference") private var dateFormatPreference: String = DateFormatPreference.medium.rawValue
@@ -147,13 +146,6 @@ private struct GeneralSettingsTab: View {
                     }
                 }
                 .pickerStyle(.inline)
-                
-                Picker("Default Confidence Level", selection: $defaultConfidenceLevel) {
-                    ForEach(ConfidenceLevel.allCases, id: \.rawValue) { level in
-                        Text(level.displayName).tag(level.rawValue)
-                    }
-                }
-                .pickerStyle(.menu)
                 
                 Toggle("Show system-generated log entries", isOn: $showSystemLogs)
             } header: {

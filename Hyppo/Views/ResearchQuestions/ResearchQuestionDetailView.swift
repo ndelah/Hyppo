@@ -416,12 +416,6 @@ struct ResearchQuestionDetailView: View {
             
             // Metadata row
             HStack(spacing: 16) {
-                if let confidence = researchQuestion.confidence {
-                    Label(confidence.shortLabel, systemImage: "gauge")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
                 // Review reminder badge (inline)
                 ReviewReminderBadge(researchQuestion: researchQuestion)
                 
@@ -1725,8 +1719,7 @@ struct ResearchQuestionDetailView_Previews: PreviewProvider {
         let question = ResearchQuestion(
             questionText: "Can AAPL sustain services revenue growth?",
             context: "Services now represent 20% of revenue",
-            thesisStatement: "Apple's services segment will continue to grow at 15%+ annually as the installed base expands.",
-            confidence: 4
+            thesisStatement: "Apple's services segment will continue to grow at 15%+ annually as the installed base expands."
         )
         
         return ResearchQuestionDetailView(researchQuestion: question)

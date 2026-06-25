@@ -66,8 +66,6 @@ struct RecordRowView: View {
             assetCell
         case .status:
             statusCell
-        case .confidence:
-            confidenceCell
         case .drivers:
             driversCell
         case .scenarios:
@@ -126,20 +124,6 @@ struct RecordRowView: View {
         .background(statusColor.opacity(0.15))
         .foregroundStyle(statusColor)
         .clipShape(Capsule())
-    }
-    
-    private var confidenceCell: some View {
-        Group {
-            if let confidence = question.confidence {
-                Text(confidence.shortLabel)
-                    .font(.system(size: 11 * textSizeMultiplier))
-                    .foregroundStyle(confidenceColor(for: confidence))
-            } else {
-                Text("—")
-                    .font(.system(size: 11 * textSizeMultiplier))
-                    .foregroundStyle(.tertiary)
-            }
-        }
     }
     
     private var driversCell: some View {
@@ -209,16 +193,6 @@ struct RecordRowView: View {
         }
     }
     
-    private func confidenceColor(for confidence: ConfidenceLevel) -> Color {
-        switch confidence {
-        case .veryLow: return .red
-        case .low: return .orange
-        case .medium: return .yellow
-        case .high: return .green
-        case .veryHigh: return .blue
-        }
-    }
-    
 }
 
 // MARK: - Tag Pill
@@ -254,13 +228,12 @@ private struct TagPill: View {
 #Preview {
     let question = ResearchQuestion(
         questionText: "Can AAPL sustain services revenue growth?",
-        context: "Services now represent 20% of revenue",
-        confidence: 4
+        context: "Services now represent 20% of revenue"
     )
     
     return RecordRowView(
         question: question,
-        columns: [.question, .assetName, .status, .confidence, .updated],
+        columns: [.question, .assetName, .status, .updated],
         isSelected: false
     )
     .padding()

@@ -17,7 +17,7 @@ struct ExportData: Codable {
     let exportedAt: Date
     let assets: [AssetExport]
     
-    static let currentVersion = "2.0"  // Updated for new model structure
+    static let currentVersion = "2.1"  // Updated: confidence feature removed
 }
 
 struct AssetExport: Codable {
@@ -40,7 +40,6 @@ struct ResearchQuestionExport: Codable {
     let thesisStatement: String?
     let drivers: [DriverExport]
     let scenarios: [SimpleScenarioExport]
-    let confidence: Int?
     let status: String
     let conclusion: String?
     let versionNumber: Int
@@ -71,7 +70,6 @@ struct LogEntryExport: Codable {
     let title: String
     let body: String
     let entryType: String
-    let confidence: Int?
     let isSystemGenerated: Bool
     let isPinned: Bool
     let occurredAt: Date
@@ -148,7 +146,6 @@ final class ExportService {
                         title: logEntry.title,
                         body: logEntry.body,
                         entryType: logEntry.entryTypeRaw,
-                        confidence: logEntry.confidence,
                         isSystemGenerated: logEntry.isSystemGenerated,
                         isPinned: logEntry.isPinned,
                         occurredAt: logEntry.occurredAt,
@@ -200,7 +197,6 @@ final class ExportService {
                     thesisStatement: question.thesisStatement,
                     drivers: driverExports,
                     scenarios: scenarioExports,
-                    confidence: question.confidenceCurrent,
                     status: question.statusRaw,
                     conclusion: question.conclusion,
                     versionNumber: question.versionNumber,
@@ -320,8 +316,7 @@ final class ExportService {
                 let researchQuestion = ResearchQuestion(
                     questionText: questionExport.questionText,
                     context: questionExport.context,
-                    thesisStatement: questionExport.thesisStatement,
-                    confidence: questionExport.confidence
+                    thesisStatement: questionExport.thesisStatement
                 )
                 researchQuestion.scenarios = importedScenarios
                 researchQuestion.statusRaw = questionExport.status
@@ -377,7 +372,6 @@ final class ExportService {
                         title: logExport.title,
                         body: logExport.body,
                         entryType: LogEntryType(rawValue: logExport.entryType) ?? .observation,
-                        confidence: logExport.confidence,
                         occurredAt: logExport.occurredAt,
                         isSystemGenerated: logExport.isSystemGenerated
                     )
@@ -438,9 +432,6 @@ final class ExportService {
             md += "**Asset:** \(asset.ticker) - \(asset.name)\n"
         }
         md += "**Status:** \(researchQuestion.status.displayName)\n"
-        if let confidence = researchQuestion.confidence {
-            md += "**Confidence:** \(confidence.rawValue)/5 (\(confidence.displayName))\n"
-        }
         md += "**Version:** \(researchQuestion.versionNumber)\n"
         md += "**Created:** \(dateFormatter.string(from: researchQuestion.createdAt))\n"
         md += "**Last Updated:** \(dateFormatter.string(from: researchQuestion.updatedAt))\n"
