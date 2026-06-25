@@ -2,7 +2,7 @@
  Driver model representing an assumption or key driver in the investment thesis.
  
  Drivers are organized in a 2-level hierarchy (Top-level Drivers and Sub-drivers).
- Evidence and ResearchTasks are attached directly to Drivers.
+ Evidence is attached directly to Drivers.
  */
 
 import Foundation
@@ -45,10 +45,6 @@ final class Driver {
     /// Evidence associated with this driver
     @Relationship(deleteRule: .cascade)
     var evidence: [Evidence]?
-    
-    /// Research tasks for this driver
-    @Relationship(deleteRule: .cascade, inverse: \ResearchTask.driver)
-    var tasks: [ResearchTask]?
     
     // MARK: - Initialization
     
@@ -127,21 +123,5 @@ final class Driver {
         return subDrivers?.allSatisfy { $0.hasBlindSpot } ?? true
     }
     
-    // MARK: - Task Progress
-    
-    /// Count of tasks directly attached to this driver
-    var taskCount: Int {
-        tasks?.count ?? 0
-    }
-    
-    /// Count of completed tasks
-    var completedTaskCount: Int {
-        tasks?.filter { $0.isCompleted }.count ?? 0
-    }
-    
-    /// Tasks sorted by position
-    var sortedTasks: [ResearchTask] {
-        tasks?.sorted { $0.position < $1.position } ?? []
-    }
 }
 

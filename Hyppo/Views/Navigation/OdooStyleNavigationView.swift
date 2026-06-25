@@ -3,7 +3,7 @@
  
  Features:
  - Top menu bar with app name and navigation tabs
- - Research Questions, Tasks, Reporting, Configuration menu items
+ - Research Questions, Reporting, Configuration menu items
  - Consistent styling across all sections
  */
 
@@ -13,7 +13,6 @@ import SwiftData
 /// App-wide navigation tabs
 enum AppNavigationTab: String, CaseIterable, Identifiable {
     case researchQuestions = "Research Questions"
-    case tasks = "Tasks"
     case reporting = "Reporting"
     case configuration = "Configuration"
     
@@ -23,7 +22,6 @@ enum AppNavigationTab: String, CaseIterable, Identifiable {
     var iconName: String {
         switch self {
         case .researchQuestions: return "questionmark.circle"
-        case .tasks: return "checklist"
         case .reporting: return "chart.bar"
         case .configuration: return "gearshape"
         }
@@ -140,9 +138,6 @@ struct OdooStyleNavigationView: View {
         case .researchQuestions:
             RecordListView(navigationPath: $navigationPath)
             
-        case .tasks:
-            AllTasksListView(navigationPath: $navigationPath)
-            
         case .reporting:
             AnalyticsDashboardView()
             
@@ -183,6 +178,6 @@ struct ComingSoonView: View {
 
 #Preview {
     OdooStyleNavigationView()
-        .modelContainer(for: [Asset.self, ResearchQuestion.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self, Driver.self, ResearchTask.self], inMemory: true)
+        .modelContainer(for: [Asset.self, ResearchQuestion.self, LogEntry.self, Evidence.self, Tag.self, ReviewReminder.self, Driver.self], inMemory: true)
 }
 

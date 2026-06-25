@@ -201,14 +201,6 @@ struct PortfolioHealthDashboardView: View {
             )
             
             metricCard(
-                title: "Tasks",
-                value: "\(analytics.completedTasks)/\(analytics.totalTasks)",
-                subtitle: taskCompletionSubtitle(analytics),
-                icon: "checklist",
-                color: .green
-            )
-            
-            metricCard(
                 title: "Drivers",
                 value: "\(analytics.totalDrivers)",
                 subtitle: "\(analytics.blindSpotCount) blind spots",
@@ -224,12 +216,6 @@ struct PortfolioHealthDashboardView: View {
                 color: analytics.overdueReviews > 0 ? .orange : .green
             )
         }
-    }
-    
-    private func taskCompletionSubtitle(_ analytics: PortfolioAnalytics) -> String {
-        guard analytics.totalTasks > 0 else { return "no tasks" }
-        let rate = Double(analytics.completedTasks) / Double(analytics.totalTasks) * 100
-        return String(format: "%.0f%% complete", rate)
     }
     
     private func metricCard(title: String, value: String, subtitle: String, icon: String, color: Color) -> some View {
@@ -525,6 +511,6 @@ struct ConfidenceChartData: Identifiable {
 
 #Preview {
     PortfolioHealthDashboardView()
-        .modelContainer(for: [Asset.self, ResearchQuestion.self, Driver.self, Evidence.self, ResearchTask.self, ReviewReminder.self], inMemory: true)
+        .modelContainer(for: [Asset.self, ResearchQuestion.self, Driver.self, Evidence.self, ReviewReminder.self], inMemory: true)
 }
 
