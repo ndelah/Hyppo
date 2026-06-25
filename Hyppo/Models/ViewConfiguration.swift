@@ -18,7 +18,6 @@ struct SavedSearch: Codable, Identifiable, Equatable {
     let id: UUID
     var name: String
     var statusFilters: [String]
-    var confidenceFilter: Int?
     var tagIds: [UUID]
     var startDate: Date?
     var endDate: Date?
@@ -29,7 +28,6 @@ struct SavedSearch: Codable, Identifiable, Equatable {
         id: UUID = UUID(),
         name: String,
         statusFilters: [String] = [],
-        confidenceFilter: Int? = nil,
         tagIds: [UUID] = [],
         startDate: Date? = nil,
         endDate: Date? = nil,
@@ -39,7 +37,6 @@ struct SavedSearch: Codable, Identifiable, Equatable {
         self.id = id
         self.name = name
         self.statusFilters = statusFilters
-        self.confidenceFilter = confidenceFilter
         self.tagIds = tagIds
         self.startDate = startDate
         self.endDate = endDate
@@ -57,7 +54,6 @@ enum GroupByColumn: String, CaseIterable, Identifiable {
     case none = "none"
     case status = "status"
     case asset = "asset"
-    case confidence = "confidence"
     case tags = "tags"
     case createdDate = "createdDate"
     case updatedDate = "updatedDate"
@@ -70,7 +66,6 @@ enum GroupByColumn: String, CaseIterable, Identifiable {
         case .none: return "None"
         case .status: return "Status"
         case .asset: return "Asset"
-        case .confidence: return "Confidence"
         case .tags: return "Tags"
         case .createdDate: return "Created Date"
         case .updatedDate: return "Updated Date"
@@ -83,7 +78,6 @@ enum GroupByColumn: String, CaseIterable, Identifiable {
         case .none: return "square.grid.2x2"
         case .status: return "flag"
         case .asset: return "building.2"
-        case .confidence: return "gauge"
         case .tags: return "tag"
         case .createdDate: return "calendar.badge.plus"
         case .updatedDate: return "calendar"
@@ -132,7 +126,6 @@ enum RecordColumn: String, CaseIterable, Identifiable {
     case question = "question"
     case assetName = "assetName"
     case status = "status"
-    case confidence = "confidence"
     case drivers = "drivers"
     case scenarios = "scenarios"
     case logEntries = "logEntries"
@@ -148,7 +141,6 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .question: return "Question"
         case .assetName: return "Asset"
         case .status: return "Status"
-        case .confidence: return "Confidence"
         case .drivers: return "Drivers"
         case .scenarios: return "Scenarios"
         case .logEntries: return "Logs"
@@ -164,7 +156,6 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .question: return "questionmark.circle"
         case .assetName: return "building.2"
         case .status: return "flag"
-        case .confidence: return "gauge"
         case .drivers: return "target"
         case .scenarios: return "arrow.up.arrow.down"
         case .logEntries: return "note.text"
@@ -177,7 +168,7 @@ enum RecordColumn: String, CaseIterable, Identifiable {
     /// Whether this column is visible by default
     var isDefaultVisible: Bool {
         switch self {
-        case .question, .assetName, .status, .confidence, .updated:
+        case .question, .assetName, .status, .updated:
             return true
         case .drivers, .scenarios, .logEntries, .tags, .created:
             return false
@@ -190,7 +181,6 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .question: return 250
         case .assetName: return 80
         case .status: return 100
-        case .confidence: return 100
         case .drivers: return 70
         case .scenarios: return 80
         case .logEntries: return 60
@@ -203,7 +193,7 @@ enum RecordColumn: String, CaseIterable, Identifiable {
     /// Whether this column is sortable
     var isSortable: Bool {
         switch self {
-        case .question, .assetName, .status, .confidence, .created, .updated:
+        case .question, .assetName, .status, .created, .updated:
             return true
         case .drivers, .scenarios, .logEntries, .tags:
             return false
@@ -215,7 +205,7 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         switch self {
         case .question:
             return .leading
-        case .assetName, .status, .confidence, .drivers, .scenarios, .logEntries, .tags, .created, .updated:
+        case .assetName, .status, .drivers, .scenarios, .logEntries, .tags, .created, .updated:
             return .center
         }
     }
@@ -227,13 +217,12 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .question: return 0      // Never hidden
         case .status: return 1        // Critical info
         case .assetName: return 2     // Important context
-        case .confidence: return 3    // Key metric
-        case .updated: return 4       // Useful timestamp
-        case .created: return 5       // Less critical timestamp
-        case .tags: return 6          // Nice to have
-        case .drivers: return 7       // Count info
-        case .logEntries: return 8    // Count info
-        case .scenarios: return 9     // Least critical
+        case .updated: return 3       // Useful timestamp
+        case .created: return 4       // Less critical timestamp
+        case .tags: return 5          // Nice to have
+        case .drivers: return 6       // Count info
+        case .logEntries: return 7    // Count info
+        case .scenarios: return 8     // Least critical
         }
     }
     
@@ -244,7 +233,6 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         case .question: return 150
         case .assetName: return 50
         case .status: return 70
-        case .confidence: return 70
         case .drivers: return 40
         case .scenarios: return 50
         case .logEntries: return 40
@@ -259,7 +247,7 @@ enum RecordColumn: String, CaseIterable, Identifiable {
         switch self {
         case .question: return 3.0    // Takes most extra space
         case .tags: return 1.5        // Tags can benefit from extra space
-        case .assetName, .status, .confidence, .created, .updated: return 1.0
+        case .assetName, .status, .created, .updated: return 1.0
         case .drivers, .scenarios, .logEntries: return 0.5  // Compact columns grow less
         }
     }
@@ -346,9 +334,6 @@ final class ViewConfiguration {
     
     /// Current status filters (multi-select)
     var activeStatusFilters: Set<String> = []
-    
-    /// Current confidence filter
-    var activeConfidenceFilter: Int?
     
     /// Current tag IDs filter
     var activeTagIds: Set<UUID> = []
@@ -590,7 +575,6 @@ final class ViewConfiguration {
         let search = SavedSearch(
             name: name,
             statusFilters: Array(activeStatusFilters),
-            confidenceFilter: activeConfidenceFilter,
             tagIds: Array(activeTagIds),
             startDate: activeStartDate,
             endDate: activeEndDate,
@@ -617,7 +601,6 @@ final class ViewConfiguration {
      */
     func applySavedSearch(_ search: SavedSearch) {
         activeStatusFilters = Set(search.statusFilters)
-        activeConfidenceFilter = search.confidenceFilter
         activeTagIds = Set(search.tagIds)
         activeStartDate = search.startDate
         activeEndDate = search.endDate
@@ -634,7 +617,6 @@ final class ViewConfiguration {
      */
     func clearActiveFilters() {
         activeStatusFilters = []
-        activeConfidenceFilter = nil
         activeTagIds = []
         activeStartDate = nil
         activeEndDate = nil
@@ -646,7 +628,6 @@ final class ViewConfiguration {
      */
     var hasActiveFilters: Bool {
         !activeStatusFilters.isEmpty ||
-        activeConfidenceFilter != nil ||
         !activeTagIds.isEmpty ||
         activeStartDate != nil ||
         activeEndDate != nil

@@ -29,7 +29,6 @@ struct PortfolioAnalytics {
     
     // Health metrics
     let averageHealthScore: Double
-    let averageConfidence: Double
     let totalDrivers: Int
     let totalEvidence: Int
     let totalTasks: Int
@@ -61,12 +60,6 @@ struct PortfolioAnalytics {
         score -= min(10, staleResearchCount * 3)
         
         return max(0, min(100, score))
-    }
-    
-    /// Confidence distribution for chart display
-    var confidenceDistribution: [Int: Int] {
-        // Returns [confidenceLevel: count]
-        [:]  // Populated by the service
     }
     
     /// Status distribution for chart display
@@ -290,7 +283,6 @@ struct RiskAlert: Identifiable {
     enum RiskAlertType: String {
         case contradictingEvidence = "Contradicting Evidence"
         case staleResearch = "Stale Research"
-        case confidenceDrop = "Confidence Drop"
         case blindSpots = "Blind Spots"
         case overdueReview = "Overdue Review"
         case invalidationRisk = "Invalidation Risk"
@@ -366,10 +358,6 @@ final class AnalyticsService {
         }
         let avgHealth = healthScores.isEmpty ? 50.0 : Double(healthScores.reduce(0, +)) / Double(healthScores.count)
         
-        // Calculate average confidence
-        let confidences = questions.compactMap { $0.confidenceCurrent }
-        let avgConfidence = confidences.isEmpty ? 3.0 : Double(confidences.reduce(0, +)) / Double(confidences.count)
-        
         // Count completed tasks
         let completedTasks = tasks.filter { $0.isCompleted }.count
         
@@ -396,7 +384,6 @@ final class AnalyticsService {
             invalidatedQuestions: invalidatedQuestions,
             archivedQuestions: archivedQuestions,
             averageHealthScore: avgHealth,
-            averageConfidence: avgConfidence,
             totalDrivers: drivers.count,
             totalEvidence: evidence.count,
             totalTasks: tasks.count,
@@ -406,27 +393,6 @@ final class AnalyticsService {
             staleResearchCount: staleCount,
             recentContradictingCount: recentContradicting
         )
-    }
-    
-    // MARK: - Confidence Distribution
-    
-    /**
-     Computes confidence level distribution across research questions.
-     
-     - Parameter modelContext: The SwiftData model context
-     - Returns: Dictionary mapping confidence level (1-5) to count
-     */
-    func computeConfidenceDistribution(modelContext: ModelContext) -> [Int: Int] {
-        let questions = fetchAll(ResearchQuestion.self, from: modelContext)
-        var distribution: [Int: Int] = [1: 0, 2: 0, 3: 0, 4: 0, 5: 0]
-        
-        for question in questions {
-            if let confidence = question.confidenceCurrent {
-                distribution[confidence, default: 0] += 1
-            }
-        }
-        
-        return distribution
     }
     
     // MARK: - Time Analytics
